@@ -26,3 +26,9 @@ You can optionally run `pre-commit` at any time as so:
 ```sh
 pre-commit run --all-files
 ```
+
+Before pushing it is adviced to check if all notebooks could be executed:
+
+```sh
+make execute-notebooks
+```
