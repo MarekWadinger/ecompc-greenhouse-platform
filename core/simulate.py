@@ -62,7 +62,7 @@ def simulate_open_loop(
         x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u,), method="RK45")
         x_ode_prev = x_ode.y[:, -1]
 
-        y_out.append(x_ode)
+        y_out.append(x_ode_prev)
         t_out.append(t)
         u_out.append(u)
     y_out = np.array(y_out)
@@ -107,7 +107,7 @@ def simulate_closed_loop(
         x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u,), method="RK45")
         x_ode_prev = x_ode.y[:, -1]
 
-        y_out.append(x_ode)
+        y_out.append(x_ode_prev)
         y_ref.append(x_ref)
         t_out.append(t)
         u_out.append(u)
