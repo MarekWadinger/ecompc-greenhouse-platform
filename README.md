@@ -8,8 +8,8 @@
 <!-- markdownlint-enable MD013 -->
 
 ## ⚡️ Quickstart
-Play around with the model in a [Jupyter notebook]().
 
+Play around with the model in a [Jupyter notebook](https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/main.ipynb).
 
 ## 🛠 Installation
 
