@@ -48,6 +48,40 @@ C_CAR3 = -2.64e-3
 
 # FUNCTIONS
 # # Dynamic Behavior Models
+def lettuce_growth_model(_: int, x: tuple, u: tuple) -> list[float]:
+    """Overall dynamic growth model.
+
+    Args:
+        _: Elapsed time for solve_ivp compatibility [s]
+        x (tuple): System states [x_sdw, x_nsdw]
+        u (tuple): System inputs [u_T, u_par, u_co2]
+
+    Returns:
+        [dx_sdw/dt, dx_nsdw/dt] - structural and non-structural dry weight
+        increments [g m^{-2} s^{-1}]
+
+    Examples:
+    >>> lettuce_growth_model(1, (10, 10), (25, 0, 400))
+    [2.8772827989339694e-05, -3.9089534986674615e-05]
+    """
+    x_sdw, x_nsdw = x
+    u_T, u_par, u_co2 = u
+
+    r_gr = get_r_gr(x_sdw, x_nsdw, u_T)
+
+    gamma = get_ggamma(u_T)
+    epsilon = get_epsilon(u_co2, gamma)
+    g_co2 = get_g_co2(get_g_car(u_T))
+    f_phot_max = get_f_phot_max(u_par, u_co2, epsilon, g_co2, gamma)
+    f_phot = get_f_phot(x_sdw, f_phot_max)
+
+    f_resp = get_f_resp(x_sdw, u_T)
+
+    dx_sdw_dt = predict_x_sdw(x_sdw, r_gr)
+    dx_nsdw_dt = predict_x_nsdw(x_sdw, r_gr, f_phot, f_resp)
+    return [dx_sdw_dt, dx_nsdw_dt]
+
+
 def predict_x_sdw(
         x_sdw: float,
         r_gr: float,
@@ -62,7 +96,7 @@ def predict_x_sdw(
         r_gr (float): specific growth rate [s^{-1}]
 
     Returns:
-        float: dx_sdw/dt - structural dry weight increment [g m^{-2} s^{-1}]
+        dx_sdw/dt - structural dry weight increment [g m^{-2} s^{-1}]
 
     References:
         Sweeney et al., 1981
