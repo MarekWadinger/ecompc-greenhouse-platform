@@ -1,0 +1,87 @@
+# https://pre-commit.com
+exclude: 'examples|reports'
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: debug-statements #Check for debugger imports and breakpoint() in python files
+      - id: check-ast #Simply check whether files parse as valid python
+      - id: fix-byte-order-marker #removes UTF-8 byte order marker
+      - id: check-json
+      - id: detect-private-key # detect-private-key is not in repo
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-shebang-scripts-are-executable
+      - id: check-case-conflict #Check for files with names that would conflict on a case-insensitive filesystem like MacOS HFS+ or Windows FAT
+      - id: end-of-file-fixer #Makes sure files end in a newline and only a newline
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+
+  - repo: https://github.com/asottile/blacken-docs
+    rev: v1.12.1
+    hooks:
+    -   id: blacken-docs #blacken-docs is a pre-commit hook that runs to check for issues in the docs
+        additional_dependencies: [black]
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort #isort is a pre-commit hook that runs to check for issues in imports and docstrings
+        args: [
+          "--profile", "black", "--filter-files",
+          "-l", "79"
+          ]
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.37.0
+    hooks:
+      - id: pyupgrade #pyupgrade is a pre-commit hook that runs to check for issues in the code
+        args: [--py36-plus]
+  - repo: local
+    hooks:
+      - id: flake8
+        name: flake8
+        language: python
+        types: [python]
+        entry: flake8
+  - repo: local
+    hooks:
+      - id: pylint # pylint is a pre-commit hook that runs as a linter to check for style
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+        exclude: ^.*/
+  - repo: local
+    hooks:
+      - id: mypy # mypy is a pre-commit hook that runs as a linter to check for type errors
+        name: mypy
+        entry: mypy --implicit-optional
+        language: system
+        types: [python]
+        args: [
+          "--ignore-missing-imports",
+          "--explicit-package-bases",
+          "--check-untyped-defs"
+          ]
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        language: python
+        types: [python]
+        entry: pytest
+        pass_filenames: false
+        always_run: true
+        args: [
+          --doctest-modules,
+          -o, addopts=""
+          ]
+  - repo: local
+    hooks:
+      - id: make
+        name: make
+        language: python
+        types: [python]
+        entry: make execute-notebooks
+        stages:
+          - "pre-push"
+          - "pre-merge-commit"
