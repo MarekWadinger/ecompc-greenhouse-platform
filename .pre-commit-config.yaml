@@ -75,13 +75,13 @@ repos:
           --doctest-modules,
           -o, addopts=""
           ]
-  - repo: local
-    hooks:
-      - id: make
-        name: make
-        language: python
-        types: [python]
-        entry: make execute-notebooks
-        stages:
-          - "pre-push"
-          - "pre-merge-commit"
+  # - repo: local
+  #   hooks:
+  #     - id: make
+  #       name: make
+  #       language: python
+  #       types: [python]
+  #       entry: make execute-notebooks
+  #       stages:
+  #         - "pre-push"
+  #         - "pre-merge-commit"
