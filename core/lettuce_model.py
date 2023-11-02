@@ -275,8 +275,8 @@ def get_epsilon(
     """Light use efficency.
 
     Args:
-        u_co2: _description_
-        gamma: _description_
+        u_co2: CO_2 concentration [ppm]
+        gamma: CO_2 compensation point [ppm]
         c_epsilon (optional): light use efficiency at high CO_2 [g J^{-1}]
 
     Returns:
@@ -312,7 +312,7 @@ def get_g_car(
     """Carboxilation conductance.
 
     Args:
-        u_T : _description_
+        u_T : canopy temperature [C]
         c_car1 (optional): carboxilation parameter [m s^{-1} C^{-2}]
         c_car2 (optional): carboxilation parameter [m s^{-1} C^{-1}]
         c_car3 (optional): carboxilation parameter [m s^{-1}]
