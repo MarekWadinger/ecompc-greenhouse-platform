@@ -48,7 +48,11 @@ C_CAR3 = -2.64e-3
 
 # FUNCTIONS
 # # Dynamic Behavior Models
-def lettuce_growth_model(_: int, x: tuple, u: tuple) -> list[float]:
+def lettuce_growth_model(
+        _: int,
+        x: tuple[float, float],
+        u: tuple[float, float, float]
+        ) -> list[float]:
     """Overall dynamic growth model.
 
     Args:
