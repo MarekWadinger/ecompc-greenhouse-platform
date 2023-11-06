@@ -5,7 +5,7 @@ from math import exp
 # # Lettuce Growth Model Parameters
 
 # [g g^{-1}] ratio of molecular weight of CH_2O to CO_2
-C_CH2O = 30/44
+C_CH2O = 30 / 44
 # [g g^{-1}] Penning de Vries et al. (1974)
 C_YF = 0.8
 # [s^{-1}] Van Holsteijn (1981)
@@ -19,7 +19,7 @@ C_RESP_SHT = 3.47e-7
 # [s^{-1}] Van Keulen et al. (1982)
 C_RESP_RT = 1.16e-7
 # [-] Van Keulen et al. (1982)
-C_Q10_RESP = 2.
+C_Q10_RESP = 2.0
 # [-] Lorenz & Wiebe, 1980; Sweeney et al., 1981
 C_TAU = 0.15
 # [-] (0.9 and 0.3 for planophile and erectophile) Goudriaan & Monteith, 1990
@@ -49,10 +49,8 @@ C_CAR3 = -2.64e-3
 # FUNCTIONS
 # # Dynamic Behavior Models
 def lettuce_growth_model(
-        _: int,
-        x: tuple[float, float],
-        u: tuple[float, float, float]
-        ) -> list[float]:
+    _: int, x: tuple[float, float], u: tuple[float, float, float]
+) -> list[float]:
     """Overall dynamic growth model.
 
     Args:
@@ -87,9 +85,9 @@ def lettuce_growth_model(
 
 
 def predict_x_sdw(
-        x_sdw: float,
-        r_gr: float,
-        ) -> float:
+    x_sdw: float,
+    r_gr: float,
+) -> float:
     """Dynamic model of structural dry weight.
 
     Nonlinear differential equation governing dynamic behavior of structural
@@ -109,13 +107,13 @@ def predict_x_sdw(
 
 
 def predict_x_nsdw(
-        x_sdw: float,
-        r_gr: float,
-        f_phot: float,
-        f_resp: float,
-        c_ch2o: float = C_CH2O,
-        c_yf: float = C_YF,
-        ) -> float:
+    x_sdw: float,
+    r_gr: float,
+    f_phot: float,
+    f_resp: float,
+    c_ch2o: float = C_CH2O,
+    c_yf: float = C_YF,
+) -> float:
     """Dynamic model of non-structural dry weight.
 
     Nonlinear differential equation governing dynamic behavior of
@@ -136,20 +134,22 @@ def predict_x_nsdw(
     References:
         Thornley & Hurd, 1974
     """
-    return (c_ch2o * f_phot
-            - r_gr * x_sdw
-            - f_resp
-            - ((1 - c_yf) / c_yf) * r_gr * x_sdw)
+    return (
+        c_ch2o * f_phot
+        - r_gr * x_sdw
+        - f_resp
+        - ((1 - c_yf) / c_yf) * r_gr * x_sdw
+    )
 
 
 def get_r_gr(
-        x_sdw: float,
-        x_nsdw: float,
-        u_T: float,
-        c_gr_max: float = C_GR_MAX,
-        c_gamma: float = C_GAMMA,
-        c_Q10_gr: float = C_Q10_GR,
-        ) -> float:
+    x_sdw: float,
+    x_nsdw: float,
+    u_T: float,
+    c_gr_max: float = C_GR_MAX,
+    c_gamma: float = C_GAMMA,
+    c_Q10_gr: float = C_Q10_GR,
+) -> float:
     """Specific growth rate.
 
     Args:
@@ -166,19 +166,21 @@ def get_r_gr(
     References:
         Thornley & Hurd (1974)
     """
-    return (c_gr_max
-            * (x_nsdw / (c_gamma * x_sdw + x_nsdw))
-            * c_Q10_gr ** ((u_T - 20) / 10))
+    return (
+        c_gr_max
+        * (x_nsdw / (c_gamma * x_sdw + x_nsdw))
+        * c_Q10_gr ** ((u_T - 20) / 10)
+    )
 
 
 def get_f_resp(
-        x_sdw: float,
-        u_T: float,
-        c_resp_sht: float = C_RESP_SHT,
-        c_tau: float = C_TAU,
-        c_resp_rt: float = C_RESP_RT,
-        c_Q10_resp: float = C_Q10_RESP,
-        ) -> float:
+    x_sdw: float,
+    u_T: float,
+    c_resp_sht: float = C_RESP_SHT,
+    c_tau: float = C_TAU,
+    c_resp_rt: float = C_RESP_RT,
+    c_Q10_resp: float = C_Q10_RESP,
+) -> float:
     """Maintenance respiration rate.
 
     Args:
@@ -192,18 +194,18 @@ def get_f_resp(
     Returns:
         f_resp - maintenance respiration rate [g m^{-2} s^{-1}]
     """
-    return ((c_resp_sht * (1 - c_tau) * x_sdw
-             + c_resp_rt * c_tau * x_sdw)
-            * c_Q10_resp ** ((u_T - 25) / 10))
+    return (
+        c_resp_sht * (1 - c_tau) * x_sdw + c_resp_rt * c_tau * x_sdw
+    ) * c_Q10_resp ** ((u_T - 25) / 10)
 
 
 def get_f_phot(
-        x_sdw: float,
-        f_phot_max: float,
-        c_K: float = C_K,
-        c_lar: float = C_LAR,
-        c_tau: float = C_TAU,
-        ) -> float:
+    x_sdw: float,
+    f_phot_max: float,
+    c_K: float = C_K,
+    c_lar: float = C_LAR,
+    c_tau: float = C_TAU,
+) -> float:
     """Groos canopy photosynthesis.
 
     Args:
@@ -223,13 +225,13 @@ def get_f_phot(
 
 
 def get_f_phot_max(
-        u_par: float,
-        u_co2: float,
-        epsilon: float,
-        g_co2: float,
-        gamma: float,
-        c_omega: float = C_OMEGA,
-        ) -> float:
+    u_par: float,
+    u_co2: float,
+    epsilon: float,
+    g_co2: float,
+    gamma: float,
+    c_omega: float = C_OMEGA,
+) -> float:
     """Response of canopy photosynthesis.
 
     Args:
@@ -246,15 +248,16 @@ def get_f_phot_max(
     References:
         Acock et al. (1978)
     """
-    return ((epsilon * u_par * g_co2 * c_omega * (u_co2 - gamma))
-            / (epsilon * u_par + g_co2 * c_omega * (u_co2 - gamma)))
+    return (epsilon * u_par * g_co2 * c_omega * (u_co2 - gamma)) / (
+        epsilon * u_par + g_co2 * c_omega * (u_co2 - gamma)
+    )
 
 
 def get_ggamma(
-        u_T: float,
-        c_Gamma: float = C_GGAMMA,
-        c_Q10_Gamma: float = C_Q10_GGAMMA,
-        ) -> float:
+    u_T: float,
+    c_Gamma: float = C_GGAMMA,
+    c_Q10_Gamma: float = C_Q10_GGAMMA,
+) -> float:
     """CO_2 compensation point.
 
     Args:
@@ -272,10 +275,10 @@ def get_ggamma(
 
 
 def get_epsilon(
-        u_co2: float,
-        gamma: float,
-        c_epsilon: float = C_EPSILON,
-        ) -> float:
+    u_co2: float,
+    gamma: float,
+    c_epsilon: float = C_EPSILON,
+) -> float:
     """Light use efficency.
 
     Args:
@@ -290,10 +293,10 @@ def get_epsilon(
 
 
 def get_g_co2(
-        g_car: float,
-        g_bdn: float = G_BND,
-        g_stm: float = G_STM,
-        ) -> float:
+    g_car: float,
+    g_bdn: float = G_BND,
+    g_stm: float = G_STM,
+) -> float:
     """Canopy conductance to CO_2 diffusion.
 
     Args:
@@ -308,11 +311,11 @@ def get_g_co2(
 
 
 def get_g_car(
-        u_T: float,
-        c_car1: float = C_CAR1,
-        c_car2: float = C_CAR2,
-        c_car3: float = C_CAR3,
-        ):
+    u_T: float,
+    c_car1: float = C_CAR1,
+    c_car2: float = C_CAR2,
+    c_car3: float = C_CAR3,
+):
     """Carboxilation conductance.
 
     Args:
@@ -324,4 +327,4 @@ def get_g_car(
     Returns:
        g_car - carboxilation conductance [m s^{-1}]
     """
-    return c_car1 * u_T ** 2 + c_car2 * u_T + c_car3
+    return c_car1 * u_T**2 + c_car2 * u_T + c_car3
