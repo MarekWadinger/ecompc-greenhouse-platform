@@ -52,19 +52,6 @@ repos:
         args: [--py36-plus]
   - repo: local
     hooks:
-      - id: pytest-check
-        name: pytest-check
-        language: python
-        types: [python]
-        entry: pytest
-        pass_filenames: false
-        always_run: true
-        args: [
-          --doctest-modules,
-          -o, addopts=""
-          ]
-  - repo: local
-    hooks:
       - id: mypy # mypy is a pre-commit hook that runs as a linter to check for type errors
         name: mypy
         entry: mypy --implicit-optional
@@ -78,3 +65,16 @@ repos:
         stages:
           - "pre-push"
           - "pre-merge-commit"
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        language: python
+        types: [python]
+        entry: pytest
+        pass_filenames: false
+        always_run: true
+        args: [
+          --doctest-modules,
+          -o, addopts=""
+          ]

@@ -2,7 +2,6 @@
 from inspect import signature
 from typing import Callable, Union
 
-import numpy as np
 from scipy.integrate import solve_ivp
 
 from core.generator import validate_gen
@@ -15,7 +14,7 @@ def simulate(
     t_s: int = 1,
     x0: Union[list[float], None] = None,
     ref_gen: Union[Callable[..., float], None] = None,
-) -> list[np.ndarray]:
+) -> list[list]:
     """Simulation of the system in the open-loop/closed-loop.
 
     Args:
@@ -30,15 +29,15 @@ def simulate(
     Returns:
         Simulation results for time, outputs and inputs
     """
-    t_out = []
-    y_out = []
-    y_ref = []
-    u_out = []
+    t_out: list[int] = []
+    y_out: list[Union[list[float], float]] = []
+    y_ref: list[Union[list[float], float]] = []
+    u_out: list[Union[list[float], float]] = []
 
     # Initial mass of structural and non-structural dry weight
     if x0 is None:
         len_x = len(signature(system).parameters["x"].annotation.__args__)
-        x0 = [0] * len_x
+        x0 = [0.0] * len_x
     x_ode_prev = x0
 
     # Required for gen validation
@@ -71,11 +70,7 @@ def simulate(
         t_out.append(t)
         u_out.append(u_)
 
-    y_out = np.array(y_out)
-    t_out = np.array(t_out)
-    u_out = np.array(u_out)
     if ref_gen is not None:
-        y_ref = np.array(y_ref)
         return [t_out, y_out, y_ref, u_out]
 
     return [t_out, y_out, u_out]
