@@ -6,7 +6,6 @@
 [![Coverage Status](/reports/coverage-badge.svg)](https://htmlpreview.github.io/?https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/reports/coverage/report/index.html)
 [![Test Status](/reports/test-badge.svg)](https://htmlpreview.github.io/?https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/reports/junit/report/index.html)
 
-
 <!-- markdownlint-enable MD013 -->
 
 ## ⚡️ Quickstart
