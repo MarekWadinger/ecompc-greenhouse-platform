@@ -3,8 +3,9 @@ from inspect import signature
 from typing import Callable, Union
 
 import numpy as np
-from generator import validate_gen
 from scipy.integrate import solve_ivp
+
+from core.generator import validate_gen
 
 
 def simulate(
