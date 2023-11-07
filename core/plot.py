@@ -9,10 +9,10 @@ def plot_response(
     y_out: list,
     u_out: list,
     y_ref: Union[list, None] = None,
-    u_min: Union[float, None] = None,
-    u_max: Union[float, None] = None,
+    u_min: Union[list[float], None] = None,
+    u_max: Union[list[float], None] = None,
     axs_: Union[np.ndarray, None] = None,
-) -> np.ndarray[plt.Axes]:
+) -> np.ndarray:
     if axs_ is None:
         _, axs = plt.subplots(nrows=2, ncols=1, sharex=True)
     else:
