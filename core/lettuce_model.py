@@ -66,7 +66,7 @@ def lettuce_growth_model(
     >>> lettuce_growth_model(1, (10, 10), (25, 0, 400))
     (2.8772827989339694e-05, -3.9089534986674615e-05)
     """
-    dx_sdw_dt, dx_nsdw_dt, _ = _lettuce_growth_model(_, x, u)
+    dx_sdw_dt, dx_nsdw_dt, __ = _lettuce_growth_model(_, x, u)
     return dx_sdw_dt, dx_nsdw_dt
 
 
@@ -89,7 +89,7 @@ def _lettuce_growth_model(
 
     dx_sdw_dt = predict_x_sdw(x_sdw, r_gr)
     dx_nsdw_dt = predict_x_nsdw(x_sdw, r_gr, f_phot, f_resp)
-    return [dx_sdw_dt, dx_nsdw_dt, locals()]
+    return dx_sdw_dt, dx_nsdw_dt, locals()
 
 
 def predict_x_sdw(
