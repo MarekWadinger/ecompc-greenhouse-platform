@@ -60,7 +60,7 @@ def gen_u_daily_sine(
     return u
 
 
-def gen_u_control(
+def gen_u_naive_control(
     t: int,
     x_ode_prev: list,
     x_ref: list,
@@ -68,20 +68,21 @@ def gen_u_control(
     u_max: float,
     **_,
 ):
-    k = np.array([1.0, 1.0, 1.0])
+    k = np.array([[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]).T
     u = -k @ (np.array(x_ode_prev) - np.array(x_ref))
-    u = max(min(u, u_max), u_min)
+    u = np.clip(u, u_min, u_max)
     return u
 
 
 def gen_ref_step(
     t: int,
     x_ode_prev: list[float],
+    x_step: list[float],
     **_,
 ):
     x_ref = x_ode_prev
     if t >= 50:
-        x_ref = [50.0, 50.0]
+        x_ref = x_step
     return x_ref
 
 
@@ -89,8 +90,9 @@ def validate_gen(gen: GenProt, **kwargs) -> None:
     try:
         _ = gen(**kwargs)
     except TypeError as e:
+        gen_name = gen.__name__ if hasattr(gen, "__name__") else "generator"
         print(
-            f"Make sure that {gen.__name__} uses following arguments: "
+            f"Make sure that {gen_name} uses following arguments: "
             f"'{kwargs.keys()}', implements kwargs and returns a list"
         )
         raise e
