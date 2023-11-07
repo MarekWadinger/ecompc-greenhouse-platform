@@ -18,18 +18,11 @@ def plot_response(
     else:
         axs = axs_
     axs[0].plot(
-        t_out,
-        y_out,
-        label=[r"$x_{\mathrm{sdw}}$", r"$x_{\mathrm{nsdw}}$"]
-        )
+        t_out, y_out, label=[r"$x_{\mathrm{sdw}}$", r"$x_{\mathrm{nsdw}}$"]
+    )
     if y_ref:
         axs[0]._get_lines.set_prop_cycle(None)
-        axs[0].plot(
-            t_out,
-            y_ref,
-            label=r'$y_{\mathrm{ref}}$',
-            linestyle=":"
-            )
+        axs[0].plot(t_out, y_ref, label=r"$y_{\mathrm{ref}}$", linestyle=":")
     if axs_ is None:
         axs[0].set_ylabel("$y$")
         axs[0].set_title("a) Response of a System")
@@ -38,7 +31,11 @@ def plot_response(
     axs[1].plot(
         t_out,
         u_out,
-        label=[r"$u_{\mathrm{T}}$", r"$u_{\mathrm{par}}$", r"$u_{\mathrm{CO_2}}$"],
+        label=[
+            r"$u_{\mathrm{T}}$",
+            r"$u_{\mathrm{par}}$",
+            r"$u_{\mathrm{CO_2}}$",
+        ],
     )
     if u_min is not None and u_max is not None:
         axs[1]._get_lines.set_prop_cycle(None)
