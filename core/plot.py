@@ -75,9 +75,7 @@ def plot_response(
     return axs
 
 
-def plot_states(
-    df: pd.DataFrame, axs: np.ndarray, set_ylabel: bool = False
-):
+def plot_states(df: pd.DataFrame, axs: np.ndarray, set_ylabel: bool = False):
     i = 0
     for column in df.columns:
         if (
