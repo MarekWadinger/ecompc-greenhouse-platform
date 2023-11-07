@@ -4,16 +4,16 @@ from typing import Callable, Union
 
 from scipy.integrate import solve_ivp
 
-from core.generator import validate_gen
+from core.generator import GenProt, validate_gen
 
 
 def simulate(
     system: Callable,
-    u: Union[Callable[..., float], list],
+    u: Union[GenProt, list],
     sim_time: int = 100,
     t_s: int = 1,
     x0: Union[list[float], None] = None,
-    ref_gen: Union[Callable[..., float], None] = None,
+    ref_gen: Union[GenProt, None] = None,
 ) -> list[list]:
     """Simulation of the system in the open-loop/closed-loop.
 
@@ -45,7 +45,7 @@ def simulate(
     if ref_gen and callable(ref_gen):
         if callable(u):
             validate_gen(ref_gen, **locals())
-            x_ref: float = 0.0  # u might use x_ref
+            x_ref: Union[list[float], float] = 0.0  # u might use x_ref
         else:
             raise TypeError("ref_gen is defined but u is not Callable")
 

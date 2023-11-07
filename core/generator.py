@@ -1,10 +1,29 @@
 """Generator functions for the simulation."""
-from typing import Callable
+from typing import Protocol, Union
 
 import numpy as np
 
 
-def gen_u_step(t: int, u_min: list, u_max: list, **_) -> list[float]:
+class GenProt(Protocol):
+    def __name__(self) -> str:
+        ...
+
+    def __call__(
+        self,
+        t: int,
+        *,
+        u_min: Union[list[float], float] = ...,
+        u_max: Union[list[float], float] = ...,
+    ) -> Union[list[float], float]:
+        ...
+
+
+def gen_step(
+    t: int,
+    u_min: Union[list[float], float],
+    u_max: Union[list[float], float],
+    **_,
+) -> Union[list[float], float]:
     u = u_min
     if t >= 10:
         u = u_max
@@ -42,6 +61,7 @@ def gen_u_daily_sine(
 
 
 def gen_u_control(
+    t: int,
     x_ode_prev: list,
     x_ref: list,
     u_min: float,
@@ -55,17 +75,17 @@ def gen_u_control(
 
 
 def gen_ref_step(
-    x_ode_prev: list[float],
     t: int,
+    x_ode_prev: list[float],
     **_,
 ):
     x_ref = x_ode_prev
     if t >= 50:
-        x_ref = [50, 50]
+        x_ref = [50.0, 50.0]
     return x_ref
 
 
-def validate_gen(gen: Callable[..., float], **kwargs) -> None:
+def validate_gen(gen: GenProt, **kwargs) -> None:
     try:
         _ = gen(**kwargs)
     except TypeError as e:
