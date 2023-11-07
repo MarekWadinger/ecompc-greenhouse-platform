@@ -1,3 +1,4 @@
+casadi~=3.6.4
 ipykernel~=6.26.0
 matplotlib~=3.8.1
 numpy~=1.26.1
