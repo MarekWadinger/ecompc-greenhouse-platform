@@ -1,5 +1,5 @@
 """Lettuce Growth Model"""
-from math import exp
+from numpy import exp
 
 # CONSTANTS
 # # Lettuce Growth Model Parameters
