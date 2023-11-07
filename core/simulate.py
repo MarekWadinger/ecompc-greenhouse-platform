@@ -71,6 +71,6 @@ def simulate(
         u_out.append(u_)
 
     if ref_gen is not None:
-        return [t_out, y_out, y_ref, u_out]
+        return [t_out, y_out, u_out, y_ref]
 
     return [t_out, y_out, u_out]
