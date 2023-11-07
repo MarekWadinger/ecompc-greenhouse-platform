@@ -50,7 +50,7 @@ C_CAR3 = -2.64e-3
 # # Dynamic Behavior Models
 def lettuce_growth_model(
     _: int, x: tuple[float, float], u: tuple[float, float, float]
-) -> list[float]:
+) -> tuple[float, float]:
     """Overall dynamic growth model.
 
     Args:
@@ -64,8 +64,16 @@ def lettuce_growth_model(
 
     Examples:
     >>> lettuce_growth_model(1, (10, 10), (25, 0, 400))
-    [2.8772827989339694e-05, -3.9089534986674615e-05]
+    (2.8772827989339694e-05, -3.9089534986674615e-05)
     """
+    dx_sdw_dt, dx_nsdw_dt, _ = _lettuce_growth_model(_, x, u)
+    return dx_sdw_dt, dx_nsdw_dt
+
+
+def _lettuce_growth_model(
+    _: int, x: tuple[float, float], u: tuple[float, float, float]
+) -> tuple[float, float, dict]:
+    """Overall dynamic growth model with states."""
     x_sdw, x_nsdw = x
     u_T, u_par, u_co2 = u
 
@@ -81,7 +89,7 @@ def lettuce_growth_model(
 
     dx_sdw_dt = predict_x_sdw(x_sdw, r_gr)
     dx_nsdw_dt = predict_x_nsdw(x_sdw, r_gr, f_phot, f_resp)
-    return [dx_sdw_dt, dx_nsdw_dt]
+    return [dx_sdw_dt, dx_nsdw_dt, locals()]
 
 
 def predict_x_sdw(
