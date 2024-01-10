@@ -12,10 +12,10 @@
 
 # The files required include:
 
-# functions.py
+# greenhouse_model.py
 #   contains generic functions for convection, radiation and conduction calculations, climate data interpolation and calculation of
 #   relative humidity
-# parameters.py
+# greenhouse_model.py
 #   contains parameter values for fundamental constants, greenhouse construction and operation and plant geometry and growth.
 # SampleWeather.csv
 #   Hourly input weather data, in the format 'Hour, Ambient Temperature ($^o$C), Sky Temperature ($^o$C), Windspeed (m/s),
@@ -27,9 +27,7 @@
 import time
 
 import matplotlib.pyplot as plt
-import numpy as np
-from functions import model
-from parameters import *
+from core.greenhouse_model import *
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
