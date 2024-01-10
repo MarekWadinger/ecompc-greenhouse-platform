@@ -3,6 +3,8 @@ Created on Tue Feb 16 09:18:07 2021
 
 @author: rmw61
 """
+import numpy as np
+
 # params
 
 Nz = 1.0
@@ -128,16 +130,10 @@ E_j = 37.0e3  # activation energy for J_pot calculation [J/mol]
 heat_phot = 3.6368e-19  # conversion rate from incident energy to number of photons [num{photons}/J]
 eta = 0.67  # conversion factor from CO2 in the air to CO2 in the stomata [-]
 s_airbuf_buf = 5.0e2  # differential switch function slope for maximum buffer capacity [m^2/kg]
-s_buforg_buf = (
-    -5.0e3
-)  # differential switch function slope for minimum buffer capacity [m^2/kg]
-s_min_T = (
-    -0.8690
-)  # differential switch function slope for minimum photosynthesis instantaneous temperature [1/degC]
+s_buforg_buf = -5.0e3  # differential switch function slope for minimum buffer capacity [m^2/kg]
+s_min_T = -0.8690  # differential switch function slope for minimum photosynthesis instantaneous temperature [1/degC]
 s_max_T = 0.5793  # differential switch function slope for maximum photosynthesis instantaneous temperature [1/degC]
-s_min_T24 = (
-    -1.1587
-)  # differential switch function slope for minimum photosynthesis mean 24 hour temperature [1/degC]
+s_min_T24 = -1.1587  # differential switch function slope for minimum photosynthesis mean 24 hour temperature [1/degC]
 s_max_T24 = 1.3904  # differential switch function slope for maximum photosynthesis mean 24 hour temperature [1/degC]
 s_prune = -50.0  # differential switch function slope for leaf pruning [m^2/kg]
 
@@ -192,6 +188,7 @@ F_m_p = 0.0  # Mat to tray
 F_p_v = 0.0  # Tray to vegetation
 F_p_m = 0.0  # Tray to mat
 F_p_f = 1.0  # Tray to floor
+
 
 def lamorturb(Gr, Re):
     free = Gr < 1e5
@@ -324,17 +321,23 @@ def model(t, z, climate, daynum):
     C_c_ppm = (
         C_c * R * T_i / (M_c * atm) * 1.0e6
     )  # External carbon dioxide concentration [ppm]
-    n = int(np.ceil(t/deltaT)) # count
-    T_ext = climate[n, 0] + T_k # External air temperature [K]
-    T_sk = climate[n, 1] + T_k # External sky temperature [K]
-    wind_speed = climate[n, 2] # External wind speed [m/s]
-    RH_e = climate[n, 3]/100 # External relative humidity
-    Cw_ext = RH_e * sat_conc(T_ext) # External air moisture content
-    p_w = C_w*R*T_i/M_w # Partial pressure of water [Pa]
-    rho_i = ((atm - p_w)*M_a + p_w*M_w)/(R*T_i) # Internal density of air [kg/m^3]
-    LAI = SLA*C_leaf # Leaf area index
-    C_ce = 4.0e-4*M_c*atm/(R*T_ext) # External carbon dioxide concentration [kg/m^3]
-    C_c_ppm = C_c*R*T_i/(M_c*atm)*1.e6 # External carbon dioxide concentration [ppm]
+    n = int(np.ceil(t / deltaT))  # count
+    T_ext = climate[n, 0] + T_k  # External air temperature [K]
+    T_sk = climate[n, 1] + T_k  # External sky temperature [K]
+    wind_speed = climate[n, 2]  # External wind speed [m/s]
+    RH_e = climate[n, 3] / 100  # External relative humidity
+    Cw_ext = RH_e * sat_conc(T_ext)  # External air moisture content
+    p_w = C_w * R * T_i / M_w  # Partial pressure of water [Pa]
+    rho_i = ((atm - p_w) * M_a + p_w * M_w) / (
+        R * T_i
+    )  # Internal density of air [kg/m^3]
+    LAI = SLA * C_leaf  # Leaf area index
+    C_ce = (
+        4.0e-4 * M_c * atm / (R * T_ext)
+    )  # External carbon dioxide concentration [kg/m^3]
+    C_c_ppm = (
+        C_c * R * T_i / (M_c * atm) * 1.0e6
+    )  # External carbon dioxide concentration [ppm]
 
     daynum.append(day(t))  # Day number
 
@@ -820,13 +823,26 @@ def model(t, z, climate, daynum):
 
     # Heating term
     if T_i < heater_switch_temp:
-        Q_heating = 10000.0  # Adjust this value [W] : power when the heater is on
+        Q_heating = (
+            10000.0  # Adjust this value [W] : power when the heater is on
+        )
 
-    
     # Temperature components [K]
-    dT_c_dt = (1 / (A_c * cd_c)) * (QV_i_c + QP_i_c - QR_c_f - QR_c_v - QR_c_m + QV_e_c - QR_c_sk + QS_c + Q_heating)
-    dT_i_dt = (1 / (V * rho_i * c_i)) * (-QV_i_m - QV_i_v - QV_i_f - QV_i_c - QV_i_e - QV_i_p + QS_i + Q_heating)
-    
+    dT_c_dt = (1 / (A_c * cd_c)) * (
+        QV_i_c
+        + QP_i_c
+        - QR_c_f
+        - QR_c_v
+        - QR_c_m
+        + QV_e_c
+        - QR_c_sk
+        + QS_c
+        + Q_heating
+    )
+    dT_i_dt = (1 / (V * rho_i * c_i)) * (
+        -QV_i_m - QV_i_v - QV_i_f - QV_i_c - QV_i_e - QV_i_p + QS_i + Q_heating
+    )
+
     # Temperature components
     dT_c_dt = (1 / (A_c * cd_c)) * (
         QV_i_c
@@ -895,15 +911,6 @@ def model(t, z, climate, daynum):
 
     # Plant growth
     # R - Relative growth rate of fruit/leaf/stem averaged over 5 days [1/s]
-    dR_fruit_dt = (dC_fruit_dt/C_fruit - R_fruit)
-    dR_leaf_dt = ((dC_leaf_dt + MC_leaf_prune)/C_leaf - R_leaf)
-    dR_stem_dt = (dC_stem_dt/C_stem - R_stem)
-    
-    return np.array([dT_c_dt,dT_i_dt,dT_v_dt,dT_m_dt,dT_p_dt,dT_f_dt,dT_s1_dt,
-                     dT_s2_dt,dT_s3_dt,dT_s4_dt,dT_vmean_dt,dT_vsum_dt,dC_w_dt,
-                     dC_c_dt,dC_buf_dt,dC_fruit_dt,dC_leaf_dt,dC_stem_dt,
-                     dR_fruit_dt,dR_leaf_dt,dR_stem_dt])
-    # Plant growth
     dR_fruit_dt = dC_fruit_dt / C_fruit - R_fruit
     dR_leaf_dt = (dC_leaf_dt + MC_leaf_prune) / C_leaf - R_leaf
     dR_stem_dt = dC_stem_dt / C_stem - R_stem
