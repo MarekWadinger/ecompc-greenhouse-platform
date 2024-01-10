@@ -4,6 +4,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+plt.rcParams.update(
+    {
+        "axes.labelsize": 8,
+        "axes.grid": True,
+        "font.size": 8,
+        "legend.fontsize": 8,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "figure.subplot.left": 0.1,
+        "figure.subplot.bottom": 0.2,
+        "figure.subplot.right": 0.95,
+        "figure.subplot.top": 0.85,
+        # "backend": "macOsX"
+    }
+)
+
 
 def format_str_(str_: str) -> str:
     r"""Format a string with underscores to be used as a label in a plot.
