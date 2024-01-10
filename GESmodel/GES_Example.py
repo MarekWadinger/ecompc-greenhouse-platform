@@ -24,12 +24,16 @@
 
 #######################################################################################################################################
 
+import sys
 import time
+from pathlib import Path
 
 import matplotlib.pyplot as plt
-from core.greenhouse_model import *
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
+
+sys.path.insert(1, str(Path().resolve()))
+from core.greenhouse_model import *  # noqa: E402, F403
 
 ## Specify initial conditions**
 
