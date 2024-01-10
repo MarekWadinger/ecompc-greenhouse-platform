@@ -20,7 +20,7 @@ def simulate(
     Args:
         system: _description_
         u (optional): Function to generate the inputs or input history
-        sim_time (optional): Time samples for the simultion
+        sim_time (optional): Time samples for the simulation
         t_s (optional): Sampling time in seconds [s]
         x0 (optional): Initial conditions
         ref_gen (optional): Function to generate the reference for closed-loop.
