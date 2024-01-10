@@ -4,6 +4,7 @@ Created on Tue Feb 16 09:18:07 2021
 @author: rmw61
 """
 import numpy as np
+# from .lettuce_model import lettuce_growth_model
 
 # params
 
@@ -401,6 +402,8 @@ def model(t, z, climate, daynum):
     R_fruit = z[18]  # Respiration rate of the fruit [kg CO2/m^2/s]
     R_leaf = z[19]  # Respiration rate of the leaf [kg CO2/m^2/s]
     R_stem = z[20]  # Respiration rate of the stem [kg CO2/m^2/s]
+    # x_sdw = z[21]  # Structural dry weight of the plant [kg/m^2]
+    # x_nsdw = z[22]  # Non-structural dry weight of the plant [kg/m^2]
 
     # External weather and dependent internal parameter values
     n = int(np.ceil(t / deltaT))  # count
@@ -1007,6 +1010,12 @@ def model(t, z, climate, daynum):
     dC_fruit_dt = MC_buf_fruit - MC_fruit_i
     dC_leaf_dt = MC_buf_leaf - MC_leaf_i - MC_leaf_prune
     dC_stem_dt = MC_buf_stem - MC_stem_i
+    # u_par = QR_c_v / A_c_roof + QR_m_v / A_m + QR_p_v / A_p
+    # u_co2 = dC_c_dt * R * (dT_i_dt + T_k) / (M_c * atm) * 1.0e6
+    # dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(
+    #     t, (x_sdw, x_nsdw), (T_i, u_par, u_co2)
+    # )
+    # dx_sdw_dt, dx_nsdw_dt = 0, 0
 
     # Plant growth
     # R - Relative growth rate of fruit/leaf/stem averaged over 5 days [1/s]
@@ -1037,5 +1046,7 @@ def model(t, z, climate, daynum):
             dR_fruit_dt,
             dR_leaf_dt,
             dR_stem_dt,
+            # dx_sdw_dt,
+            # dx_nsdw_dt,
         ]
     )
