@@ -29,11 +29,12 @@ import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
 sys.path.insert(1, str(Path().resolve()))
-from core.greenhouse_model import *  # noqa: E402, F403
+from core.greenhouse_model import M_c, R, T_k, atm, deltaT, model  # noqa: E402
 
 ## Specify initial conditions**
 
@@ -96,8 +97,8 @@ if __name__ == "__main__":
         "GESmodel/SampleWeather.csv", delimiter=","
     )  # Hourly data
 
-    l = len(climdat)
-    mult = np.linspace(1, l, int((l - 1) * 3600 / deltaT))
+    len_climdat = len(climdat)
+    mult = np.linspace(1, len_climdat, int((len_climdat - 1) * 3600 / deltaT))
     y_interp = interp1d(climdat[:, 0], climdat[:, 1:21], axis=0)
 
     climate = y_interp(mult)

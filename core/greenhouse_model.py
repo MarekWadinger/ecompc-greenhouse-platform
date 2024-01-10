@@ -191,6 +191,16 @@ F_p_f = 1.0  # Tray to floor
 
 
 def lamorturb(Gr, Re):
+    """
+    Calculate the Nusselt number (Nu) and Sherwood number (Sh) for laminar/turbulent flow.
+
+    Parameters:
+    - Gr (float): Grashof number [-]
+    - Re (float): Reynolds number [-]
+
+    Returns:
+    - tuple: A tuple containing the Nusselt number (Nu) [-] and Sherwood number (Sh) [-]
+    """
     free = Gr < 1e5
     Nu_G = 0.5 * free * Gr**0.25 + 0.13 * (1 - free) * Gr**0.33
 
@@ -207,6 +217,25 @@ def lamorturb(Gr, Re):
 
 
 def convection(d, A, T1, T2, ias, rho, c, C):
+    """
+    Calculate the convective heat transfer between two surfaces.
+
+    Args:
+        d (float): Distance between the two surfaces [m].
+        A (float): Area of the surfaces [m^2].
+        T1 (float): Temperature of the first surface [K].
+        T2 (float): Temperature of the second surface [K].
+        ias (float): Air speed between the surfaces [m/s].
+        rho (float): Density of the air [kg/m^3].
+        c (float): Specific heat capacity of the air [J/(kg*K)].
+        C (float): Concentration of a substance [unitless].
+
+    Returns:
+        tuple: A tuple containing the convective heat transfer rates and the Nusselt number.
+            - QV_1_2 (float): Convective heat transfer rate due to temperature difference [W].
+            - QP_1_2 (float): Convective heat transfer rate due to concentration difference [W].
+            - Nu (float): Nusselt number [unitless].
+    """
     g = 9.81
     nu = 15.1e-6
     lam = 0.025
@@ -223,6 +252,23 @@ def convection(d, A, T1, T2, ias, rho, c, C):
 
 
 def radiation(eps_1, eps_2, rho_1, rho_2, F_1_2, F_2_1, A_1, T_1, T_2):
+    """
+    Calculate the radiative heat transfer between two surfaces.
+
+    Args:
+        eps_1 (float): Emissivity of surface 1.
+        eps_2 (float): Emissivity of surface 2.
+        rho_1 (float): Reflectivity of surface 1.
+        rho_2 (float): Reflectivity of surface 2.
+        F_1_2 (float): View factor from surface 1 to surface 2.
+        F_2_1 (float): View factor from surface 2 to surface 1.
+        A_1 (float): Area of surface 1 [m^2].
+        T_1 (float): Temperature of surface 1 [K].
+        T_2 (float): Temperature of surface 2 [K].
+
+    Returns:
+        float: The radiative heat transfer between the two surfaces [W].
+    """
     sigm = 5.67e-8
 
     k = eps_1 * eps_2 / (1 - rho_1 * rho_2 * F_1_2 * F_2_1)
@@ -231,15 +277,37 @@ def radiation(eps_1, eps_2, rho_1, rho_2, F_1_2, F_2_1, A_1, T_1, T_2):
     return QR_1_2
 
 
-def conduction(A, lam, l, T1, T2):
-    QD_12 = (A * lam / l) * (T1 - T2)
+def conduction(A, lam, distance, T1, T2):
+    """
+    Calculate the rate of heat conduction between two objects.
+
+    Parameters:
+    - A (float): Surface area of the objects [m^2]
+    - lam (float): Thermal conductivity of the objects [W/(m*K)]
+    - distance (float): Distance between the objects [m]
+    - T1 (float): Temperature of the first object [K]
+    - T2 (float): Temperature of the second object [K]
+
+    Returns:
+    - q (float): Rate of heat conduction between the objects [W]
+    """
+    QD_12 = (A * lam / distance) * (T1 - T2)
 
     return QD_12
 
 
 def T_ext(t):
-    # Weather data
+    """
+    Calculate the external temperature at a given time.
 
+    Parameters:
+    t (float): Time in seconds.
+
+    Returns:
+    float: External temperature in Kelvin.
+    """
+
+    # Weather data
     climate = np.genfromtxt("climate.txt", delimiter=",")
 
     deltaT = 600
@@ -250,6 +318,19 @@ def T_ext(t):
 
 
 def sat_conc(T):
+    """
+    Calculate the saturated concentration of water vapor in the air.
+
+    Parameters:
+    - T (float): Temperature in degrees Celsius.
+
+    Returns:
+    - a (float): Saturated concentration of water vapor in kg/m^3.
+
+    Units:
+    - T: degrees Celsius
+    - a: kg/m^3
+    """
     TC = T - T_k
     spec_hum = np.exp(11.56 - 4030 / (TC + 235))
     air_dens = -0.0046 * TC + 1.2978
@@ -259,8 +340,17 @@ def sat_conc(T):
 
 
 def Cw_ext(t):
-    # Weather data
+    """
+    Calculate the external CO2 concentration in a greenhouse at a given time.
 
+    Parameters:
+    t (float): Time in seconds.
+
+    Returns:
+    float: External CO2 concentration in parts per million [ppm].
+    """
+
+    # Weather data
     climate = np.genfromtxt("climate.txt", delimiter=",")
 
     deltaT = 600
@@ -273,7 +363,16 @@ def Cw_ext(t):
 
 
 def day(t):
-    ## Day
+    """
+    Convert time in seconds to the number of days.
+
+    Parameters:
+    t (float): Time in seconds.
+
+    Returns:
+    float: Number of days.
+
+    """
     day_new = np.ceil(t / 86400)
     return day_new
 
@@ -281,27 +380,27 @@ def day(t):
 def model(t, z, climate, daynum):
     # Values being calculated
 
-    T_c = z[0]
-    T_i = z[1]
-    T_v = z[2]
-    T_m = z[3]
-    T_p = z[4]
-    T_f = z[5]
-    T_s1 = z[6]
-    T_s2 = z[7]
-    T_s3 = z[8]
-    T_s4 = z[9]
-    T_vmean = z[10]
-    T_vsum = z[11]
-    C_w = z[12]
-    C_c = z[13]
-    C_buf = z[14]
-    C_fruit = z[15]
-    C_leaf = z[16]
-    C_stem = z[17]
-    R_fruit = z[18]
-    R_leaf = z[19]
-    R_stem = z[20]
+    T_c = z[0]  # Temperature of the canopy [K]
+    T_i = z[1]  # Temperature of the internal air [K]
+    T_v = z[2]  # Temperature of the ventilation air [K]
+    T_m = z[3]  # Temperature of the mixed air [K]
+    T_p = z[4]  # Temperature of the pad [K]
+    T_f = z[5]  # Temperature of the floor [K]
+    T_s1 = z[6]  # Temperature of the first soil layer [K]
+    T_s2 = z[7]  # Temperature of the second soil layer [K]
+    T_s3 = z[8]  # Temperature of the third soil layer [K]
+    T_s4 = z[9]  # Temperature of the fourth soil layer [K]
+    T_vmean = z[10]  # Mean temperature of the ventilation air [K]
+    T_vsum = z[11]  # Sum of ventilation air temperatures [K]
+    C_w = z[12]  # Concentration of water vapor in the air [kg/m^3]
+    C_c = z[13]  # Concentration of carbon dioxide in the air [kg/m^3]
+    C_buf = z[14]  # Concentration of carbon dioxide in the buffer [kg/m^3]
+    C_fruit = z[15]  # Concentration of carbon dioxide in the fruit [kg/m^3]
+    C_leaf = z[16]  # Concentration of carbon dioxide in the leaf [kg/m^3]
+    C_stem = z[17]  # Concentration of carbon dioxide in the stem [kg/m^3]
+    R_fruit = z[18]  # Respiration rate of the fruit [kg CO2/m^2/s]
+    R_leaf = z[19]  # Respiration rate of the leaf [kg CO2/m^2/s]
+    R_stem = z[20]  # Respiration rate of the stem [kg CO2/m^2/s]
 
     # External weather and dependent internal parameter values
     n = int(np.ceil(t / deltaT))  # count
