@@ -96,6 +96,12 @@ def predict_x_sdw(
     References:
         Sweeney et al., 1981
     """
+    # params_string = (
+    #     f"predict_x_sdw: "
+    #     f"x_sdw (Structural Dry Weight) = {x_sdw} [g m^-2], "
+    #     f"r_gr (Specific Growth Rate) = {r_gr} [s^-1], "
+    # )
+    # print(params_string)
     return r_gr * x_sdw
 
 
@@ -127,6 +133,16 @@ def predict_x_nsdw(
     References:
         Thornley & Hurd, 1974
     """
+    # params_string = (
+    #     f"predict_x_nsdw: "
+    #     f"x_sdw (Structural Dry Weight) = {x_sdw} [g m^-2], "
+    #     f"r_gr (Specific Growth Rate) = {r_gr} [s^-1], "
+    #     f"f_phot (Gross Canopy Photosynthesis) = {f_phot} [g m^-2 s^-1], "
+    #     f"f_resp (Maintenance Respiration) = {f_resp} [g m^-2 s^-1], "
+    #     f"c_ch2o (Conversion of CO2 to CH2O) = {c_ch2o} [g g^-1], "
+    #     f"c_yf (Yield Factor) = {c_yf} [g g^-1]"
+    # )
+    # print(params_string)
     return (
         c_ch2o * f_phot
         - r_gr * x_sdw
@@ -187,6 +203,16 @@ def get_f_resp(
     Returns:
         f_resp - maintenance respiration rate [g m^{-2} s^{-1}]
     """
+    # params_string = (
+    #     f"get_f_resp: "
+    #     f"x_sdw (Structural Dry Weight) = {x_sdw} [g m^-2], "
+    #     f"u_T (Canopy Temperature) = {u_T} [C], "
+    #     f"c_resp_sht (Shoot Maintenance Respiration Rate at 25 C) = {c_resp_sht} [s^-1], "
+    #     f"c_tau (Root Dry Mass Ratio) = {c_tau}, "
+    #     f"c_resp_rt (Root Maintenance Respiration Rate at 25 C) = {c_resp_rt} [s^-1], "
+    #     f"c_Q10_resp (Maintenance Respiration Sensitivity to Temperature) = {c_Q10_resp}"
+    # )
+    # print(params_string)
     return (
         c_resp_sht * (1 - c_tau) * x_sdw + c_resp_rt * c_tau * x_sdw
     ) * c_Q10_resp ** ((u_T - 25) / 10)
@@ -413,7 +439,6 @@ def day(t):
 
 def model(t, z, climate, daynum):
     # Values being calculated
-
     T_c = z[0]
     T_i = z[1]
     T_v = z[2]
@@ -626,9 +651,12 @@ def model(t, z, climate, daynum):
     dC_c_dt = MC_cc_i - MC_i_e + (M_c / M_carb) * (A_v / V) * (MC_buf_i + MC_fruit_i + MC_leaf_i + MC_stem_i - MC_i_buf)
 
     # Salaatia growth
-    frequency_of_light = 3.0e8 / 550e-9
-    u_par = PAR * h * frequency_of_light / N_A
+    cLight = 3.0e8  # Speed of light (meters per second)
+    lambda_nm = 550  # Wavelength in nanometers (nm)
+    lambda_m = lambda_nm * 1e-9
+    E = h * cLight / lambda_m
+    u_par = PAR * E
     u_co2 = C_c * R * (T_i + T_k) / (M_c * atm) * 1.0e6
-    dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(t, (x_sdw, x_nsdw), (T_i, u_par, u_co2))
-
+    dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(t, (x_sdw, x_nsdw), (100, u_par, 400))
+    print("T_i, u_par, u_co2", dx_sdw_dt, dx_nsdw_dt)
     return np.array([0,dT_i_dt,0,0,0,0,0,0,0,0,0,0,0,dC_c_dt,0,0,0,0,0,0,0,dx_sdw_dt,dx_nsdw_dt])
