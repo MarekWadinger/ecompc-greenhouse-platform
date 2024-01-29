@@ -65,7 +65,7 @@ R_leaf_0 = 0.0  # Relative growth rate of leaf averaged over 5 days [1/s]
 R_stem_0 = 0.0  # Relative growth rate of stem averaged over 5 days [1/s]
 
 x_sdw  = 0.5  # Structural dry weight of the plant [kg/m^2]
-x_nsdw = 2.8  # Non-structural dry weight of the plant [kg/m^2]
+x_nsdw = 2.1  # Non-structural dry weight of the plant [kg/m^2]
 
 z = [
     T_c_0,
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     tic = time.time()
 
-    sim_days = 1  # Number of days of simulation
+    sim_days = 10  # Number of days of simulation
     tf = 86400 * sim_days  # Time in seconds
     t = [0, tf]
     tval = np.linspace(0, tf, tf + 1)
@@ -168,28 +168,25 @@ if __name__ == "__main__":
 
     fig7, ax5 = plt.subplots()
     ax5.plot(time,dx_sdw_dt, color='b')
-    ax5.set_title('kapusta')
-    ax5.set_xlabel('Day')
-    ax5.set_ylabel('-')
+    ax5.set_title('dx_sdw_dt')
+    ax5.set_xlabel('Time[day]')
+    ax5.set_ylabel('Plant Dry Weight [g m^{-2} s^{-1}]')
     plt.savefig('salat.png', format="png", dpi=resolution_value)
 
-    dx_nsdw_dt = np.transpose(output.y[18,:])
+    dx_nsdw_dt = np.transpose(output.y[22,:])
 
     fig8, ax6 = plt.subplots()
     ax6.plot(time,dx_nsdw_dt, color='g')
-    ax6.set_title('kapusta')
-    ax6.set_xlabel('Day')
-    ax6.set_ylabel('-')
+    ax6.set_title('dx_nsdw_dt')
+    ax6.set_xlabel('Time[day]')
+    ax6.set_ylabel('Plant Dry Weight [g m^{-2} s^{-1}]')
     plt.savefig('salat2.png', format="png", dpi=resolution_value)
 
-    # ## states
-    # # outPar = np.transpose(output.y[2,:])
-    # outCO2 = np.transpose(output.y[2,:])
-    # fig9, ax7 = plt.subplots()
-    # # ax7.plot(time, outPar, color='b', label='u_par')
-    # ax7.plot(time, outCO2, color='k', label='u_co2')
-    # ax7.set_title('PAR and CO2 over Time')
-    # ax7.set_xlabel('Day')
-    # ax7.set_ylabel('Value')
-    # ax7.legend()
-    # plt.savefig('salatStates.png', format="png", dpi=resolution_value)
+    fig9, ax7 = plt.subplots()
+    ax7.plot(time, dx_sdw_dt, color='b', label='Structural Dry Weight Rate')
+    ax7.plot(time, dx_nsdw_dt, color='g', label='Non-Structural Dry Weight Rate')
+    ax7.set_title('Plant Dry Weight Rates')
+    ax7.set_xlabel('Time [day]')
+    ax7.set_ylabel('Rate [g m^{-2} s^{-1}]')
+    ax7.legend()
+    plt.savefig('combined_salat.png', format="png", dpi=resolution_value)

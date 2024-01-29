@@ -31,14 +31,14 @@ nu = 15.1e-6 # kinematic viscosity [m^2/s]
 rho_w = 1000. # density of water [kg/m^3]
 
 # Geometry
-A_f = 250. # greenhouse floor area [m^2]
-V = 1000. # greenhouse volume [m^3]
-# surface areas NE Wall NE Roof SE Wall SE Roof SW Wall SW Roof NW Wall NW Roof [m^2]
-SurfaceArea = np.array([40., 0., 75., 135., 40., 0., 75., 135.])
+A_f = 10. # greenhouse floor area [m^2]
+H = 2. # Height of greenhouse [m]
+V = A_f * H # greenhouse volume [m^3]
+# Surface areas: Front, Back, Left Side, Right Side, Roof [m^2]
+SurfaceArea = np.array([10., 10., 4., 4., 10.])
 A_c = np.sum(SurfaceArea)
-a_obs = 0.05 # fraction of solar radiation hitting obstructions [-]   
-H = 5. # Height of greenhouse [m]
-A_c_roof = 271. # Area of roof
+a_obs = 0.05 # fraction of solar radiation hitting obstructions [-]
+A_c_roof = 10. # Area of roof [m^2]
 
 # Air characteristics
 ias = 0.5 # internal air speed [m/s]              
