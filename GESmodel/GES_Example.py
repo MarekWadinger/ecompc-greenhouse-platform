@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     tic = time.time()
 
-    sim_days = 10  # Number of days of simulation
+    sim_days = 50  # Number of days of simulation
     tf = 86400 * sim_days  # Time in seconds
     t = [0, tf]
     tval = np.linspace(0, tf, tf + 1)
@@ -133,8 +133,8 @@ if __name__ == "__main__":
 
     ## Plot results
 
-    Tout_i = np.transpose(output.y[1,:]-T_k) # [°C]
-    Ccout = np.transpose(output.y[13,:])
+    Tout_i = np.transpose(output.y[1, :]-T_k)  # [°C]
+    Ccout = np.transpose(output.y[13, :])
 
     ## Temperatures
 
@@ -164,29 +164,29 @@ if __name__ == "__main__":
 
     ## Salaattia
 
-    dx_sdw_dt = np.transpose(output.y[21,:])
+    dx_sdw_dt = np.transpose(output.y[21, :])
 
     fig7, ax5 = plt.subplots()
     ax5.plot(time,dx_sdw_dt, color='b')
     ax5.set_title('dx_sdw_dt')
     ax5.set_xlabel('Time[day]')
-    ax5.set_ylabel('Plant Dry Weight [g m^{-2} s^{-1}]')
+    ax5.set_ylabel('Plant Dry Weight [g.m-2]')
     plt.savefig('salat.png', format="png", dpi=resolution_value)
 
-    dx_nsdw_dt = np.transpose(output.y[22,:])
+    dx_nsdw_dt = np.transpose(output.y[22, :])
 
     fig8, ax6 = plt.subplots()
     ax6.plot(time,dx_nsdw_dt, color='g')
     ax6.set_title('dx_nsdw_dt')
     ax6.set_xlabel('Time[day]')
-    ax6.set_ylabel('Plant Dry Weight [g m^{-2} s^{-1}]')
+    ax6.set_ylabel('Plant Dry Weight [g.m-2]')
     plt.savefig('salat2.png', format="png", dpi=resolution_value)
 
     fig9, ax7 = plt.subplots()
-    ax7.plot(time, dx_sdw_dt, color='b', label='Structural Dry Weight Rate')
-    ax7.plot(time, dx_nsdw_dt, color='g', label='Non-Structural Dry Weight Rate')
-    ax7.set_title('Plant Dry Weight Rates')
+    ax7.plot(time, dx_sdw_dt, color='b', label='Structural Dry Weight')
+    ax7.plot(time, dx_nsdw_dt, color='g', label='Non-Structural Dry Weight')
+    ax7.set_title('Plant Dry Weight')
     ax7.set_xlabel('Time [day]')
-    ax7.set_ylabel('Rate [g m^{-2} s^{-1}]')
+    ax7.set_ylabel('Rate [g.m-2]')
     ax7.legend()
     plt.savefig('combined_salat.png', format="png", dpi=resolution_value)
