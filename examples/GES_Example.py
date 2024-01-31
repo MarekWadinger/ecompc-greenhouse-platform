@@ -15,7 +15,6 @@
 # greenhouse_model.py
 #   contains generic functions for convection, radiation and conduction calculations, climate data interpolation and calculation of
 #   relative humidity
-# greenhouse_model.py
 #   contains parameter values for fundamental constants, greenhouse construction and operation and plant geometry and growth.
 # SampleWeather.csv
 #   Hourly input weather data, in the format 'Hour, Ambient Temperature ($^o$C), Sky Temperature ($^o$C), Windspeed (m/s),
@@ -37,7 +36,7 @@ from scipy.interpolate import interp1d
 sys.path.insert(1, str(Path().resolve()))
 from core.greenhouse_model import M_c, R, T_k, atm, deltaT, model  # noqa: E402
 
-results_dir = "results"
+results_dir = "examples/results"
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
@@ -103,7 +102,7 @@ z = [
 
 if __name__ == "__main__":
     climdat = np.genfromtxt(
-        "GESModel/SampleWeather.csv", delimiter=","
+        "examples/data/SampleWeather.csv", delimiter=","
     )  # Hourly data
 
     len_climdat = len(climdat)
@@ -143,7 +142,7 @@ if __name__ == "__main__":
     ## Temperatures
 
     time = output.t / (3600 * 24)  # Time in days
-    resolution_value = 1200
+    dpi = 1200
 
     ## Internal air
 
@@ -153,7 +152,7 @@ if __name__ == "__main__":
     ax.legend(loc="upper right", fontsize=8)
     ax.set_xlabel("Day")
     ax.set_ylabel("Temperature ($^o$C)")
-    plt.savefig("results/temp.png", format="png", dpi=resolution_value)
+    plt.savefig("examples/results/temp.png", format="png", dpi=dpi)
 
     ## CO_2
 
@@ -163,7 +162,7 @@ if __name__ == "__main__":
     ax4.set_title("CO$_2$")
     ax4.set_xlabel("Day")
     ax4.set_ylabel("CO$_2$ (ppm)")
-    plt.savefig("results/co2.png", format="png", dpi=resolution_value)
+    plt.savefig("examples/results/co2.png", format="png", dpi=dpi)
 
     ## Salaattia
 
@@ -178,4 +177,4 @@ if __name__ == "__main__":
     ax7.set_xlabel("Time [day]")
     ax7.set_ylabel("Rate [g.m-2]")
     ax7.legend()
-    plt.savefig("results/salat.png", format="png", dpi=resolution_value)
+    plt.savefig("examples/results/salat.png", format="png", dpi=dpi)
