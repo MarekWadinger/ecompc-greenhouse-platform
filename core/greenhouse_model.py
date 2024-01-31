@@ -1,364 +1,181 @@
-import numpy as np
-from simpleParameters import *
-from math import exp
+import sys
+from pathlib import Path
 
+import numpy as np
+sys.path.insert(1, str(Path().resolve()))
+from core.lettuce_model import lettuce_growth_model  # noqa: E402
 
 # CONSTANTS
-# # Lettuce Growth Model Parameters
+Nz = 1.
+deltaT = 60 # s
 
-# [g g^{-1}] ratio of molecular weight of CH_2O to CO_2
-C_CH2O = 30 / 44
-# [g g^{-1}] Penning de Vries et al. (1974)
-C_YF = 0.8
-# [s^{-1}] Van Holsteijn (1981)
-C_GR_MAX = 5e-6
-# [-] (0.5 - 1.) Thornley & Hurd (1974); (1.) Sweeney et al. (1981)
-C_GAMMA = 1.1981
-# [-] Sweeney et al. (1981)
-C_Q10_GR = 1.6
-# [s^{-1}] Van Keulen et al. (1982)
-C_RESP_SHT = 3.47e-7
-# [s^{-1}] Van Keulen et al. (1982)
-C_RESP_RT = 1.16e-7
-# [-] Van Keulen et al. (1982)
-C_Q10_RESP = 2.0
-# [-] Lorenz & Wiebe, 1980; Sweeney et al., 1981
-C_TAU = 0.15
-# [-] (0.9 and 0.3 for planophile and erectophile) Goudriaan & Monteith, 1990
-C_K = 0.9
-# [g^{-1} m^{-2}] Lorenz & Wiebe (1980)
-C_LAR = 75e-3
-# [g m^{-3}] temperature 15 C and pressure 101.3 kPa
-C_OMEGA = 1.83e-3
-# [ppm] CO_2 compensation point at 20 C (Goudriaan et al. 1985)
-C_GGAMMA = 40
-# [-] CO_2 compensation point sensitivity to temp (Goudriaan et al.1985)
-C_Q10_GGAMMA = 2
-# [g J^{-1}] light use efficiency (Goudriaan et al. 1985)
-C_EPSILON = 17e-6
-# [m s^{-1}] boundary layer conductance (Stanghellini et al.)
-G_BND = 0.00071987
-# [m s^{-1}] stomatal resistance (Stanghellini et al. 1987)
-G_STM = 0.005
-# [m s^{-1} C^{-2}] carboxilation parameter
-C_CAR1 = -1.32e-5
-# [m s^{-1} C^{-1}] carboxilation parameter
-C_CAR2 = 5.94e-4
-# [m s^{-1}] carboxilation parameter
-C_CAR3 = -2.64e-3
+# Constants
+sigm = 5.67e-8 # Stefan-Boltzmann constant [W/m^2/K^4]
+T_k = 273.15 # zero celsius [K]
+g = 9.81 # acceleration due to gravity [m/s^2]
+atm = 1.013e5 # standard atmospheric pressure [Pa]
+latitude = 53.193583 #  latitude of greenhouse
+longitude = -2.434920 # longitude of greenhouse
+N_A = 6.02214e+23 # Avogadro's number
+M_a = 0.029 # molar mass of dry air [kg/mol]
+lam = 0.025 # thermal conductivity of air [W/m/K]
+c_i = 1003.2 # heat capacity of humid air [J/kg/K]
+H_fg = 2437000. # latent heat of condensation of water [J/kg]
+Le = 0.819 # Lewis number [-]
+R = 8.314 # gas constant [J/mol/K]
+M_w = 0.018 # molar mass of water [kg/mol]
+M_c = 0.044 # molar mass of CO2 [kg/mol]
+M_carb = 0.03 # molar mass of CH2O [kg/mol]
+nu = 15.1e-6 # kinematic viscosity [m^2/s]
+rho_w = 1000. # density of water [kg/m^3]
+
+# Geometry
+A_f = 250. # greenhouse floor area [m^2]
+V = 1000. # greenhouse volume [m^3]
+# surface areas NE Wall NE Roof SE Wall SE Roof SW Wall SW Roof NW Wall NW Roof [m^2]
+SurfaceArea = np.array([40., 0., 75., 135., 40., 0., 75., 135.])
+A_c = np.sum(SurfaceArea)
+a_obs = 0.05 # fraction of solar radiation hitting obstructions [-]   
+H = 5. # Height of greenhouse [m]
+A_c_roof = 271. # Area of roof
+
+# Air characteristics
+ias = 0.5 # internal air speed [m/s]              
+R_a_max = 30./3600. # ventilation air change rate [1/s] 
+T_sp_vent = 25. + T_k # Ventilation set-point
+Q_heater = 10000 # watts
+
+# Cover 
+# Glass
+eps_ce = 0.85 # far-IR emissivity, outer surface [-]
+eps_ci = 0.85 # far-IR emissivity, inner surface [-]
+tau_c = 0.0 # far-IR transmissivity (0.0) [-]
+rho_ci = 0.15 # far-IR reflectivity, inner surface (0.1) [-]  
+alph_c = 0.04 # solar absorptivity, taking 'perpendicular' values [-]
+tau_c_NIR = 0.85 # near-IR transmissivity of cover (0.84) [-]  
+tau_c_VIS = 0.85 # visible transmissivity of cover [-] 
+d_c = 1.5 # characteristic length of cover [m]
+cd_c = 8736. # cover heat capacity per unit area [J/m^2/K]
+
+# Floor 
+lam_s = [1.7, 0.85, 0.85, 0.85, 0.85] # thermal conductivity of soil layers [W/mK] Concrete, Soil, Clay
+c_s = [880., 1081., 1081., 1081., 1081.] # specific heat of soil layers [J/kgK]
+l_s = [0.02, 0.05, 0.1, 0.25, 1.0] # thickness of soil layers [m]
+rhod_s = [2300., 1500., 1600., 1600., 1600.] # density of soil layers [kg/m^3]
+rho_s = 0.85 # far-IR reflectance of floor [-]
+eps_s = 0.95 # far-IR emmittance of floor [-]
+rhoS_s = 0.5 # solar reflectance of floor [-]
+alphS_s = 0.5 # solar absorptance of floor [-]
+d_f = 0.5 # characteristic floor length [m]
+T_ss = 14.0 + T_k # deep soil temperature [K]
+
+# Vegetation
+c_v = 4180. # heat capacity of vegetation [J/kgK]
+k_l = 0.94 # long-wave extinction coefficient [-]
+rho_v = 0.22 # far-IR reflectivity of vegetation [-]
+eps_v = 0.95 # far-IR emissivity of vegetation [-]
+rhoS_v=0.35 # solar reflectance of vegetation [-]
+d_v = 0.1 # characteristic leaf length [m]
+p_v = 0.75 # cultivated fraction of floor 
+msd_v = 1.326 # surface density [kg/m^2]
+
+# Tray/mat
+A_p = p_v*A_f # Area of cultivated floor [m^2]
+A_v = A_p # Area of plants [m^2]
+A_m = A_p # Area of mat for conduction to tray [m^2]
+d_p = 1. # characteristic dimension of tray (width)
+d_m = 0.1 # characteristic dimension of mat (width)
+lam_m = 0.5 # thermal conductivity of mat [W/mK]
+lam_p = 0.2 # thermal conductivity of plastic tray [W/mK]
+c_m = 45050. # specific heat of mat assumed 25% saturated [J/m^2K]  
+c_p = 10020. # specific heat of tray [J/m^2K]
+l_m = 0.03 # thickness of mat [m]
+l_p = 0.005 # thickness of tray [m]
+rhod_m = 720. # density of mat [kg/m^3]
+rhod_p = 1200. # density of tray [kg/m^3]
+rho_m = 0.05 # far-IR reflectivity of mat [-]
+rho_p = 0.05 # far-IR reflectivity of tray
+eps_m = 0.95 # far-IR emissivity of mat [-]
+eps_p = 0.95 # far-IR emissivity of tray
+
+# Photosynthesis model - Vanthoor  
+c_Gamma = 1.7e-6 # effect of canopy temperature on CO2 compensation point [mol{CO2}/mol{air}/K]
+J_max_25 = 210e-6 # maximum rate of electron transport at 25 C [mol{e}/m^2{leaf}/s]
+alph = 0.385 # conversion factor from photons to electrons [mol{e}/mol{phot}]
+C_buf_max = 0.02 # maximum buffer capacity per unit area of cultivated floor [kg{CH2O}/m^2/s]
+theta = 0.7 # degree of curvature of the electron transport rate [-]
+S = 710. # entropy term for J_pot calculation [J/mol/K]
+HH = 22.e4#  deactivation energy for J_pot calculation [J/mol]
+E_j = 37.e3 # activation energy for J_pot calculation [J/mol]
+heat_phot = 3.6368e-19 # conversion rate from incident energy to number of photons [num{photons}/J]
+eta = 0.67 # conversion factor from CO2 in the air to CO2 in the stomata [-]
+s_airbuf_buf = 5.e2 # differential switch function slope for maximum buffer capacity [m^2/kg]
+s_buforg_buf = -5.e3 # differential switch function slope for minimum buffer capacity [m^2/kg]
+s_min_T = -0.8690 # differential switch function slope for minimum photosynthesis instantaneous temperature [1/degC]
+s_max_T = 0.5793 # differential switch function slope for maximum photosynthesis instantaneous temperature [1/degC]
+s_min_T24 = -1.1587 # differential switch function slope for minimum photosynthesis mean 24 hour temperature [1/degC]
+s_max_T24 = 1.3904 # differential switch function slope for maximum photosynthesis mean 24 hour temperature [1/degC]
+s_prune = -50. # differential switch function slope for leaf pruning [m^2/kg]
+
+# Crop Growth Model
+added_CO2 = 0. # mass of CO2 pumped in per hour [kg/h] (100)
+SLA = 26.6 # specific leaf area index [m^2{leaf}/kg{CH2O}]
+LAI_max = 5. # the maximum allowed leaf area index [m^2{leaf}/m^2{floor}]
+Q_10 = 2. # see parameters for de Zwart model above [-]
+rg_fruit = 0.328e-6 # potential fruit growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
+rg_leaf = 0.095e-6 # potential leaf growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
+rg_stem = 0.074e-6 # potential stem growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
+weight_fruit = 0.5
+weight_leaf = 0.3
+weight_stem = 0.2
+c_fruit_g = 0.27 # fruit growth respiration coefficient [-]
+c_fruit_m = 1.16e-7 # fruit maintenance respiration coefficient [1/s]
+c_leaf_g = 0.28 # leaf growth respiration coefficient [-]
+c_leaf_m = 3.47e-7 # leaf maintenance respiration coefficient [1/s]
+c_stem_g = 0.30 # stem growth respiration coefficient [-]
+c_stem_m = 1.47e-7 # stem maintenance respiration coefficient [1/s]
+weight_fruit = 0.5
+weight_leaf = 0.3
+weight_stem = 0.2
+weight_fruit_g = 0.5
+weight_leaf_g = 0.3
+weight_stem_g = 0.2
+c_RGR = 2.85e6 # regression coefficient in maintenance respiration function [s]
+T_min_v24 = 12. #  between base temperature and first optimal temperature for 24 hour mean [oC]
+T_max_v24 = 27. # between second optimal temperature and maximum temperature for 24 hour mean [oC]
+T_min_v = 6. # between base temperature and first optimal temperature [oC]
+T_max_v = 40. # between second optimal temperature and maximum temperature [oC]
+T_sum_end = 1035. # the temperature sum at which point the fruit growth rate is maximal [oC]
+
+
+# Infiltration
+c = 0.35 # terrain factor, see Awbi, Chapter 3, Table 3.2
+a = 0.25 # terrain factor, see Awbi, Chapter 3, Table 3.2
+Cp = 0.62 # static pressure coefficient - for wind perpendicular to gap
+Cd = 0.61 # sharp edge orifice, see Awbi
+crack_length = 1. # typical estimate
+crack_width = 0.001 # typical estimate
+crack_area = crack_length*crack_width
+crack_length_total = 350. 
+
+# View Factors
+F_f_c = 1-p_v # Floor to cover
+F_f_p = p_v # Floor to tray
+F_c_f = A_f/A_c_roof*F_f_c # Cover to floor
+#F_c_v = min((1-F_c_f)*LAI,(1-F_c_f)) # Cover to vegetation
+#F_c_m = max((1-F_c_f)*(1-LAI),0) # Cover to mat
+F_v_c = 0.5 # Vegetation to cover
+F_v_m = 0.5 # Vegetation to mat
+F_v_p = 0. # Vegetation to tray
+#F_m_c = max((1-LAI),0.0) # Mat to cover
+#F_m_v = 1-F_m_c # Mat to vegetation
+F_m_p = 0. # Mat to tray
+F_p_v = 0. # Tray to vegetation
+F_p_m = 0. # Tray to mat
+F_p_f = 1.0 # Tray to floor
 
 # FUNCTIONS
 # # Dynamic Behavior Models
-def lettuce_growth_model(_: int, x: tuple[float, float], u: tuple[float, float, float]) -> tuple[float, float]:
-    dx_sdw_dt, dx_nsdw_dt, info = _lettuce_growth_model(_, x, u)
-    # print(f"Time: {_}, x_sdw: {x[0]}, x_nsdw: {x[1]}, dx_sdw_dt: {dx_sdw_dt}, dx_nsdw_dt: {dx_nsdw_dt}")
-    return dx_sdw_dt, dx_nsdw_dt
-
-
-def _lettuce_growth_model(
-    _: int, x: tuple[float, float], u: tuple[float, float, float]
-) -> tuple[float, float, dict]:
-    """Overall dynamic growth model with states."""
-    x_sdw, x_nsdw = x
-    u_T, u_par, u_co2 = u
-
-    r_gr = get_r_gr(x_sdw, x_nsdw, u_T)
-
-    gamma = get_ggamma(u_T)
-    epsilon = get_epsilon(u_co2, gamma)
-    g_co2 = get_g_co2(get_g_car(u_T))
-    f_phot_max = get_f_phot_max(u_par, u_co2, epsilon, g_co2, gamma)
-    f_phot = get_f_phot(x_sdw, f_phot_max)
-
-    f_resp = get_f_resp(x_sdw, u_T)
-
-    dx_sdw_dt = predict_x_sdw(x_sdw, r_gr)
-    dx_nsdw_dt = predict_x_nsdw(x_sdw, r_gr, f_phot, f_resp)
-    return dx_sdw_dt, dx_nsdw_dt, locals()
-
-
-def predict_x_sdw(
-    x_sdw: float,
-    r_gr: float,
-) -> float:
-    """Dynamic model of structural dry weight.
-
-    Nonlinear differential equation governing dynamic behavior of structural
-    dry weight.
-
-    Args:
-        x_sdw: structural dry weight [g m^{-2}]
-        r_gr (float): specific growth rate [s^{-1}]
-
-    Returns:
-        dx_sdw/dt - structural dry weight increment [g m^{-2} s^{-1}]
-
-    References:
-        Sweeney et al., 1981
-    """
-    # params_string = (
-    #     f"predict_x_sdw: "
-    #     f"x_sdw (Structural Dry Weight) = {x_sdw} [g m^-2], "
-    #     f"r_gr (Specific Growth Rate) = {r_gr} [s^-1], "
-    # )
-    # print(params_string)
-    return r_gr * x_sdw
-
-
-def predict_x_nsdw(
-    x_sdw: float,
-    r_gr: float,
-    f_phot: float,
-    f_resp: float,
-    c_ch2o: float = C_CH2O,
-    c_yf: float = C_YF,
-) -> float:
-    """Dynamic model of non-structural dry weight.
-
-    Nonlinear differential equation governing dynamic behavior of
-    non-structural dry weight.
-
-    Args:
-        x_sdw: structural dry weight [g m^{-2}]
-        r_gr: specific growth rate [s^{-1}]
-        c_ch2o: conversion of assimilated CO_2 to CH_2O [g g^{-1}]
-        c_yf: yield factor [g g^{-1}]
-        f_phot: gross canopy photosynthesis [g m^{-2} s^{-1}]
-        f_resp: maintenance respiration [g m^{-2} s^{-1}]
-
-    Returns:
-        dx_nsdw/dt - non-structural dry weight increment
-        [g m^{-2} s^{-1}]
-
-    References:
-        Thornley & Hurd, 1974
-    """
-    # params_string = (
-    #     f"predict_x_nsdw: "
-    #     f"x_sdw (Structural Dry Weight) = {x_sdw} [g m^-2], "
-    #     f"r_gr (Specific Growth Rate) = {r_gr} [s^-1], "
-    #     f"f_phot (Gross Canopy Photosynthesis) = {f_phot} [g m^-2 s^-1], "
-    #     f"f_resp (Maintenance Respiration) = {f_resp} [g m^-2 s^-1], "
-    #     f"c_ch2o (Conversion of CO2 to CH2O) = {c_ch2o} [g g^-1], "
-    #     f"c_yf (Yield Factor) = {c_yf} [g g^-1]",
-    #     # c_ch2o * f_phot - r_gr * x_sdw - f_resp - ((1 - c_yf) / c_yf) * r_gr * x_sdw
-    # )
-    # print(params_string)
-    return (
-        c_ch2o * f_phot
-        - r_gr * x_sdw
-        - f_resp
-        - ((1 - c_yf) / c_yf) * r_gr * x_sdw
-    )
-
-
-def get_r_gr(
-    x_sdw: float,
-    x_nsdw: float,
-    u_T: float,
-    c_gr_max: float = C_GR_MAX,
-    c_gamma: float = C_GAMMA,
-    c_Q10_gr: float = C_Q10_GR,
-) -> float:
-    """Specific growth rate.
-
-    Args:
-        x_sdw: structural dry weight [g m^{-2}]
-        u_T: canopy temperature [C]
-        x_nsdw: non-structural dry weight [g m^{-2}]
-        c_gr_max: saturated growth rate at 20 C [s^{-1}]
-        c_gamma: growth rate coefficient [-]
-        c_Q10_gr: growth rate sensitivity to temperature [-]
-
-    Returns:
-        r_gr - specific growth rate [s^{-1}]
-
-    References:
-        Thornley & Hurd (1974)
-    """
-    # params_string = (
-    #     f"x_sdw (Structural Dry Weight) = {x_sdw} [g m^-2], "
-    #     f"x_nsdw (Non-Structural Dry Weight) = {x_nsdw} [g m^-2], "
-    #     f"u_T (Canopy Temperature) = {u_T} [C], "
-    #     f"c_gr_max (Saturated Growth Rate at 20 C) = {c_gr_max} [s^-1], "
-    #     f"c_gamma (Growth Rate Coefficient) = {c_gamma}, "
-    #     f"c_Q10_gr (Growth Rate Sensitivity to Temperature) = {c_Q10_gr}"
-    # )
-    # print(params_string)
-    return (
-        c_gr_max
-        * (x_nsdw / (c_gamma * x_sdw + x_nsdw))
-        * c_Q10_gr ** ((u_T - 20) / 10)
-    )
-
-
-def get_f_resp(
-    x_sdw: float,
-    u_T: float,
-    c_resp_sht: float = C_RESP_SHT,
-    c_tau: float = C_TAU,
-    c_resp_rt: float = C_RESP_RT,
-    c_Q10_resp: float = C_Q10_RESP,
-) -> float:
-    """Maintenance respiration rate.
-
-    Args:
-        x_sdw: structural dry weight [g m^{-2}]
-        u_T: canopy temperature [C]
-        c_resp_sht: shoot maintenance respiration rate at 25 C [s^{-1}]
-        c_tau: root dry mass ratio [-]
-        c_resp_rt: root maintenance respiration rate at 25 C [s^{-1}]
-        c_Q10_resp: maintenance respiration sensitivity to temperature [-]
-
-    Returns:
-        f_resp - maintenance respiration rate [g m^{-2} s^{-1}]
-    """
-    # params_string = (
-    #     f"get_f_resp: "
-    #     f"x_sdw (Structural Dry Weight) = {x_sdw} [g m^-2], "
-    #     f"u_T (Canopy Temperature) = {u_T} [C], "
-    #     f"c_resp_sht (Shoot Maintenance Respiration Rate at 25 C) = {c_resp_sht} [s^-1], "
-    #     f"c_tau (Root Dry Mass Ratio) = {c_tau}, "
-    #     f"c_resp_rt (Root Maintenance Respiration Rate at 25 C) = {c_resp_rt} [s^-1], "
-    #     f"c_Q10_resp (Maintenance Respiration Sensitivity to Temperature) = {c_Q10_resp}",
-    #     (c_resp_sht * (1 - c_tau) * x_sdw + c_resp_rt * c_tau * x_sdw) * c_Q10_resp ** ((u_T - 25) / 10)
-    # )
-    # print(params_string)
-    return (
-        c_resp_sht * (1 - c_tau) * x_sdw + c_resp_rt * c_tau * x_sdw
-    ) * c_Q10_resp ** ((u_T - 25) / 10)
-
-
-def get_f_phot(
-    x_sdw: float,
-    f_phot_max: float,
-    c_K: float = C_K,
-    c_lar: float = C_LAR,
-    c_tau: float = C_TAU,
-) -> float:
-    """Groos canopy photosynthesis.
-
-    Args:
-        x_sdw: structural dry weight [g m^{-2}]
-        c_K: extinction coefficient [-]
-        c_lar: structural leaf area ratio [g^{-1} m^{-2}]
-        c_tau: root dry mass ratio [-]
-        f_phot_max: gross CO_2 assimilation rate [g m^{-2} s^{-1}]
-
-    Returns:
-        f_phot - gross canopy photosynthesis [g m^{-2} s^{-1}]
-
-    References:
-        Goudriaan & Van Laar (1978) and Goudriaan & Monteith (1990)
-    """
-    return (1 - exp(-c_K * c_lar * (1 - c_tau) * x_sdw)) * f_phot_max
-
-
-def get_f_phot_max(
-    u_par: float,
-    u_co2: float,
-    epsilon: float,
-    g_co2: float,
-    gamma: float,
-    c_omega: float = C_OMEGA,
-) -> float:
-    """Response of canopy photosynthesis.
-
-    Args:
-        u_par: incident photosynthetically active radiation [W m^{-2}]
-        u_co2: CO_2 concentration [ppm]
-        epsilon: light use efficiency [g J^{-1}]
-        g_co2: canopy conductance to CO_2 diffusion [m s^{-1}]
-        c_omega: density of CO_2 in air [g m^{-3}]
-        gamma: CO_2 compensation point [g m^{-3}]
-
-    Returns:
-        f_phot_max - gross CO_2 assimilation rate [g m^{-2} s^{-1}]
-
-    References:
-        Acock et al. (1978)
-    """
-    return (epsilon * u_par * g_co2 * c_omega * (u_co2 - gamma)) / (
-        epsilon * u_par + g_co2 * c_omega * (u_co2 - gamma)
-    )
-
-
-def get_ggamma(
-    u_T: float,
-    c_Gamma: float = C_GGAMMA,
-    c_Q10_Gamma: float = C_Q10_GGAMMA,
-) -> float:
-    """CO_2 compensation point.
-
-    Args:
-        u_T: canopy temperature [C]
-        c_Gamma (optional): CO_2 compensation points at 20 C [ppm]
-        c_Q10_Gamma (optional): CO_2 compensation point sensitivity [-]
-
-    Returns:
-        Gamma - CO2 compensation point [ppm]
-
-    References:
-        Goudriaan et al. (1985)
-    """
-    return c_Gamma * c_Q10_Gamma ** ((u_T - 20) / 10)
-
-
-def get_epsilon(
-    u_co2: float,
-    gamma: float,
-    c_epsilon: float = C_EPSILON,
-) -> float:
-    """Light use efficency.
-
-    Args:
-        u_co2: CO_2 concentration [ppm]
-        gamma: CO_2 compensation point [ppm]
-        c_epsilon (optional): light use efficiency at high CO_2 [g J^{-1}]
-
-    Returns:
-        epsilon - light use efficiency [g J^{-1}]
-    """
-    return c_epsilon * ((u_co2 - gamma) / (u_co2 + 2 * gamma))
-
-
-def get_g_co2(
-    g_car: float,
-    g_bdn: float = G_BND,
-    g_stm: float = G_STM,
-) -> float:
-    """Canopy conductance to CO_2 diffusion.
-
-    Args:
-        g_car: carboxilation conductance [m s^{-1}]
-        g_bdn (optional): boundary layer conductance [m s^{-1}]
-        g_stm (optional): stomatal resistance [m s^{-1}]
-
-    Returns:
-        g_co2 - canopy conductance to CO_2 diffusion.
-    """
-    return 1 / ((1 / g_bdn) + (1 / g_stm) + (1 / g_car))
-
-
-def get_g_car(
-    u_T: float,
-    c_car1: float = C_CAR1,
-    c_car2: float = C_CAR2,
-    c_car3: float = C_CAR3,
-):
-    """Carboxilation conductance.
-
-    Args:
-        u_T : canopy temperature [C]
-        c_car1 (optional): carboxilation parameter [m s^{-1} C^{-2}]
-        c_car2 (optional): carboxilation parameter [m s^{-1} C^{-1}]
-        c_car3 (optional): carboxilation parameter [m s^{-1}]
-
-    Returns:
-       g_car - carboxilation conductance [m s^{-1}]
-    """
-    return c_car1 * u_T**2 + c_car2 * u_T + c_car3
-
 ## GSE model
 def lamorturb(Gr, Re):
     free = Gr < 1e5
@@ -401,8 +218,8 @@ def radiation(eps_1, eps_2, rho_1, rho_2, F_1_2, F_2_1, A_1, T_1, T_2):
     return (QR_1_2)
 
 
-def conduction(A, lam, l, T1, T2):
-    QD_12 = (A * lam / l) * (T1 - T2)
+def conduction(A, lam, thickness, T1, T2):
+    QD_12 = (A * lam / thickness) * (T1 - T2)
 
     return (QD_12)
 
@@ -435,7 +252,7 @@ def Cw_ext(t):
 
     deltaT = 600
     n = int(np.ceil(t / deltaT))
-    RH_e = climate[n, 1] / 100;
+    RH_e = climate[n, 1] / 100
 
     Cw_e = RH_e * sat_conc(T_ext(t))
 
@@ -447,7 +264,7 @@ def day(t):
     day_new = np.ceil(t / 86400)
     return (day_new)
 
-def model(t, z, climate, daynum):
+def model(t, z, climate):
     # Values being calculated
 
     T_c = z[0]
@@ -487,29 +304,24 @@ def model(t, z, climate, daynum):
     C_ce = 4.0e-4 * M_c * atm / (R * T_ext)  # External carbon dioxide concentration [kg/m^3]
     C_c_ppm = C_c * R * T_i / (M_c * atm) * 1.e6  # External carbon dioxide concentration [ppm]
     h = 6.626e-34  # Planck's constant in Joule*Hz^{-1}
-    total_plant_biomass = C_fruit + C_leaf + C_stem  # Total plant biomass [kg/m^2]
+    _ = C_fruit + C_leaf + C_stem  # Total plant biomass [kg/m^2]
 
-    daynum.append(day(t))  # Day number
-
-    # Option for printing progress of run in days - uncomment out if needed
-    if daynum[(len(daynum) - 1)] > daynum[(len(daynum) - 2)]:
-        print('Day', daynum[len(daynum) - 1])
 
     hour = np.floor(t / 3600) + 1
     # Option for printing progress in hours - uncomment if needed
     # print('Hour', hour)
 
-    day_hour = (hour / 24 - np.floor(hour / 24)) * 24
+    _ = (hour / 24 - np.floor(hour / 24)) * 24
 
     ## Lights
-    L_on = 0  # No additional lighting included
-    AL_on = 0  # No ambient lighting included
+    _ = 0  # No additional lighting included
+    _ = 0  # No ambient lighting included
 
     ## Convection
     # Convection external air -> cover
 
     (QV_e_c, QP_e_c, Nu_e_c) = convection(d_c, A_c, T_ext, T_c, wind_speed, rho_i, c_i, C_w)
-    QP_e_c = 0  # Assumed no external condensation/evaporation
+    _ = 0  # Assumed no external condensation/evaporation
 
     # Convection internal air -> cover
 
@@ -523,8 +335,8 @@ def model(t, z, climate, daynum):
 
     # Convection internal air -> vegetation
     A_v_exp = LAI * A_v
-    (QV_i_v, QP_i_v, Nu_i_v) = convection(d_v, A_v_exp, T_i, T_v, ias, rho_i, c_i, C_w)
-    QP_i_v = 0  # No condensation/evaporation - transpiration considered separately
+    (QV_i_v, _, Nu_i_v) = convection(d_v, A_v_exp, T_i, T_v, ias, rho_i, c_i, C_w)
+    _ = 0  # No condensation/evaporation - transpiration considered separately
     HV = Nu_i_v * lam / d_v
 
     # Convection internal air -> mat
@@ -624,7 +436,7 @@ def model(t, z, climate, daynum):
     R_a = R_a_min + comp_dtv_low * (R_a_max - R_a_min) / 4 * DeltaT_vent + comp_dtv_high * (R_a_max - R_a_min)
 
     QV_i_e = R_a * V * rho_i * c_i * (T_i - T_ext)  # Internal air to outside air [J/s]
-    QP_i_e = R_a * V * H_fg * (C_w - Cw_ext)  # Latent heat loss due to leakiness
+    _ = R_a * V * H_fg * (C_w - Cw_ext)  # Latent heat loss due to leakiness
 
     MW_i_e = R_a * (C_w - Cw_ext)
 
@@ -699,7 +511,7 @@ def model(t, z, climate, daynum):
 
     QS_m_rVIS = (QS_int_rVIS * (1 - a_obs) + QS_al_VIS) * a_m_rVIS * A_v / A_f
     QS_m_fVIS = QS_int_fVIS * (1 - a_obs) * a_m_fVIS * A_v / A_f
-    QS_m_VIS = (QS_m_rVIS + QS_m_fVIS)
+    _ = (QS_m_rVIS + QS_m_fVIS)
 
     # Solar radiation absorbed by the floor
     # factor by (A_f-A_v)/A_f
@@ -710,7 +522,7 @@ def model(t, z, climate, daynum):
 
     QS_s_rVIS = QS_int_rVIS * (1 - a_obs) * alphS_s * (A_f - A_v) / A_f
     QS_s_fVIS = QS_int_fVIS * (1 - a_obs) * alphS_s * (A_f - A_v) / A_f
-    QS_s_VIS = QS_s_rVIS + QS_s_fVIS
+    _ = QS_s_rVIS + QS_s_fVIS
 
     ## Transpiration
     QS_int = (QS_int_rNIR + QS_int_rVIS + QS_int_fNIR + QS_int_fVIS) * (1 - a_obs) * A_v / A_f  # J/s
@@ -870,12 +682,7 @@ def model(t, z, climate, daynum):
     u_par = PAR * E * N_A  # [W/m^2]
     u_co2 = C_c * 1.0e6  # [ppm] >> external C_c_ppm
     dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(t, (x_sdw, x_nsdw), (T_i - T_k, u_par, u_co2))
-    # dx_sdw_dt, dx_nsdw_dt = 0,0
-    # dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(t, (x_sdw, x_nsdw), (15, 50, 500))
-    # print("T_i, u_par, u_co2", T_i - T_k, u_par, u_co2)
-    # print("u_par", u_par, PAR)
 
-    # return np.array([0,dT_i_dt,0,0,0,0,0,0,0,0,0,0,0,dC_c_dt,0,0,0,0,0,0,0,dx_sdw_dt,dx_nsdw_dt])
     return np.array([
         dT_c_dt, dT_i_dt, dT_v_dt, dT_m_dt, dT_p_dt, dT_f_dt,
         dT_s1_dt, dT_s2_dt, dT_s3_dt, dT_s4_dt,

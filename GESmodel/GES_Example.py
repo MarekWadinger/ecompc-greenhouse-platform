@@ -24,17 +24,24 @@
 
 #######################################################################################################################################
 
+import os
 import sys
 import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
-from simpleParameters import *
 
 sys.path.insert(1, str(Path().resolve()))
 from core.greenhouse_model import M_c, R, T_k, atm, deltaT, model  # noqa: E402
+
+
+results_dir = "results"
+if not os.path.exists(results_dir):
+    os.makedirs(results_dir)
+
 
 ## Specify initial conditions**
 
@@ -93,13 +100,11 @@ z = [
     x_nsdw
 ]
 
-daynum = [0]
-
 ## Interpolate weather data
 
 if __name__ == "__main__":
     climdat = np.genfromtxt(
-        "SampleWeather.csv", delimiter=","
+        "GESModel/SampleWeather.csv", delimiter=","
     )  # Hourly data
 
     len_climdat = len(climdat)
@@ -112,13 +117,13 @@ if __name__ == "__main__":
 
     tic = time.time()
 
-    sim_days = 50  # Number of days of simulation
+    sim_days = 30  # Number of days of simulation
     tf = 86400 * sim_days  # Time in seconds
     t = [0, tf]
     tval = np.linspace(0, tf, tf + 1)
 
     # Use solve_ivp with 'BDF' stiff solver to solve the ODEs
-    params = [climate, daynum]
+    params = [climate]
 
     output = solve_ivp(
         model, t, z, method="BDF", t_eval=tval, rtol=1e-5, args=params
@@ -149,7 +154,7 @@ if __name__ == "__main__":
     ax.legend(loc='upper right', fontsize=8)
     ax.set_xlabel('Day')
     ax.set_ylabel('Temperature ($^o$C)')
-    plt.savefig('temp.png', format="png", dpi=resolution_value)
+    plt.savefig('results/temp.png', format="png", dpi=resolution_value)
 
     ## CO_2
 
@@ -159,28 +164,14 @@ if __name__ == "__main__":
     ax4.set_title('CO$_2$')
     ax4.set_xlabel('Day')
     ax4.set_ylabel('CO$_2$ (ppm)')
-    plt.savefig('co2.png', format="png", dpi=resolution_value)
+    plt.savefig('results/co2.png', format="png", dpi=resolution_value)
 
 
     ## Salaattia
 
     dx_sdw_dt = np.transpose(output.y[21, :])
 
-    fig7, ax5 = plt.subplots()
-    ax5.plot(time,dx_sdw_dt, color='b')
-    ax5.set_title('dx_sdw_dt')
-    ax5.set_xlabel('Time[day]')
-    ax5.set_ylabel('Plant Dry Weight [g.m-2]')
-    plt.savefig('salat.png', format="png", dpi=resolution_value)
-
     dx_nsdw_dt = np.transpose(output.y[22, :])
-
-    fig8, ax6 = plt.subplots()
-    ax6.plot(time,dx_nsdw_dt, color='g')
-    ax6.set_title('dx_nsdw_dt')
-    ax6.set_xlabel('Time[day]')
-    ax6.set_ylabel('Plant Dry Weight [g.m-2]')
-    plt.savefig('salat2.png', format="png", dpi=resolution_value)
 
     fig9, ax7 = plt.subplots()
     ax7.plot(time, dx_sdw_dt, color='b', label='Structural Dry Weight')
@@ -189,4 +180,4 @@ if __name__ == "__main__":
     ax7.set_xlabel('Time [day]')
     ax7.set_ylabel('Rate [g.m-2]')
     ax7.legend()
-    plt.savefig('combined_salat.png', format="png", dpi=resolution_value)
+    plt.savefig('results/salat.png', format="png", dpi=resolution_value)
