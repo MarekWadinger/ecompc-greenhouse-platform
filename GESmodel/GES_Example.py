@@ -37,7 +37,6 @@ from scipy.interpolate import interp1d
 sys.path.insert(1, str(Path().resolve()))
 from core.greenhouse_model import M_c, R, T_k, atm, deltaT, model  # noqa: E402
 
-
 results_dir = "results"
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
@@ -71,7 +70,7 @@ R_fruit_0 = 0.0  # Relative growth rate of fruit averaged over 5 days [1/s]
 R_leaf_0 = 0.0  # Relative growth rate of leaf averaged over 5 days [1/s]
 R_stem_0 = 0.0  # Relative growth rate of stem averaged over 5 days [1/s]
 
-x_sdw  = 0.5  # Structural dry weight of the plant [kg/m^2]
+x_sdw = 0.5  # Structural dry weight of the plant [kg/m^2]
 x_nsdw = 2.1  # Non-structural dry weight of the plant [kg/m^2]
 
 z = [
@@ -97,7 +96,7 @@ z = [
     R_leaf_0,
     R_stem_0,
     x_sdw,
-    x_nsdw
+    x_nsdw,
 ]
 
 ## Interpolate weather data
@@ -138,34 +137,33 @@ if __name__ == "__main__":
 
     ## Plot results
 
-    Tout_i = np.transpose(output.y[1, :]-T_k)  # [°C]
+    Tout_i = np.transpose(output.y[1, :] - T_k)  # [°C]
     Ccout = np.transpose(output.y[13, :])
 
     ## Temperatures
 
-    time = output.t/(3600*24) # Time in days
+    time = output.t / (3600 * 24)  # Time in days
     resolution_value = 1200
 
     ## Internal air
 
     fig1, ax = plt.subplots()
-    ax.plot(time,Tout_i, color='b', label = 'Internal air')
-    ax.set_title('Internal air and vegetation temperatures')
-    ax.legend(loc='upper right', fontsize=8)
-    ax.set_xlabel('Day')
-    ax.set_ylabel('Temperature ($^o$C)')
-    plt.savefig('results/temp.png', format="png", dpi=resolution_value)
+    ax.plot(time, Tout_i, color="b", label="Internal air")
+    ax.set_title("Internal air and vegetation temperatures")
+    ax.legend(loc="upper right", fontsize=8)
+    ax.set_xlabel("Day")
+    ax.set_ylabel("Temperature ($^o$C)")
+    plt.savefig("results/temp.png", format="png", dpi=resolution_value)
 
     ## CO_2
 
-    Ccout_ppm = Ccout*R*(Tout_i+T_k)/(M_c*atm)*1.e6
+    Ccout_ppm = Ccout * R * (Tout_i + T_k) / (M_c * atm) * 1.0e6
     fig6, ax4 = plt.subplots()
-    ax4.plot(time,Ccout_ppm, color='b')
-    ax4.set_title('CO$_2$')
-    ax4.set_xlabel('Day')
-    ax4.set_ylabel('CO$_2$ (ppm)')
-    plt.savefig('results/co2.png', format="png", dpi=resolution_value)
-
+    ax4.plot(time, Ccout_ppm, color="b")
+    ax4.set_title("CO$_2$")
+    ax4.set_xlabel("Day")
+    ax4.set_ylabel("CO$_2$ (ppm)")
+    plt.savefig("results/co2.png", format="png", dpi=resolution_value)
 
     ## Salaattia
 
@@ -174,10 +172,10 @@ if __name__ == "__main__":
     dx_nsdw_dt = np.transpose(output.y[22, :])
 
     fig9, ax7 = plt.subplots()
-    ax7.plot(time, dx_sdw_dt, color='b', label='Structural Dry Weight')
-    ax7.plot(time, dx_nsdw_dt, color='g', label='Non-Structural Dry Weight')
-    ax7.set_title('Plant Dry Weight')
-    ax7.set_xlabel('Time [day]')
-    ax7.set_ylabel('Rate [g.m-2]')
+    ax7.plot(time, dx_sdw_dt, color="b", label="Structural Dry Weight")
+    ax7.plot(time, dx_nsdw_dt, color="g", label="Non-Structural Dry Weight")
+    ax7.set_title("Plant Dry Weight")
+    ax7.set_xlabel("Time [day]")
+    ax7.set_ylabel("Rate [g.m-2]")
     ax7.legend()
-    plt.savefig('results/salat.png', format="png", dpi=resolution_value)
+    plt.savefig("results/salat.png", format="png", dpi=resolution_value)
