@@ -31,10 +31,10 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp
-from scipy.interpolate import interp1d
 
 sys.path.insert(1, str(Path().resolve()))
-from core.greenhouse_model import M_c, R, T_k, atm, deltaT, model  # noqa: E402
+from core.greenhouse_model import M_c, R, T_k, atm, model  # noqa: E402
+from core.openmeteo_query import get_weather_data  # noqa: E402
 
 results_dir = "examples/results"
 if not os.path.exists(results_dir):
@@ -101,21 +101,48 @@ z = [
 ## Interpolate weather data
 
 if __name__ == "__main__":
-    climdat = np.genfromtxt(
-        "examples/data/SampleWeather.csv", delimiter=","
-    )  # Hourly data
+    # climdat = np.genfromtxt(
+    #     "examples/data/SampleWeather.csv", delimiter=","
+    # )  # Hourly data
+    # len_climdat = len(climdat)
+    # # Convert to seconds
+    # mult = np.linspace(1, len_climdat, int((len_climdat - 1) * 3600 / deltaT))
+    # y_interp = interp1d(climdat[:, 0], climdat[:, 1:21], axis=0)
 
-    len_climdat = len(climdat)
-    mult = np.linspace(1, len_climdat, int((len_climdat - 1) * 3600 / deltaT))
-    y_interp = interp1d(climdat[:, 0], climdat[:, 1:21], axis=0)
-
-    climate = y_interp(mult)
+    # climate = y_interp(mult)
+    climdat = get_weather_data(
+        latitude=52.52,  # Latitude of the location in degrees
+        longitude=13.41,  # Longitude of the location in degrees
+        tilt=[
+            90,
+            40,
+            90,
+            40,
+            90,
+            40,
+            90,
+            40,
+        ],  # Tilt angle of the surface in degrees
+        azimuth=[
+            "NE",
+            "NE",
+            "SE",
+            "SE",
+            "SW",
+            "SW",
+            "NW",
+            "NW",
+        ],  # Azimuth angle of the surface in degrees (South facing)
+        frequency="hourly",
+        forecast=2,
+    )
+    climate = climdat.asfreq("1s").interpolate(method="time").values
 
     ## Simulate over time
 
     tic = time.time()
 
-    sim_days = 30  # Number of days of simulation
+    sim_days = 2  # Number of days of simulation
     tf = 86400 * sim_days  # Time in seconds
     t = [0, tf]
     tval = np.linspace(0, tf, tf + 1)
@@ -144,37 +171,51 @@ if __name__ == "__main__":
     time = output.t / (3600 * 24)  # Time in days
     dpi = 1200
 
-    ## Internal air
+    ## Weather data
+    fig, ax = plt.subplots()
+    cond = climdat.columns.str.contains("poa_direct|poa_diffuse")
+    clim_raw = climdat.loc[:, ~cond]
+    clim_stat = climdat.loc[:, cond]
+    aggregations = ["min", "max"]
+    clim_stat = (
+        clim_stat.T.groupby(clim_stat.columns.str.split(":").str[0])
+        .agg(aggregations)  # type: ignore
+        .T
+    )
+    clim_stat = clim_stat.unstack()
+    clim_stat.columns = ['_'.join(col).strip() for col in clim_stat.columns.values]
+    clim_raw.plot(ax=ax)
+    clim_stat.plot(ax=ax)
+    fig.savefig("examples/results/weather.png", format="png", dpi=dpi)
 
-    fig1, ax = plt.subplots()
+    ## Internal air
+    fig, ax = plt.subplots()
     ax.plot(time, Tout_i, color="b", label="Internal air")
     ax.set_title("Internal air and vegetation temperatures")
     ax.legend(loc="upper right", fontsize=8)
     ax.set_xlabel("Day")
     ax.set_ylabel("Temperature ($^o$C)")
-    plt.savefig("examples/results/temp.png", format="png", dpi=dpi)
+    fig.savefig("examples/results/temp.png", format="png", dpi=dpi)
 
     ## CO_2
-
     Ccout_ppm = Ccout * R * (Tout_i + T_k) / (M_c * atm) * 1.0e6
-    fig6, ax4 = plt.subplots()
-    ax4.plot(time, Ccout_ppm, color="b")
-    ax4.set_title("CO$_2$")
-    ax4.set_xlabel("Day")
-    ax4.set_ylabel("CO$_2$ (ppm)")
-    plt.savefig("examples/results/co2.png", format="png", dpi=dpi)
+    fig, ax = plt.subplots()
+    ax.plot(time, Ccout_ppm, color="b")
+    ax.set_title("CO$_2$")
+    ax.set_xlabel("Day")
+    ax.set_ylabel("CO$_2$ (ppm)")
+    fig.savefig("examples/results/co2.png", format="png", dpi=dpi)
 
     ## Salaattia
-
     dx_sdw_dt = np.transpose(output.y[21, :])
 
     dx_nsdw_dt = np.transpose(output.y[22, :])
 
-    fig9, ax7 = plt.subplots()
-    ax7.plot(time, dx_sdw_dt, color="b", label="Structural Dry Weight")
-    ax7.plot(time, dx_nsdw_dt, color="g", label="Non-Structural Dry Weight")
-    ax7.set_title("Plant Dry Weight")
-    ax7.set_xlabel("Time [day]")
-    ax7.set_ylabel("Rate [g.m-2]")
-    ax7.legend()
-    plt.savefig("examples/results/salat.png", format="png", dpi=dpi)
+    fig, ax = plt.subplots()
+    ax.plot(time, dx_sdw_dt, color="b", label="Structural Dry Weight")
+    ax.plot(time, dx_nsdw_dt, color="g", label="Non-Structural Dry Weight")
+    ax.set_title("Plant Dry Weight")
+    ax.set_xlabel("Time [day]")
+    ax.set_ylabel("Rate [g.m-2]")
+    ax.legend()
+    fig.savefig("examples/results/salat.png", format="png", dpi=dpi)
