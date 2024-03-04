@@ -98,46 +98,35 @@ z = [
     x_nsdw,
 ]
 
-## Interpolate weather data
+climdat = get_weather_data(
+    latitude=52.52,  # Latitude of the location in degrees
+    longitude=13.41,  # Longitude of the location in degrees
+    tilt=[
+        90,
+        40,
+        90,
+        40,
+        90,
+        40,
+        90,
+        40,
+    ],  # Tilt angle of the surface in degrees
+    azimuth=[
+        "NE",
+        "NE",
+        "SE",
+        "SE",
+        "SW",
+        "SW",
+        "NW",
+        "NW",
+    ],  # Azimuth angle of the surface in degrees (South facing)
+    frequency="hourly",
+    forecast=3,
+)
+climate = climdat.asfreq("1s").interpolate(method="time").values
 
 if __name__ == "__main__":
-    # climdat = np.genfromtxt(
-    #     "examples/data/SampleWeather.csv", delimiter=","
-    # )  # Hourly data
-    # len_climdat = len(climdat)
-    # # Convert to seconds
-    # mult = np.linspace(1, len_climdat, int((len_climdat - 1) * 3600 / deltaT))
-    # y_interp = interp1d(climdat[:, 0], climdat[:, 1:21], axis=0)
-
-    # climate = y_interp(mult)
-    climdat = get_weather_data(
-        latitude=52.52,  # Latitude of the location in degrees
-        longitude=13.41,  # Longitude of the location in degrees
-        tilt=[
-            90,
-            40,
-            90,
-            40,
-            90,
-            40,
-            90,
-            40,
-        ],  # Tilt angle of the surface in degrees
-        azimuth=[
-            "NE",
-            "NE",
-            "SE",
-            "SE",
-            "SW",
-            "SW",
-            "NW",
-            "NW",
-        ],  # Azimuth angle of the surface in degrees (South facing)
-        frequency="hourly",
-        forecast=3,
-    )
-    climate = climdat.asfreq("1s").interpolate(method="time").values
-
     ## Simulate over time
 
     tic = time.time()
@@ -186,7 +175,9 @@ if __name__ == "__main__":
         .T
     )
     clim_stat = clim_stat.unstack()
-    clim_stat.columns = ['_'.join(col).strip() for col in clim_stat.columns.values]
+    clim_stat.columns = [
+        "_".join(col).strip() for col in clim_stat.columns.values
+    ]
     clim_raw.plot(ax=ax)
     clim_stat.plot(ax=ax)
     fig.savefig("examples/results/weather.png", format="png", dpi=dpi)
