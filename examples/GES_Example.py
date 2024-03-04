@@ -134,7 +134,7 @@ if __name__ == "__main__":
             "NW",
         ],  # Azimuth angle of the surface in degrees (South facing)
         frequency="hourly",
-        forecast=2,
+        forecast=3,
     )
     climate = climdat.asfreq("1s").interpolate(method="time").values
 
@@ -148,8 +148,11 @@ if __name__ == "__main__":
     tval = np.linspace(0, tf, tf + 1)
 
     # Use solve_ivp with 'BDF' stiff solver to solve the ODEs
-    params = [climate]
+    R_a_max = 3600
+    Q_heater = 20000
+    params = [(R_a_max, Q_heater), climate]
 
+    # TODO: FIX: for some reason, the simulation requires longer weather forecast than the actual simulation time
     output = solve_ivp(
         model, t, z, method="BDF", t_eval=tval, rtol=1e-5, args=params
     )
