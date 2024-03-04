@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
+from typing import Union
 
+import casadi as ca
 import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
@@ -219,12 +221,15 @@ def lamorturb(Gr, Re):
     return (Nu, Sh)
 
 
-def convection(d, A, T1, T2, ias, rho, c, C):
+def convection(d, A, T1, T2: Union[float, ca.MX], ias, rho, c, C):
     g = 9.81
     nu = 15.1e-6
     lam = 0.025
-
-    Gr = (g * d**3) / (T1 * nu**2) * abs(T1 - T2)
+    if isinstance(T2, ca.MX):
+        abs_diff_T = ca.fabs(T1 - T2)
+    else:
+        abs_diff_T = abs(T1 - T2)
+    Gr = (g * d**3) / (T1 * nu**2) * abs_diff_T
     Re = ias * d / nu
     (Nu, Sh) = lamorturb(Gr, Re)
 
@@ -366,7 +371,7 @@ def _model(
     (QV_i_c, QP_i_c, Nu_i_c) = convection(
         d_c, A_c, T_i, T_c, ias, rho_i, c_i, C_w
     )
-    QP_i_c = max(
+    QP_i_c = ca.fmax(
         QP_i_c, 0
     )  # assumed no evaporation from the cover, only condensation
 
@@ -375,7 +380,7 @@ def _model(
     (QV_i_f, QP_i_f, Nu_i_f) = convection(
         d_f, A_f, T_i, T_f, ias, rho_i, c_i, C_w
     )
-    QP_i_f = max(
+    QP_i_f = ca.fmax(
         QP_i_f, 0
     )  # assumed no evaporation from the floor, only condensation
 
@@ -405,10 +410,10 @@ def _model(
 
     ## Far-IR Radiation
 
-    A_vvf = min(LAI * p_v * A_f, p_v * A_f)
-    F_c_v = min((1 - F_c_f) * LAI, (1 - F_c_f))  # Cover to vegetation
-    F_c_m = max((1 - F_c_f) * (1 - LAI), 0)  # Cover to mat
-    F_m_c = max((1 - LAI), 0.0)  # Mat to cover
+    A_vvf = ca.fmin(LAI * p_v * A_f, p_v * A_f)
+    F_c_v = ca.fmin((1 - F_c_f) * LAI, (1 - F_c_f))  # Cover to vegetation
+    F_c_m = ca.fmax((1 - F_c_f) * (1 - LAI), 0)  # Cover to mat
+    F_m_c = ca.fmax((1 - LAI), 0.0)  # Mat to cover
     F_m_v = 1 - F_m_c  # Mat to vegetation
 
     # Cover to sky
@@ -497,7 +502,7 @@ def _model(
         Cd * crack_area * (2 * wind_pressure / rho_i) ** 0.5
     )  # Flow rate due to wind pressure
     Qs = (
-        Cd * crack_area * (2 * abs(stack_pressure_diff) / rho_i) ** 0.5
+        Cd * crack_area * (2 * ca.fabs(stack_pressure_diff) / rho_i) ** 0.5
     )  # Flow rate due to stack pressure
     Qt = (Qw**2 + Qs**2) ** 0.5  # Total flow rate
 
@@ -506,7 +511,7 @@ def _model(
 
     # Ventilation
     DeltaT_vent = T_i - T_sp_vent
-    comp_dtv_low = DeltaT_vent > 0 and DeltaT_vent < 4
+    comp_dtv_low = ca.logic_and(DeltaT_vent > 0, DeltaT_vent < 4)
     comp_dtv_high = DeltaT_vent >= 4
 
     # Here R_a air-flow value, this will be as input argument
@@ -691,7 +696,7 @@ def _model(
 
     QT_St = A_v * hL_v_i * (sat_conc(T_v) - C_w)  # J/s
 
-    QT_v_i = max(QT_St, 0)
+    QT_v_i = ca.fmax(QT_St, 0)
 
     ## Dehumidification
     MW_cc_i = 0  # No dehumidification included
@@ -718,7 +723,7 @@ def _model(
     # The number of moles of photosynthetically active photons per unit area of planted floor [mol{phot}/m^2/s]
     # J/s/(J/photon)/(photons/mol)/m^2 cf Vanthoor 2.3mumol(photons)/J
 
-    Gamma = max(
+    Gamma = ca.fmax(
         (c_Gamma * (T_v - T_k) / LAI + 20 * c_Gamma * (1 - 1 / LAI)), 0
     )  # The CO2 compensation point [mol{CO2}/mol{air}]
     k_switch = C_buf_max  # kg/m^2/s
@@ -809,7 +814,7 @@ def _model(
     )
 
     C_max_leaf = LAI_max / SLA
-    MC_leaf_prune = max(C_leaf - C_max_leaf, 0)
+    MC_leaf_prune = ca.fmax(C_leaf - C_max_leaf, 0)
 
     ## ODE equations
     # Heater control logic
