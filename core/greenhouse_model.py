@@ -265,9 +265,35 @@ def day(t):
     return day_new
 
 
-def model(t, z, climate):
-    # Values being calculated
+def model(
+    t,
+    z: tuple,
+    u: tuple,
+    climate: np.ndarray,
+) -> np.ndarray:
+    """Greenhouse model.
 
+    This function models the greenhouse system with
+
+    Args:
+        t: Elapsed time [s]
+        z: System states
+        u: System inputs
+        climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length. TODO: currently, climate data are expected to be sampled at second intervals. This should be changed to match the model sampling rate.
+
+    Returns:
+        np.ndarray: System state derivatives
+    """
+    dz_dt, __ = _model(t, z, u, climate)
+    return dz_dt
+
+
+def _model(
+    t,
+    z: tuple,
+    u: tuple,
+    climate: np.ndarray,
+) -> tuple[np.ndarray, dict]:
     T_c = z[0]
     T_i = z[1]
     T_v = z[2]
@@ -292,12 +318,16 @@ def model(t, z, climate):
     x_sdw = z[21]
     x_nsdw = z[22]
 
+    R_a_max = u[0]
+    Q_heater = u[1]
+
     # External weather and dependent internal parameter values
-    n = int(np.ceil(t / deltaT))  # count
-    T_ext = climate[n, 0] + T_k  # External air temperature (K)
-    T_sk = climate[n, 1] + T_k  # External sky temperature (K)
-    wind_speed = climate[n, 2]  # External wind speed (m/s)
-    RH_e = climate[n, 3] / 100  # External relative humidity
+    # n = int(np.ceil(t / deltaT))  # count
+    t = int(t)
+    T_ext = climate[t, 0] + T_k  # External air temperature (K)
+    T_sk = climate[t, 1] + T_k  # External sky temperature (K)
+    wind_speed = climate[t, 2]  # External wind speed (m/s)
+    RH_e = climate[t, 3] / 100  # External relative humidity
     Cw_ext = RH_e * sat_conc(T_ext)  # External air moisture content
     p_w = C_w * R * T_i / M_w  # Partial pressure of water [Pa]
     rho_i = ((atm - p_w) * M_a + p_w * M_w) / (
@@ -478,6 +508,8 @@ def model(t, z, climate):
     DeltaT_vent = T_i - T_sp_vent
     comp_dtv_low = DeltaT_vent > 0 and DeltaT_vent < 4
     comp_dtv_high = DeltaT_vent >= 4
+
+    # Here R_a air-flow value, this will be as input argument
     # RF: R_a for co2 & T_i
     R_a = (
         R_a_min
@@ -521,10 +553,10 @@ def model(t, z, climate):
     QS_al_VIS = 0.0
 
     # Solar radiation incident on the cover
-    QS_tot_rNIR = 0.5 * SurfaceArea @ climate[n, 4:12]  # Direct
-    QS_tot_rVIS = 0.5 * SurfaceArea @ climate[n, 4:12]
-    QS_tot_fNIR = 0.5 * SurfaceArea @ climate[n, 12:20]  # Diffuse
-    QS_tot_fVIS = 0.5 * SurfaceArea @ climate[n, 12:20]
+    QS_tot_rNIR = 0.5 * SurfaceArea @ climate[t, 4:12]  # Direct
+    QS_tot_rVIS = 0.5 * SurfaceArea @ climate[t, 4:12]
+    QS_tot_fNIR = 0.5 * SurfaceArea @ climate[t, 12:20]  # Diffuse
+    QS_tot_fVIS = 0.5 * SurfaceArea @ climate[t, 12:20]
 
     # Transmitted solar radiation
     QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
@@ -781,23 +813,26 @@ def model(t, z, climate):
 
     ## ODE equations
     # Heater control logic
-    # RF: Q_heating for T_i
-    Q_heating = 0.0  # Default [W]: heater is off
+    # RF: Q_heater for T_i
+    # Q_heating = 0.0  # Default [W]: heater is off
 
     # Heating term
     heater_switch_temp = 28.0 + T_k  # Adjust this temperature threshold
-    Q_heating = 0.0  # Default: heater is off
-    if T_i < heater_switch_temp:
-        Q_heating = (
-            20000.0  # Adjust this value [W] : power when the heater is on
-        )
+
+    # Delete these rows... Q_heating will be input arguments #HERE for Q heating
+    # Q_heater = 0.0  # Default: heater is off
+    # if T_i < heater_switch_temp:
+    #     Q_heater = (
+    #         20000.0  # Adjust this value [W] : power when the heater is on
+    #     )
+
     # Temperature components
     dT_c_dt = (1 / (A_c * cd_c)) * (
         QV_i_c + QP_i_c - QR_c_f - QR_c_v - QR_c_m + QV_e_c - QR_c_sk + QS_c
     )
 
     dT_i_dt = (1 / (V * rho_i * c_i)) * (
-        -QV_i_m - QV_i_v - QV_i_f - QV_i_c - QV_i_e - QV_i_p + QS_i + Q_heating
+        -QV_i_m - QV_i_v - QV_i_f - QV_i_c - QV_i_e - QV_i_p + QS_i + Q_heater
     )
 
     dT_v_dt = (1 / (c_v * A_v * msd_v)) * (
@@ -861,30 +896,33 @@ def model(t, z, climate):
         t, (x_sdw, x_nsdw), (T_i - T_k, u_par, u_co2)
     )
 
-    return np.array(
-        [
-            dT_c_dt,
-            dT_i_dt,
-            dT_v_dt,
-            dT_m_dt,
-            dT_p_dt,
-            dT_f_dt,
-            dT_s1_dt,
-            dT_s2_dt,
-            dT_s3_dt,
-            dT_s4_dt,
-            dT_vmean_dt,
-            dT_vsum_dt,
-            dC_w_dt,
-            dC_c_dt,
-            dC_buf_dt,
-            dC_fruit_dt,
-            dC_leaf_dt,
-            dC_stem_dt,
-            dR_fruit_dt,
-            dR_leaf_dt,
-            dR_stem_dt,
-            dx_sdw_dt,
-            dx_nsdw_dt,
-        ]
+    return (
+        np.array(
+            [
+                dT_c_dt,
+                dT_i_dt,
+                dT_v_dt,
+                dT_m_dt,
+                dT_p_dt,
+                dT_f_dt,
+                dT_s1_dt,
+                dT_s2_dt,
+                dT_s3_dt,
+                dT_s4_dt,
+                dT_vmean_dt,
+                dT_vsum_dt,
+                dC_w_dt,
+                dC_c_dt,
+                dC_buf_dt,
+                dC_fruit_dt,
+                dC_leaf_dt,
+                dC_stem_dt,
+                dR_fruit_dt,
+                dR_leaf_dt,
+                dR_stem_dt,
+                dx_sdw_dt,
+                dx_nsdw_dt,
+            ]
+        ),
+        locals(),
     )
