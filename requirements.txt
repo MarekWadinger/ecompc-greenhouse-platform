@@ -5,4 +5,5 @@ matplotlib~=3.8.1
 numpy~=1.26.1
 pandas~=2.1.2
 pvlib~=0.10.3
+requests_cache~=1.2.0
 scipy~=1.11.3
