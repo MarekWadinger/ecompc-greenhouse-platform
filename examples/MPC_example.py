@@ -1,5 +1,6 @@
 # import os
 import sys
+from functools import partial
 
 # import time
 from pathlib import Path
@@ -13,6 +14,13 @@ from GES_Example import climate, z  # noqa: E402
 
 from core.greenhouse_model import model  # noqa: E402
 
+greenhouse_model = partial(model, climate=climate)
+
+
+def f(k, x, u):
+    return vertcat(*greenhouse_model(k, vertsplit(x), vertsplit(u)))
+
+
 if __name__ == "__main__":
     ## optimization problem
     opti = Opti()  # Optimization problem
@@ -22,23 +30,28 @@ if __name__ == "__main__":
     # x_ref = [25 + T_k, 7.5869e-4]  #TODO reference state
     x_ref = [z_ * 2.0 for z_ in z]
     # ---- decision variables ---------
-    # X = opti.variable(2, N + 1)  # state trajectory
-    n_states = 23
+    n_states = 14
     X = opti.variable(n_states, N + 1)  # state trajectory
     U = opti.variable(2, N)  # control trajectory (Q_heating, R_a)
     Ts = 60  # TODO choose appropriate step size
-    Q = np.eye(23)
+    dt = Ts
+    Q = np.eye(n_states)
     R = np.eye(2)
     u_min = [0.0, 0.0]
     u_max = [100.0, 100.0]
-    x_min = [0.0] * 23
-    x_max = [10000.0] * 23
-    x0 = z
+    x_min = [0.0] * n_states
+    x_max = [10000.0] * n_states
 
-    dt = Ts
-
-    def f(k, x, u):
-        return vertcat(*model(k, vertsplit(x), vertsplit(u), climate))
+    # Get x0 to feasible initial state - hopefully...
+    x0 = np.array(z)
+    u0 = np.array([0.0, 0.0])
+    for k in range(N):
+        k1 = greenhouse_model(k, x0, u0)
+        k2 = greenhouse_model(k, x0 + dt / 2 * k1, u0)
+        k3 = greenhouse_model(k, x0 + dt / 2 * k2, u0)
+        k4 = greenhouse_model(k, x0 + dt * k3, u0)
+        x_next = x0 + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        x0 = x_next
 
     # Implement Runge-Kutta 4 integrator manually 😱
     for k in range(N):
