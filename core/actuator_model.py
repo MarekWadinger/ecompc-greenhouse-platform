@@ -63,7 +63,7 @@ class SimpleHeater(Actuator):
     Examples:
     >>> max_act = 1000  # Maximum heating power in watts
     >>> heater = SimpleHeater(max_act)
-    >>> heater.transform_one(50)
+    >>> heater.signal_to_actuation(50)
     500.0
     """
 
@@ -82,7 +82,7 @@ class SimpleVentilation(Actuator):
     Examples:
     >>> max_flow = 1000  # Maximum airflow in m^3/s
     >>> ventilation = SimpleVentilation(max_flow)
-    >>> ventilation.transform_one(50)
+    >>> ventilation.signal_to_actuation(50)
     500.0
     """
 
