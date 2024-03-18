@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 import casadi as ca
 
+
 class Heater:
     """Heater model interface
 
@@ -29,7 +30,7 @@ class SimpleHeater(Heater):
         self.max_power = max_power  # Maximum heating power in watts
 
     def transform_one(self, signal: float | ca.MX) -> float | ca.MX:
-         # Ensure signal is within the range of 0 to 100
+        # Ensure signal is within the range of 0 to 100
         if isinstance(signal, ca.MX):
             signal = ca.if_else(signal < 0, 0, signal)
             signal = ca.if_else(signal > 100, 100, signal)
