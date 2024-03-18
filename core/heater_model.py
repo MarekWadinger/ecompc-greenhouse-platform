@@ -1,13 +1,16 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import casadi as ca
 
 
-class Heater:
+class Heater(ABC):
     """Heater model interface
 
     Interface for heater models
     """
+
+    def __init__(self, max_power):
+        self.max_power = max_power  # Maximum heating power in watts
 
     @abstractmethod
     def transform_one(self, signal: float) -> float:
@@ -21,7 +24,7 @@ class SimpleHeater(Heater):
 
     Examples:
     >>> max_power = 1000  # Maximum heating power in watts
-    >>> heater = Heater(max_power)
+    >>> heater = SimpleHeater(max_power)
     >>> heater.transform_one(50)
     500.0
     """
@@ -29,9 +32,11 @@ class SimpleHeater(Heater):
     def __init__(self, max_power):
         self.max_power = max_power  # Maximum heating power in watts
 
-    def transform_one(self, signal: float | ca.MX) -> float | ca.MX:
+    def transform_one(
+        self, signal: float | ca.GenericExpressionCommon
+    ) -> float | ca.MX:
         # Ensure signal is within the range of 0 to 100
-        if isinstance(signal, ca.MX):
+        if isinstance(signal, ca.GenericExpressionCommon):
             signal = ca.if_else(signal < 0, 0, signal)
             signal = ca.if_else(signal > 100, 100, signal)
         else:

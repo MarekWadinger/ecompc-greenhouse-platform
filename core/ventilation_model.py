@@ -1,13 +1,16 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import casadi as ca
 
 
-class Ventilation:
+class Ventilation(ABC):
     """Ventilation model interface
 
     Interface for Ventilation models
     """
+
+    def __init__(self, max_flow):
+        self.max_flow = max_flow  # Maximum flow in 1/s
 
     @abstractmethod
     def transform_one(self, signal: float) -> float:
@@ -21,17 +24,19 @@ class SimpleVentilation(Ventilation):
 
     Examples:
     >>> max_flow = 1000  # Maximum airflow in 1/s
-    >>> Ventilation = Ventilation(max_flow)
-    >>> Ventilation.transform_one(50)
+    >>> ventilation = SimpleVentilation(max_flow)
+    >>> ventilation.transform_one(50)
     500.0
     """
 
     def __init__(self, max_flow: float):
         self.max_flow = max_flow
 
-    def transform_one(self, signal: float | ca.MX) -> float | ca.MX:
+    def transform_one(
+        self, signal: float | ca.GenericExpressionCommon
+    ) -> float | ca.MX:
         # Ensure signal is within the range of 0 to 100
-        if isinstance(signal, ca.MX):
+        if isinstance(signal, ca.GenericExpressionCommon):
             signal = ca.if_else(signal < 0, 0, signal)
             signal = ca.if_else(signal > 100, 100, signal)
         else:
