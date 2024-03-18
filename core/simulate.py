@@ -2,6 +2,7 @@
 from inspect import signature
 from typing import Callable, Union
 
+import numpy as np
 from scipy.integrate import solve_ivp
 
 from core.generator import GenProt, validate_gen
@@ -14,7 +15,8 @@ def simulate(
     t_s: int = 1,
     x0: Union[list[float], None] = None,
     ref_gen: Union[GenProt, None] = None,
-) -> list[list]:
+    method: str = "RK45",
+) -> tuple:
     """Simulation of the system in the open-loop/closed-loop.
 
     Args:
@@ -63,14 +65,19 @@ def simulate(
         else:
             u_ = u[t]
 
-        x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,), method="RK45")
+        x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,), method=method)
         x_ode_prev = x_ode.y[:, -1]
 
         y_out.append(x_ode_prev)
         t_out.append(t)
         u_out.append(u_)
 
-    if ref_gen is not None:
-        return [t_out, y_out, u_out, y_ref]
+    t_out_ = np.array(t_out)
+    y_out_ = np.array(y_out)
+    u_out_ = np.array(u_out)
+    y_ref_ = np.array(y_ref)
 
-    return [t_out, y_out, u_out]
+    if ref_gen is not None:
+        return t_out_, y_out_, u_out_, y_ref_
+
+    return t_out_, y_out_, u_out_

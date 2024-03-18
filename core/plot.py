@@ -49,14 +49,14 @@ def plot_response(
     u_min: Union[list[float], None] = None,
     u_max: Union[list[float], None] = None,
     axs_: Union[np.ndarray, None] = None,
+    y_label: Union[list[str], None] = None,
+    u_label: Union[list[str], None] = None,
 ) -> np.ndarray:
     if axs_ is None:
         _, axs = plt.subplots(nrows=2, ncols=1, sharex=True)
     else:
         axs = axs_
-    axs[0].plot(
-        t_out, y_out, label=[r"$x_{\mathrm{sdw}}$", r"$x_{\mathrm{nsdw}}$"]
-    )
+    axs[0].plot(t_out, y_out, label=y_label)
     if y_ref:
         axs[0]._get_lines.set_prop_cycle(None)
         axs[0].plot(t_out, y_ref, label=r"$y_{\mathrm{ref}}$", linestyle=":")
@@ -68,11 +68,7 @@ def plot_response(
     axs[1].plot(
         t_out,
         u_out,
-        label=[
-            r"$u_{\mathrm{T}}$",
-            r"$u_{\mathrm{par}}$",
-            r"$u_{\mathrm{CO_2}}$",
-        ],
+        label=u_label,
     )
     if u_min is not None and u_max is not None:
         axs[1]._get_lines.set_prop_cycle(None)
@@ -91,16 +87,21 @@ def plot_response(
     return axs
 
 
-def plot_states(df: pd.DataFrame, axs: np.ndarray, set_ylabel: bool = False):
+def plot_states(
+    df: pd.DataFrame,
+    axs: np.ndarray,
+    set_ylabel: bool = True,
+    exclude: list[str] = [],
+):
     i = 0
     for column in df.columns:
-        if (
-            df[column].dtype == "float64"
-            and "x_" not in column
-            and "u_" not in column
-        ):
-            axs[i].plot(df[column])
-            if set_ylabel:
-                axs[i].set_ylabel(f"${format_str_(column)}$")
-            i += 1
+        if df[column].dtype == "float64":
+            if not isinstance(column, str) or (
+                isinstance(column, str)
+                and not any([excl in column for excl in exclude])
+            ):
+                axs[i].plot(df[column])
+                if set_ylabel:
+                    axs[i].set_ylabel(f"${format_str_(column)}$")
+                i += 1
     return axs

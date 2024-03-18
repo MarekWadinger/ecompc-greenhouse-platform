@@ -1,10 +1,14 @@
 import sys
 from pathlib import Path
+from typing import Union
 
+import casadi as ca
 import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
+from core.heater_model import SimpleHeater  # noqa: E402
 from core.lettuce_model import lettuce_growth_model  # noqa: E402
+from core.ventilation_model import SimpleVentilation  # noqa: E402
 
 # CONSTANTS
 Nz = 1.0
@@ -28,6 +32,7 @@ M_w = 0.018  # molar mass of water [kg/mol]
 M_c = 0.044  # molar mass of CO2 [kg/mol]
 M_carb = 0.03  # molar mass of CH2O [kg/mol]
 nu = 15.1e-6  # kinematic viscosity [m^2/s]
+rho_i = 1.2  # density of air [kg/m^3]
 rho_w = 1000.0  # density of water [kg/m^3]
 
 # Geometry
@@ -43,8 +48,15 @@ A_c_roof = 271.0  # Area of roof
 # Air characteristics
 ias = 0.5  # internal air speed [m/s]
 R_a_max = 30.0 / 3600.0  # ventilation air change rate [1/s]
-T_sp_vent = 25.0 + T_k  # Ventilation set-point
-Q_heater = 10000  # watts
+T_sp_vent = 25.0 + T_k  # Ventilation set-point [K]
+ventilation = SimpleVentilation(R_a_max)
+
+# Heater
+# Q_heater_max is computed as the mass of air we want to heat per second
+#  considering the heat capacity of air and the temperature difference
+Q_heater_max = (rho_i * V * (T_sp_vent - T_k) * R_a_max * c_i)  # watts
+# Q_heater_max = 10000.0  # watts
+heater = SimpleHeater(Q_heater_max)
 
 # Cover
 # Glass
@@ -219,12 +231,15 @@ def lamorturb(Gr, Re):
     return (Nu, Sh)
 
 
-def convection(d, A, T1, T2, ias, rho, c, C):
+def convection(d, A, T1, T2: Union[float, ca.MX], ias, rho, c, C):
     g = 9.81
     nu = 15.1e-6
     lam = 0.025
-
-    Gr = (g * d**3) / (T1 * nu**2) * abs(T1 - T2)
+    if isinstance(T2, ca.MX):
+        abs_diff_T = ca.fabs(T1 - T2)
+    else:
+        abs_diff_T = abs(T1 - T2)
+    Gr = (g * d**3) / (T1 * nu**2) * abs_diff_T
     Re = ias * d / nu
     (Nu, Sh) = lamorturb(Gr, Re)
 
@@ -265,9 +280,35 @@ def day(t):
     return day_new
 
 
-def model(t, z, climate):
-    # Values being calculated
+def model(
+    t,
+    z: tuple,
+    u: tuple,
+    climate: np.ndarray,
+) -> np.ndarray:
+    """Greenhouse model.
 
+    This function models the greenhouse system with
+
+    Args:
+        t: Elapsed time [s]
+        z: System states
+        u: System inputs
+        climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length. TODO: currently, climate data are expected to be sampled at second intervals. This should be changed to match the model sampling rate.
+
+    Returns:
+        np.ndarray: System state derivatives
+    """
+    dz_dt, __ = _model(t, z, u, climate)
+    return dz_dt
+
+
+def _model(
+    t,
+    z: tuple,
+    u: tuple,
+    climate: np.ndarray,
+) -> tuple[np.ndarray, dict]:
     T_c = z[0]
     T_i = z[1]
     T_v = z[2]
@@ -291,13 +332,22 @@ def model(t, z, climate):
     R_stem = z[20]
     x_sdw = z[21]
     x_nsdw = z[22]
+    perc_vent = u[0]
+    R_a = ventilation.transform_one(perc_vent)
+    # R_a = 0.005
+    # print("Ventilation rate", R_a)
+    perc_heater = u[1]
+    Q_heater = heater.transform_one(perc_heater)
+    # Q_heater = 10000.0
+    # print("Heating power", Q_heater)
 
     # External weather and dependent internal parameter values
-    n = int(np.ceil(t / deltaT))  # count
-    T_ext = climate[n, 0] + T_k  # External air temperature (K)
-    T_sk = climate[n, 1] + T_k  # External sky temperature (K)
-    wind_speed = climate[n, 2]  # External wind speed (m/s)
-    RH_e = climate[n, 3] / 100  # External relative humidity
+    # n = int(np.ceil(t / deltaT))  # count
+    t = int(t)
+    T_ext = climate[t, 0] + T_k  # External air temperature (K)
+    T_sk = climate[t, 1] + T_k  # External sky temperature (K)
+    wind_speed = climate[t, 2]  # External wind speed (m/s)
+    RH_e = climate[t, 3] / 100  # External relative humidity
     Cw_ext = RH_e * sat_conc(T_ext)  # External air moisture content
     p_w = C_w * R * T_i / M_w  # Partial pressure of water [Pa]
     rho_i = ((atm - p_w) * M_a + p_w * M_w) / (
@@ -336,7 +386,7 @@ def model(t, z, climate):
     (QV_i_c, QP_i_c, Nu_i_c) = convection(
         d_c, A_c, T_i, T_c, ias, rho_i, c_i, C_w
     )
-    QP_i_c = max(
+    QP_i_c = ca.fmax(
         QP_i_c, 0
     )  # assumed no evaporation from the cover, only condensation
 
@@ -345,7 +395,7 @@ def model(t, z, climate):
     (QV_i_f, QP_i_f, Nu_i_f) = convection(
         d_f, A_f, T_i, T_f, ias, rho_i, c_i, C_w
     )
-    QP_i_f = max(
+    QP_i_f = ca.fmax(
         QP_i_f, 0
     )  # assumed no evaporation from the floor, only condensation
 
@@ -375,10 +425,10 @@ def model(t, z, climate):
 
     ## Far-IR Radiation
 
-    A_vvf = min(LAI * p_v * A_f, p_v * A_f)
-    F_c_v = min((1 - F_c_f) * LAI, (1 - F_c_f))  # Cover to vegetation
-    F_c_m = max((1 - F_c_f) * (1 - LAI), 0)  # Cover to mat
-    F_m_c = max((1 - LAI), 0.0)  # Mat to cover
+    A_vvf = ca.fmin(LAI * p_v * A_f, p_v * A_f)
+    F_c_v = ca.fmin((1 - F_c_f) * LAI, (1 - F_c_f))  # Cover to vegetation
+    F_c_m = ca.fmax((1 - F_c_f) * (1 - LAI), 0)  # Cover to mat
+    F_m_c = ca.fmax((1 - LAI), 0.0)  # Mat to cover
     F_m_v = 1 - F_m_c  # Mat to vegetation
 
     # Cover to sky
@@ -467,23 +517,15 @@ def model(t, z, climate):
         Cd * crack_area * (2 * wind_pressure / rho_i) ** 0.5
     )  # Flow rate due to wind pressure
     Qs = (
-        Cd * crack_area * (2 * abs(stack_pressure_diff) / rho_i) ** 0.5
+        Cd * crack_area * (2 * ca.fabs(stack_pressure_diff) / rho_i) ** 0.5
     )  # Flow rate due to stack pressure
     Qt = (Qw**2 + Qs**2) ** 0.5  # Total flow rate
 
     total_air_flow = Qt * crack_length_total / crack_length
     R_a_min = total_air_flow / V
 
-    # Ventilation
-    DeltaT_vent = T_i - T_sp_vent
-    comp_dtv_low = DeltaT_vent > 0 and DeltaT_vent < 4
-    comp_dtv_high = DeltaT_vent >= 4
-    # RF: R_a for co2 & T_i
-    R_a = (
-        R_a_min
-        + comp_dtv_low * (R_a_max - R_a_min) / 4 * DeltaT_vent
-        + comp_dtv_high * (R_a_max - R_a_min)
-    )
+    # Ventilation account for disturbance
+    R_a = R_a_min + R_a
 
     QV_i_e = (
         R_a * V * rho_i * c_i * (T_i - T_ext)
@@ -521,10 +563,10 @@ def model(t, z, climate):
     QS_al_VIS = 0.0
 
     # Solar radiation incident on the cover
-    QS_tot_rNIR = 0.5 * SurfaceArea @ climate[n, 4:12]  # Direct
-    QS_tot_rVIS = 0.5 * SurfaceArea @ climate[n, 4:12]
-    QS_tot_fNIR = 0.5 * SurfaceArea @ climate[n, 12:20]  # Diffuse
-    QS_tot_fVIS = 0.5 * SurfaceArea @ climate[n, 12:20]
+    QS_tot_rNIR = 0.5 * SurfaceArea @ climate[t, 4:12]  # Direct
+    QS_tot_rVIS = 0.5 * SurfaceArea @ climate[t, 4:12]
+    QS_tot_fNIR = 0.5 * SurfaceArea @ climate[t, 12:20]  # Diffuse
+    QS_tot_fVIS = 0.5 * SurfaceArea @ climate[t, 12:20]
 
     # Transmitted solar radiation
     QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
@@ -659,7 +701,7 @@ def model(t, z, climate):
 
     QT_St = A_v * hL_v_i * (sat_conc(T_v) - C_w)  # J/s
 
-    QT_v_i = max(QT_St, 0)
+    QT_v_i = ca.fmax(QT_St, 0)
 
     ## Dehumidification
     MW_cc_i = 0  # No dehumidification included
@@ -686,7 +728,7 @@ def model(t, z, climate):
     # The number of moles of photosynthetically active photons per unit area of planted floor [mol{phot}/m^2/s]
     # J/s/(J/photon)/(photons/mol)/m^2 cf Vanthoor 2.3mumol(photons)/J
 
-    Gamma = max(
+    Gamma = ca.fmax(
         (c_Gamma * (T_v - T_k) / LAI + 20 * c_Gamma * (1 - 1 / LAI)), 0
     )  # The CO2 compensation point [mol{CO2}/mol{air}]
     k_switch = C_buf_max  # kg/m^2/s
@@ -777,27 +819,30 @@ def model(t, z, climate):
     )
 
     C_max_leaf = LAI_max / SLA
-    MC_leaf_prune = max(C_leaf - C_max_leaf, 0)
+    MC_leaf_prune = ca.fmax(C_leaf - C_max_leaf, 0)
 
     ## ODE equations
     # Heater control logic
-    # RF: Q_heating for T_i
-    Q_heating = 0.0  # Default [W]: heater is off
+    # RF: Q_heater for T_i
+    # Q_heating = 0.0  # Default [W]: heater is off
 
     # Heating term
     heater_switch_temp = 28.0 + T_k  # Adjust this temperature threshold
-    Q_heating = 0.0  # Default: heater is off
-    if T_i < heater_switch_temp:
-        Q_heating = (
-            20000.0  # Adjust this value [W] : power when the heater is on
-        )
+
+    # Delete these rows... Q_heating will be input arguments #HERE for Q heating
+    # Q_heater = 0.0  # Default: heater is off
+    # if T_i < heater_switch_temp:
+    #     Q_heater = (
+    #         20000.0  # Adjust this value [W] : power when the heater is on
+    #     )
+
     # Temperature components
     dT_c_dt = (1 / (A_c * cd_c)) * (
         QV_i_c + QP_i_c - QR_c_f - QR_c_v - QR_c_m + QV_e_c - QR_c_sk + QS_c
     )
 
     dT_i_dt = (1 / (V * rho_i * c_i)) * (
-        -QV_i_m - QV_i_v - QV_i_f - QV_i_c - QV_i_e - QV_i_p + QS_i + Q_heating
+        -QV_i_m - QV_i_v - QV_i_f - QV_i_c - QV_i_e - QV_i_p + QS_i + Q_heater
     )
 
     dT_v_dt = (1 / (c_v * A_v * msd_v)) * (
@@ -861,30 +906,33 @@ def model(t, z, climate):
         t, (x_sdw, x_nsdw), (T_i - T_k, u_par, u_co2)
     )
 
-    return np.array(
-        [
-            dT_c_dt,
-            dT_i_dt,
-            dT_v_dt,
-            dT_m_dt,
-            dT_p_dt,
-            dT_f_dt,
-            dT_s1_dt,
-            dT_s2_dt,
-            dT_s3_dt,
-            dT_s4_dt,
-            dT_vmean_dt,
-            dT_vsum_dt,
-            dC_w_dt,
-            dC_c_dt,
-            dC_buf_dt,
-            dC_fruit_dt,
-            dC_leaf_dt,
-            dC_stem_dt,
-            dR_fruit_dt,
-            dR_leaf_dt,
-            dR_stem_dt,
-            dx_sdw_dt,
-            dx_nsdw_dt,
-        ]
+    return (
+        np.array(
+            [
+                dT_c_dt,
+                dT_i_dt,
+                dT_v_dt,
+                dT_m_dt,
+                dT_p_dt,
+                dT_f_dt,
+                dT_s1_dt,
+                dT_s2_dt,
+                dT_s3_dt,
+                dT_s4_dt,
+                dT_vmean_dt,
+                dT_vsum_dt,
+                dC_w_dt,
+                dC_c_dt,
+                dC_buf_dt,
+                dC_fruit_dt,
+                dC_leaf_dt,
+                dC_stem_dt,
+                dR_fruit_dt,
+                dR_leaf_dt,
+                dR_stem_dt,
+                dx_sdw_dt,
+                dx_nsdw_dt,
+            ]
+        ),
+        locals(),
     )

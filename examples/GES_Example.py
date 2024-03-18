@@ -98,46 +98,35 @@ z = [
     x_nsdw,
 ]
 
-## Interpolate weather data
+climdat = get_weather_data(
+    latitude=52.52,  # Latitude of the location in degrees
+    longitude=13.41,  # Longitude of the location in degrees
+    tilt=[
+        90,
+        40,
+        90,
+        40,
+        90,
+        40,
+        90,
+        40,
+    ],  # Tilt angle of the surface in degrees
+    azimuth=[
+        "NE",
+        "NE",
+        "SE",
+        "SE",
+        "SW",
+        "SW",
+        "NW",
+        "NW",
+    ],  # Azimuth angle of the surface in degrees (South facing)
+    frequency="hourly",
+    forecast=3,
+)
+climate = climdat.asfreq("1s").interpolate(method="time").values
 
 if __name__ == "__main__":
-    # climdat = np.genfromtxt(
-    #     "examples/data/SampleWeather.csv", delimiter=","
-    # )  # Hourly data
-    # len_climdat = len(climdat)
-    # # Convert to seconds
-    # mult = np.linspace(1, len_climdat, int((len_climdat - 1) * 3600 / deltaT))
-    # y_interp = interp1d(climdat[:, 0], climdat[:, 1:21], axis=0)
-
-    # climate = y_interp(mult)
-    climdat = get_weather_data(
-        latitude=52.52,  # Latitude of the location in degrees
-        longitude=13.41,  # Longitude of the location in degrees
-        tilt=[
-            90,
-            40,
-            90,
-            40,
-            90,
-            40,
-            90,
-            40,
-        ],  # Tilt angle of the surface in degrees
-        azimuth=[
-            "NE",
-            "NE",
-            "SE",
-            "SE",
-            "SW",
-            "SW",
-            "NW",
-            "NW",
-        ],  # Azimuth angle of the surface in degrees (South facing)
-        frequency="hourly",
-        forecast=2,
-    )
-    climate = climdat.asfreq("1s").interpolate(method="time").values
-
     ## Simulate over time
 
     tic = time.time()
@@ -148,8 +137,11 @@ if __name__ == "__main__":
     tval = np.linspace(0, tf, tf + 1)
 
     # Use solve_ivp with 'BDF' stiff solver to solve the ODEs
-    params = [climate]
+    perc_vent = 100.
+    perc_heater = 100.
+    params = [(perc_vent, perc_heater), climate]
 
+    # TODO: FIX: for some reason, the simulation requires longer weather forecast than the actual simulation time
     output = solve_ivp(
         model, t, z, method="BDF", t_eval=tval, rtol=1e-5, args=params
     )
@@ -183,7 +175,9 @@ if __name__ == "__main__":
         .T
     )
     clim_stat = clim_stat.unstack()
-    clim_stat.columns = ['_'.join(col).strip() for col in clim_stat.columns.values]
+    clim_stat.columns = [
+        "_".join(col).strip() for col in clim_stat.columns.values
+    ]
     clim_raw.plot(ax=ax)
     clim_stat.plot(ax=ax)
     fig.savefig("examples/results/weather.png", format="png", dpi=dpi)
