@@ -137,9 +137,9 @@ if __name__ == "__main__":
     tval = np.linspace(0, tf, tf + 1)
 
     # Use solve_ivp with 'BDF' stiff solver to solve the ODEs
-    R_a_max = 3600
-    Q_heater = 20000
-    params = [(R_a_max, Q_heater), climate]
+    perc_vent = 100.
+    perc_heater = 100.
+    params = [(perc_vent, perc_heater), climate]
 
     # TODO: FIX: for some reason, the simulation requires longer weather forecast than the actual simulation time
     output = solve_ivp(

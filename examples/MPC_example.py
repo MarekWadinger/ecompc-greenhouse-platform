@@ -29,25 +29,23 @@ if __name__ == "__main__":
     Ts = 60  # TODO choose appropriate step size
     Q = np.eye(23)
     R = np.eye(2)
-    u_min = [0, 0.0009]
-    u_max = [20000, 30 / 3600]
+    u_min = [0.0, 0.0]
+    u_max = [100.0, 100.0]
     x_min = [0.0] * 23
     x_max = [10000.0] * 23
     x0 = z
 
     dt = Ts
 
-
-    def f(x, u):
-        return vertcat(*model(0, vertsplit(x), vertsplit(u), climate))
-
+    def f(k, x, u):
+        return vertcat(*model(k, vertsplit(x), vertsplit(u), climate))
 
     # Implement Runge-Kutta 4 integrator manually 😱
     for k in range(N):
-        k1 = f(X[:, k], U[:, k])
-        k2 = f(X[:, k] + dt / 2 * k1, U[:, k])
-        k3 = f(X[:, k] + dt / 2 * k2, U[:, k])
-        k4 = f(X[:, k] + dt * k3, U[:, k])
+        k1 = f(k, X[:, k], U[:, k])
+        k2 = f(k, X[:, k] + dt / 2 * k1, U[:, k])
+        k3 = f(k, X[:, k] + dt / 2 * k2, U[:, k])
+        k4 = f(k, X[:, k] + dt * k3, U[:, k])
         x_next = X[:, k] + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
         for state in range(X.shape[0]):
             opti.subject_to(X[state, k + 1] == x_next[state])

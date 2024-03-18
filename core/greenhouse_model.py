@@ -6,7 +6,9 @@ import casadi as ca
 import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
+from core.heater_model import SimpleHeater  # noqa: E402
 from core.lettuce_model import lettuce_growth_model  # noqa: E402
+from core.ventilation_model import SimpleVentilation  # noqa: E402
 
 # CONSTANTS
 Nz = 1.0
@@ -30,6 +32,7 @@ M_w = 0.018  # molar mass of water [kg/mol]
 M_c = 0.044  # molar mass of CO2 [kg/mol]
 M_carb = 0.03  # molar mass of CH2O [kg/mol]
 nu = 15.1e-6  # kinematic viscosity [m^2/s]
+rho_i = 1.2  # density of air [kg/m^3]
 rho_w = 1000.0  # density of water [kg/m^3]
 
 # Geometry
@@ -45,8 +48,15 @@ A_c_roof = 271.0  # Area of roof
 # Air characteristics
 ias = 0.5  # internal air speed [m/s]
 R_a_max = 30.0 / 3600.0  # ventilation air change rate [1/s]
-T_sp_vent = 25.0 + T_k  # Ventilation set-point
-Q_heater = 10000  # watts
+T_sp_vent = 25.0 + T_k  # Ventilation set-point [K]
+ventilation = SimpleVentilation(R_a_max)
+
+# Heater
+# Q_heater_max is computed as the mass of air we want to heat per second
+#  considering the heat capacity of air and the temperature difference
+Q_heater_max = (rho_i * V * (T_sp_vent - T_k) * R_a_max * c_i)  # watts
+# Q_heater_max = 10000.0  # watts
+heater = SimpleHeater(Q_heater_max)
 
 # Cover
 # Glass
@@ -322,9 +332,14 @@ def _model(
     R_stem = z[20]
     x_sdw = z[21]
     x_nsdw = z[22]
-
-    R_a_max = u[0]
-    Q_heater = u[1]
+    perc_vent = u[0]
+    R_a = ventilation.transform_one(perc_vent)
+    # R_a = 0.005
+    # print("Ventilation rate", R_a)
+    perc_heater = u[1]
+    Q_heater = heater.transform_one(perc_heater)
+    # Q_heater = 10000.0
+    # print("Heating power", Q_heater)
 
     # External weather and dependent internal parameter values
     # n = int(np.ceil(t / deltaT))  # count
@@ -509,18 +524,8 @@ def _model(
     total_air_flow = Qt * crack_length_total / crack_length
     R_a_min = total_air_flow / V
 
-    # Ventilation
-    DeltaT_vent = T_i - T_sp_vent
-    comp_dtv_low = ca.logic_and(DeltaT_vent > 0, DeltaT_vent < 4)
-    comp_dtv_high = DeltaT_vent >= 4
-
-    # Here R_a air-flow value, this will be as input argument
-    # RF: R_a for co2 & T_i
-    R_a = (
-        R_a_min
-        + comp_dtv_low * (R_a_max - R_a_min) / 4 * DeltaT_vent
-        + comp_dtv_high * (R_a_max - R_a_min)
-    )
+    # Ventilation account for disturbance
+    R_a = R_a_min + R_a
 
     QV_i_e = (
         R_a * V * rho_i * c_i * (T_i - T_ext)
