@@ -67,9 +67,9 @@ def simulate(
             u_ = u[t]
 
         if c is not None:
-            x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,c,), method="RK45")
+            x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,c,), method=method)
         else:
-            x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,), method="RK45")
+            x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,), method=method)
         x_ode_prev = x_ode.y[:, -1]
 
         y_out.append(x_ode_prev)
