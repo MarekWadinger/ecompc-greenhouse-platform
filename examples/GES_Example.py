@@ -54,20 +54,9 @@ T_s1_0 = 12.0 + T_k  # Temperature of soil layer 1 [K]
 T_s2_0 = 12.0 + T_k  # Temperature of soil layer 2 [K]
 T_s3_0 = 12.0 + T_k  # Temperature of soil layer 3 [K]
 T_s4_0 = 11.0 + T_k  # Temperature of soil layer 4 [K]
-#
-T_vmean_0 = 12.0 + T_k  # 24 hour mean vegetation temperature [K]
-T_vsum_0 = 0  # Vegetation temperature sum [degC]
-#
+
 C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
 C_c_0 = 7.5869e-4  # CO_2 density
-#
-C_buf_0 = 0.01  # Mass of carbohydrate in buffer per unit per unit area of cultivated floor [kg/m^2]
-C_fruit_0 = 0.001  # Mass of carbohydrate in fruit per unit per unit area of cultivated floor [kg/m^2]
-C_leaf_0 = 0.01  # Mass of carbohydrate in leaves per unit per unit area of cultivated floor [kg/m^2]
-C_stem_0 = 0.01  # Mass of carbohydrate in stem per unit per unit area of cultivated floor [kg/m^2]
-R_fruit_0 = 0.0  # Relative growth rate of fruit averaged over 5 days [1/s]
-R_leaf_0 = 0.0  # Relative growth rate of leaf averaged over 5 days [1/s]
-R_stem_0 = 0.0  # Relative growth rate of stem averaged over 5 days [1/s]
 
 x_sdw = 0.5  # Structural dry weight of the plant [kg/m^2]
 x_nsdw = 2.1  # Non-structural dry weight of the plant [kg/m^2]
@@ -83,61 +72,41 @@ z = [
     T_s2_0,
     T_s3_0,
     T_s4_0,
-    T_vmean_0,
-    T_vsum_0,
     C_w_0,
     C_c_0,
-    C_buf_0,
-    C_fruit_0,
-    C_leaf_0,
-    C_stem_0,
-    R_fruit_0,
-    R_leaf_0,
-    R_stem_0,
     x_sdw,
     x_nsdw,
 ]
 
-## Interpolate weather data
+climdat = get_weather_data(
+    latitude=52.52,  # Latitude of the location in degrees
+    longitude=13.41,  # Longitude of the location in degrees
+    tilt=[
+        90,
+        40,
+        90,
+        40,
+        90,
+        40,
+        90,
+        40,
+    ],  # Tilt angle of the surface in degrees
+    azimuth=[
+        "NE",
+        "NE",
+        "SE",
+        "SE",
+        "SW",
+        "SW",
+        "NW",
+        "NW",
+    ],  # Azimuth angle of the surface in degrees (South facing)
+    frequency="hourly",
+    forecast=3,
+)
+climate = climdat.asfreq("1s").interpolate(method="time").values
 
 if __name__ == "__main__":
-    # climdat = np.genfromtxt(
-    #     "examples/data/SampleWeather.csv", delimiter=","
-    # )  # Hourly data
-    # len_climdat = len(climdat)
-    # # Convert to seconds
-    # mult = np.linspace(1, len_climdat, int((len_climdat - 1) * 3600 / deltaT))
-    # y_interp = interp1d(climdat[:, 0], climdat[:, 1:21], axis=0)
-
-    # climate = y_interp(mult)
-    climdat = get_weather_data(
-        latitude=52.52,  # Latitude of the location in degrees
-        longitude=13.41,  # Longitude of the location in degrees
-        tilt=[
-            90,
-            40,
-            90,
-            40,
-            90,
-            40,
-            90,
-            40,
-        ],  # Tilt angle of the surface in degrees
-        azimuth=[
-            "NE",
-            "NE",
-            "SE",
-            "SE",
-            "SW",
-            "SW",
-            "NW",
-            "NW",
-        ],  # Azimuth angle of the surface in degrees (South facing)
-        frequency="hourly",
-        forecast=2,
-    )
-    climate = climdat.asfreq("1s").interpolate(method="time").values
-
     ## Simulate over time
 
     tic = time.time()
@@ -148,8 +117,11 @@ if __name__ == "__main__":
     tval = np.linspace(0, tf, tf + 1)
 
     # Use solve_ivp with 'BDF' stiff solver to solve the ODEs
-    params = [climate]
+    perc_vent = 100.
+    perc_heater = 100.
+    params = [(perc_vent, perc_heater), climate]
 
+    # TODO: FIX: for some reason, the simulation requires longer weather forecast than the actual simulation time
     output = solve_ivp(
         model, t, z, method="BDF", t_eval=tval, rtol=1e-5, args=params
     )
@@ -164,7 +136,7 @@ if __name__ == "__main__":
     ## Plot results
 
     Tout_i = np.transpose(output.y[1, :] - T_k)  # [°C]
-    Ccout = np.transpose(output.y[13, :])
+    Ccout = np.transpose(output.y[11, :])
 
     ## Temperatures
 
@@ -183,7 +155,9 @@ if __name__ == "__main__":
         .T
     )
     clim_stat = clim_stat.unstack()
-    clim_stat.columns = ['_'.join(col).strip() for col in clim_stat.columns.values]
+    clim_stat.columns = [
+        "_".join(col).strip() for col in clim_stat.columns.values
+    ]
     clim_raw.plot(ax=ax)
     clim_stat.plot(ax=ax)
     fig.savefig("examples/results/weather.png", format="png", dpi=dpi)
@@ -207,9 +181,9 @@ if __name__ == "__main__":
     fig.savefig("examples/results/co2.png", format="png", dpi=dpi)
 
     ## Salaattia
-    dx_sdw_dt = np.transpose(output.y[21, :])
+    dx_sdw_dt = np.transpose(output.y[-2, :])
 
-    dx_nsdw_dt = np.transpose(output.y[22, :])
+    dx_nsdw_dt = np.transpose(output.y[-1, :])
 
     fig, ax = plt.subplots()
     ax.plot(time, dx_sdw_dt, color="b", label="Structural Dry Weight")

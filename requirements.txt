@@ -1,6 +1,11 @@
 casadi~=3.6.3
+do-mpc~=4.6.4
 ipykernel~=6.26.0
 matplotlib~=3.8.1
 numpy~=1.26.1
 pandas~=2.1.2
+pvlib~=0.10.3
+requests~=2.31.0
+requests_cache~=1.2.0
+retry-requests~=2.0.0
 scipy~=1.11.3
