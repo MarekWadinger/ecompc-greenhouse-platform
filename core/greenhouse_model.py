@@ -6,9 +6,8 @@ import casadi as ca
 import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
-from core.heater_model import SimpleHeater  # noqa: E402
+from core.actuator_model import SimpleHeater, SimpleVentilation  # noqa: E402
 from core.lettuce_model import get_f_resp, lettuce_growth_model  # noqa: E402
-from core.ventilation_model import SimpleVentilation  # noqa: E402
 
 # CONSTANTS
 Nz = 1.0
@@ -47,15 +46,14 @@ A_c_roof = 271.0  # Area of roof
 
 # Air characteristics
 ias = 0.5  # internal air speed [m/s]
-R_a_max = 30.0 / 3600.0  # ventilation air change rate [1/s]
+R_a_max = V / 3600.0  # ventilation air change rate [m^3/s]
 T_sp_vent = 25.0 + T_k  # Ventilation set-point [K]
 ventilation = SimpleVentilation(R_a_max)
 
 # Heater
 # Q_heater_max is computed as the mass of air we want to heat per second
 #  considering the heat capacity of air and the temperature difference
-Q_heater_max = rho_i * V * (T_sp_vent - T_k) * R_a_max * c_i  # watts
-# Q_heater_max = 10000.0  # watts
+Q_heater_max = rho_i * (T_sp_vent - T_k) * R_a_max * c_i  # watts
 heater = SimpleHeater(Q_heater_max)
 
 # Cover
@@ -329,9 +327,9 @@ def _model(
     x_sdw = z[12]
     x_nsdw = z[13]
     perc_vent = u[0]
-    R_a = ventilation.transform_one(perc_vent)
+    R_a = ventilation.signal_to_actuation(perc_vent)
     perc_heater = u[1]
-    Q_heater = heater.transform_one(perc_heater)
+    Q_heater = heater.signal_to_actuation(perc_heater)
 
     # External weather and dependent internal parameter values
     # n = int(np.ceil(t / deltaT))  # count
@@ -504,7 +502,7 @@ def _model(
     R_a_min = total_air_flow / V
 
     # Ventilation account for disturbance
-    R_a = R_a_min + R_a
+    R_a = R_a_min + R_a / V
 
     QV_i_e = (
         R_a * V * rho_i * c_i * (T_i - T_ext)
