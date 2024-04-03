@@ -1,4 +1,5 @@
 """Simulation of the system."""
+
 from inspect import signature
 from typing import Callable, Union
 
@@ -14,9 +15,9 @@ def simulate(
     sim_time: int = 100,
     t_s: int = 1,
     x0: Union[list[float], None] = None,
-    c: tuple[float, float, float, float, float] = None,
     ref_gen: Union[GenProt, None] = None,
     method: str = "RK45",
+    **kwargs,
 ) -> tuple:
     """Simulation of the system in the open-loop/closed-loop.
 
@@ -65,11 +66,9 @@ def simulate(
             u_ = u(**locals())
         else:
             u_ = u[t]
-
-        if c is not None:
-            x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,c,), method=method)
-        else:
-            x_ode = solve_ivp(system, tspan, x_ode_prev, args=(u_,), method=method)
+        x_ode = solve_ivp(
+            system, tspan, x_ode_prev, args=(u_, kwargs), method=method
+        )
         x_ode_prev = x_ode.y[:, -1]
 
         y_out.append(x_ode_prev)
