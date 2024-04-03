@@ -57,7 +57,7 @@ def plot_response(
     else:
         axs = axs_
     axs[0].plot(t_out, y_out, label=y_label)
-    if y_ref:
+    if y_ref is not None:
         axs[0]._get_lines.set_prop_cycle(None)
         axs[0].plot(t_out, y_ref, label=r"$y_{\mathrm{ref}}$", linestyle=":")
     if axs_ is None:

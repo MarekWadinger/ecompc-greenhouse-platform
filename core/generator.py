@@ -1,12 +1,12 @@
 """Generator functions for the simulation."""
+
 from typing import Protocol, Union
 
 import numpy as np
 
 
 class GenProt(Protocol):
-    def __name__(self) -> str:
-        ...
+    def __name__(self) -> str: ...
 
     def __call__(
         self,
@@ -14,8 +14,7 @@ class GenProt(Protocol):
         *,
         u_min: Union[list[float], float] = ...,
         u_max: Union[list[float], float] = ...,
-    ) -> Union[list[float], float]:
-        ...
+    ) -> Union[list[float], float]: ...
 
 
 def gen_step(

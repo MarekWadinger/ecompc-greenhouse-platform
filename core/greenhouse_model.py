@@ -143,7 +143,9 @@ E_j = 37.0e3  # activation energy for J_pot calculation [J/mol]
 heat_phot = 3.6368e-19  # conversion rate from incident energy to number of photons [num{photons}/J]
 eta = 0.67  # conversion factor from CO2 in the air to CO2 in the stomata [-]
 s_airbuf_buf = 5.0e2  # differential switch function slope for maximum buffer capacity [m^2/kg]
-s_buforg_buf = -5.0e3  # differential switch function slope for minimum buffer capacity [m^2/kg]
+s_buforg_buf = (
+    -5.0e3
+)  # differential switch function slope for minimum buffer capacity [m^2/kg]
 s_min_T = -0.8690  # differential switch function slope for minimum photosynthesis instantaneous temperature [1/degC]
 s_max_T = 0.5793  # differential switch function slope for maximum photosynthesis instantaneous temperature [1/degC]
 s_min_T24 = -1.1587  # differential switch function slope for minimum photosynthesis mean 24 hour temperature [1/degC]
