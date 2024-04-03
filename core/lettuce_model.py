@@ -1,4 +1,5 @@
 """Lettuce Growth Model"""
+
 from numpy import exp
 
 # CONSTANTS
@@ -7,9 +8,9 @@ from numpy import exp
 # [g g^{-1}] ratio of molecular weight of CH_2O to CO_2
 C_CH2O = 30 / 44
 # [g g^{-1}] Penning de Vries et al. (1974)
-C_YF = 0.8
+C_YF = 0.8  # plant grow influencing
 # [s^{-1}] Van Holsteijn (1981)
-C_GR_MAX = 5e-6
+C_GR_MAX = 5e-6  # plant grow influencing
 # [-] (0.5 - 1.) Thornley & Hurd (1974); (1.) Sweeney et al. (1981)
 C_GAMMA = 1.1981
 # [-] Sweeney et al. (1981)
@@ -23,9 +24,9 @@ C_Q10_RESP = 2.0
 # [-] Lorenz & Wiebe, 1980; Sweeney et al., 1981
 C_TAU = 0.15
 # [-] (0.9 and 0.3 for planophile and erectophile) Goudriaan & Monteith, 1990
-C_K = 0.9
+C_K = 0.9  # plant grow influencing
 # [g^{-1} m^{-2}] Lorenz & Wiebe (1980)
-C_LAR = 75e-3
+C_LAR = 75e-3  # plant grow influencing
 # [g m^{-3}] temperature 15 C and pressure 101.3 kPa
 C_OMEGA = 1.83e-3
 # [ppm] CO_2 compensation point at 20 C (Goudriaan et al. 1985)
@@ -33,7 +34,7 @@ C_GGAMMA = 40
 # [-] CO_2 compensation point sensitivity to temp (Goudriaan et al.1985)
 C_Q10_GGAMMA = 2
 # [g J^{-1}] light use efficiency (Goudriaan et al. 1985)
-C_EPSILON = 17e-6
+C_EPSILON = 17e-6  # plant grow influencing
 # [m s^{-1}] boundary layer conductance (Stanghellini et al.)
 G_BND = 0.00071987
 # [m s^{-1}] stomatal resistance (Stanghellini et al. 1987)
@@ -47,9 +48,19 @@ C_CAR3 = -2.64e-3
 
 
 # FUNCTIONS
+def get_default_constants(filter: list = []):
+    consts = {key: value for key, value in globals().items() if key.isupper()}
+    if filter:
+        return {key: value for key, value in consts.items() if key in filter}
+    return consts
+
+
 # # Dynamic Behavior Models
 def lettuce_growth_model(
-    _: int, x: tuple[float, float], u: tuple[float, float, float]
+    _: int,
+    x: tuple[float, float],
+    u: tuple[float, float, float],
+    c: dict[str, float] = {},
 ) -> tuple[float, float]:
     """Overall dynamic growth model.
 
@@ -66,29 +77,84 @@ def lettuce_growth_model(
     >>> lettuce_growth_model(1, (10, 10), (25, 0, 400))
     (2.8772827989339694e-05, -3.9089534986674615e-05)
     """
-    dx_sdw_dt, dx_nsdw_dt, __ = _lettuce_growth_model(_, x, u)
+    dx_sdw_dt, dx_nsdw_dt, __ = _lettuce_growth_model(_, x, u, **c)
     return dx_sdw_dt, dx_nsdw_dt
 
 
 def _lettuce_growth_model(
-    _: int, x: tuple[float, float], u: tuple[float, float, float]
+    _: int, x: tuple[float, float], u: tuple[float, float, float], **kwargs
 ) -> tuple[float, float, dict]:
     """Overall dynamic growth model with states."""
     x_sdw, x_nsdw = x
     u_T, u_par, u_co2 = u
 
-    r_gr = get_r_gr(x_sdw, x_nsdw, u_T)
+    # Overwrite default constants
+    consts = get_default_constants()
+    consts.update(kwargs)
 
-    gamma = get_ggamma(u_T)
-    epsilon = get_epsilon(u_co2, gamma)
-    g_co2 = get_g_co2(get_g_car(u_T))
-    f_phot_max = get_f_phot_max(u_par, u_co2, epsilon, g_co2, gamma)
-    f_phot = get_f_phot(x_sdw, f_phot_max)
+    r_gr = get_r_gr(
+        x_sdw,
+        x_nsdw,
+        u_T,
+        consts["C_GR_MAX"],
+        consts["C_GAMMA"],
+        consts["C_Q10_GR"],
+    )
 
-    f_resp = get_f_resp(x_sdw, u_T)
+    gamma = get_ggamma(
+        u_T,
+        consts["C_GAMMA"],
+        consts["C_Q10_GGAMMA"],
+    )
+    epsilon = get_epsilon(
+        u_co2,
+        gamma,
+        consts["C_EPSILON"],
+    )
+    g_co2 = get_g_co2(
+        get_g_car(
+            u_T,
+            consts["C_CAR1"],
+            consts["C_CAR2"],
+            consts["C_CAR3"],
+        ),
+        consts["G_BND"],
+        consts["G_STM"],
+    )
+    f_phot_max = get_f_phot_max(
+        u_par,
+        u_co2,
+        epsilon,
+        g_co2,
+        gamma,
+        consts["C_OMEGA"],
+    )
+    f_phot = get_f_phot(
+        x_sdw,
+        f_phot_max,
+        consts["C_K"],
+        consts["C_LAR"],
+        consts["C_TAU"],
+    )
+
+    f_resp = get_f_resp(
+        x_sdw,
+        u_T,
+        consts["C_RESP_SHT"],
+        consts["C_TAU"],
+        consts["C_RESP_RT"],
+        consts["C_Q10_RESP"],
+    )
 
     dx_sdw_dt = predict_x_sdw(x_sdw, r_gr)
-    dx_nsdw_dt = predict_x_nsdw(x_sdw, r_gr, f_phot, f_resp)
+    dx_nsdw_dt = predict_x_nsdw(
+        x_sdw,
+        r_gr,
+        f_phot,
+        f_resp,
+        consts["C_CH2O"],
+        consts["C_YF"],
+    )
     return dx_sdw_dt, dx_nsdw_dt, locals()
 
 
