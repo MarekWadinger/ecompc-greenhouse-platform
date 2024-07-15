@@ -3,8 +3,7 @@
 <!-- markdownlint-disable MD013 -->
 [![Python application](https://github.com/MarekWadinger/dynamic_opt_growth_model/actions/workflows/python-app.yml/badge.svg)](https://github.com/MarekWadinger/dynamic_opt_growth_model/actions/workflows/python-app.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Coverage Status](/reports/coverage-badge.svg)](https://htmlpreview.github.io/?https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/reports/coverage/report/index.html)
-[![Test Status](/reports/test-badge.svg)](https://htmlpreview.github.io/?https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/reports/junit/report/index.html)
+[![codecov](https://codecov.io/gh/MarekWadinger/dynamic_opt_growth_model/graph/badge.svg?token=UWBJ585H4J)](https://codecov.io/gh/MarekWadinger/dynamic_opt_growth_model)
 
 <!-- markdownlint-enable MD013 -->
 
