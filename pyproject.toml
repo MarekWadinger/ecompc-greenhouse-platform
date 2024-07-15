@@ -6,6 +6,9 @@ addopts = [
     "-ra",
     "-m not datasets and not slow",
     "--color=yes",
+    "--cov=.",
+    "--cov-report=xml:reports/coverage/coverage.xml",
+    "--cov-report=html:reports/coverage/report",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
