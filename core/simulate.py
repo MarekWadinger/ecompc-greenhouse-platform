@@ -67,7 +67,12 @@ def simulate(
         else:
             u_ = u[t]
         x_ode = solve_ivp(
-            system, tspan, x_ode_prev, args=(u_, kwargs), method=method
+            system,
+            tspan,
+            x_ode_prev,
+            args=(u_, kwargs),
+            method=method,
+            first_step=t_s,
         )
         x_ode_prev = x_ode.y[:, -1]
 

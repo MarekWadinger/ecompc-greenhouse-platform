@@ -301,7 +301,7 @@ def model(
         z: System states
         u: System inputs
         c: System parameters
-        climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length. TODO: currently, climate data are expected to be sampled at second intervals. This should be changed to match the model sampling rate.
+        climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length.
 
     Returns:
         np.ndarray: System state derivatives
