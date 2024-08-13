@@ -96,7 +96,7 @@ eps_s = 0.95  # far-IR emmittance of floor [-]
 rhoS_s = 0.5  # solar reflectance of floor [-]
 alphS_s = 0.5  # solar absorptance of floor [-]
 d_f = 0.5  # characteristic floor length [m]
-T_ss = 14.0 + T_k  # deep soil temperature [K]
+T_ss = 10.0 + T_k  # deep soil temperature [K]
 
 # Vegetation
 c_v = 4180.0  # heat capacity of vegetation [J/kgK]
@@ -289,7 +289,8 @@ def model(
     t,
     z: tuple,
     u: tuple,
-    climate: np.ndarray,
+    c: dict[str, float] = {},
+    climate: np.ndarray | None = None,
 ) -> np.ndarray:
     """Greenhouse model.
 
@@ -299,12 +300,13 @@ def model(
         t: Elapsed time [s]
         z: System states
         u: System inputs
+        c: System parameters
         climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length. TODO: currently, climate data are expected to be sampled at second intervals. This should be changed to match the model sampling rate.
 
     Returns:
         np.ndarray: System state derivatives
     """
-    dz_dt, __ = _model(t, z, u, climate)
+    dz_dt, __ = _model(t, z, u, climate, **c)
     return dz_dt
 
 
@@ -313,6 +315,7 @@ def _model(
     z: tuple,
     u: tuple,
     climate: np.ndarray,
+    **kwargs,
 ) -> tuple[np.ndarray, dict]:
     T_c = z[0]
     T_i = z[1]
@@ -321,13 +324,10 @@ def _model(
     T_p = z[4]
     T_f = z[5]
     T_s1 = z[6]
-    T_s2 = z[7]
-    T_s3 = z[8]
-    T_s4 = z[9]
-    C_w = z[10]
-    C_c = z[11]
-    x_sdw = z[12]
-    x_nsdw = z[13]
+    C_w = z[7]
+    C_c = z[8]
+    x_sdw = z[9]
+    x_nsdw = z[10]
     perc_vent = u[0]
     R_a = ventilation.signal_to_actuation(perc_vent)
     perc_heater = u[1]
@@ -474,13 +474,10 @@ def _model(
     ## Conduction
     # Conduction through floor
     QD_sf1 = conduction(A_f, lam_s[0], l_s[0], T_f, T_s1)
-    QD_s12 = conduction(A_f, lam_s[1], l_s[1], T_s1, T_s2)
-    QD_s23 = conduction(A_f, lam_s[2], l_s[2], T_s2, T_s3)
-    QD_s34 = conduction(A_f, lam_s[3], l_s[3], T_s3, T_s4)
-    QD_s45 = conduction(A_f, lam_s[4], l_s[4], T_s4, T_ss)
+    QD_s12 = conduction(A_f, lam_s[1], l_s[1], T_s1, T_ss)
 
     # Conduction mat to tray
-    QD_m_p = (A_m * lam_p / l_m) * (T_m - T_p)
+    QD_m_p = conduction(A_m, lam_p, l_m, T_m, T_p)
 
     ## Ventilation
     # Leakage (equations for orifice flow from Awbi, Ventilation of Buildings, Chapter 3)
@@ -718,9 +715,6 @@ def _model(
         QV_i_f + QP_i_f - QR_f_c - QR_f_p - QD_sf1 + QS_s_NIR
     )
     dT_s1_dt = (1 / (rhod_s[1] * c_s[1] * l_s[1] * A_f)) * (QD_sf1 - QD_s12)
-    dT_s2_dt = (1 / (rhod_s[2] * c_s[2] * l_s[2] * A_f)) * (QD_s12 - QD_s23)
-    dT_s3_dt = (1 / (rhod_s[3] * c_s[3] * l_s[3] * A_f)) * (QD_s23 - QD_s34)
-    dT_s4_dt = (1 / (rhod_s[4] * c_s[4] * l_s[4] * A_f)) * (QD_s34 - QD_s45)
 
     # Water vapour
     dC_w_dt = (
@@ -761,9 +755,6 @@ def _model(
                 dT_p_dt,
                 dT_f_dt,
                 dT_s1_dt,
-                dT_s2_dt,
-                dT_s3_dt,
-                dT_s4_dt,
                 dC_w_dt,
                 dC_c_dt,
                 dx_sdw_dt,

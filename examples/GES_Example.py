@@ -51,9 +51,6 @@ T_m_0 = 12.0 + T_k  # Growing medium temperature [K]
 T_p_0 = 12.0 + T_k  # Tray temperature [K]
 T_f_0 = 12.0 + T_k  # Floor temperature [K]
 T_s1_0 = 12.0 + T_k  # Temperature of soil layer 1 [K]
-T_s2_0 = 12.0 + T_k  # Temperature of soil layer 2 [K]
-T_s3_0 = 12.0 + T_k  # Temperature of soil layer 3 [K]
-T_s4_0 = 11.0 + T_k  # Temperature of soil layer 4 [K]
 
 C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
 C_c_0 = 7.5869e-4  # CO_2 density
@@ -69,9 +66,6 @@ z = [
     T_p_0,
     T_f_0,
     T_s1_0,
-    T_s2_0,
-    T_s3_0,
-    T_s4_0,
     C_w_0,
     C_c_0,
     x_sdw,
@@ -117,8 +111,8 @@ if __name__ == "__main__":
     tval = np.linspace(0, tf, tf + 1)
 
     # Use solve_ivp with 'BDF' stiff solver to solve the ODEs
-    perc_vent = 100.
-    perc_heater = 100.
+    perc_vent = 100.0
+    perc_heater = 100.0
     params = [(perc_vent, perc_heater), climate]
 
     # TODO: FIX: for some reason, the simulation requires longer weather forecast than the actual simulation time
