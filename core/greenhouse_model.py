@@ -346,7 +346,7 @@ def _model(
         R * T_i
     )  # Internal density of air [kg/m^3]
     # Let's assume all the bimass are leafs
-    LAI = SLA * x_sdw  # Leaf area index
+    LAI = ca.fmin(SLA * x_sdw, LAI_max)  # Leaf area index
     C_ce = (
         4.0e-4 * M_c * atm / (R * T_ext)
     )  # External carbon dioxide concentration [kg/m^3]
