@@ -279,18 +279,12 @@ def sat_conc(T):
     return a
 
 
-def day(t):
-    ## Day
-    day_new = np.ceil(t / 86400)
-    return day_new
-
-
 def model(
     t,
     z: tuple,
     u: tuple,
     c: dict[str, float] = {},
-    climate: np.ndarray | None = None,
+    climate: tuple | np.ndarray | None = None,
 ) -> np.ndarray:
     """Greenhouse model.
 
@@ -306,6 +300,8 @@ def model(
     Returns:
         np.ndarray: System state derivatives
     """
+    if climate is None:
+        raise ValueError("Climate information must be provided.")
     dz_dt, __ = _model(t, z, u, climate, **c)
     return dz_dt
 
@@ -314,7 +310,7 @@ def _model(
     t,
     z: tuple,
     u: tuple,
-    climate: np.ndarray,
+    climate: tuple | np.ndarray,
     **kwargs,
 ) -> tuple[np.ndarray, dict]:
     T_c = z[0]
@@ -335,11 +331,12 @@ def _model(
 
     # External weather and dependent internal parameter values
     # n = int(np.ceil(t / deltaT))  # count
-    t = int(t)
-    T_ext = climate[t, 0] + T_k  # External air temperature (K)
-    T_sk = climate[t, 1] + T_k  # External sky temperature (K)
-    wind_speed = climate[t, 2]  # External wind speed (m/s)
-    RH_e = climate[t, 3] / 100  # External relative humidity
+    if isinstance(climate, np.ndarray):
+        climate = tuple(climate[int(t), :])
+    T_ext = climate[0] + T_k  # External air temperature (K)
+    T_sk = climate[1] + T_k  # External sky temperature (K)
+    wind_speed = climate[2]  # External wind speed (m/s)
+    RH_e = climate[3] / 100  # External relative humidity
     Cw_ext = RH_e * sat_conc(T_ext)  # External air moisture content
     p_w = C_w * R * T_i / M_w  # Partial pressure of water [Pa]
     rho_i = ((atm - p_w) * M_a + p_w * M_w) / (
@@ -512,8 +509,17 @@ def _model(
     ##      Solar radiation
     # We first define the solar elevation angle that determines that absorption of solar radiation. Notation: r is direct radiation, f is diffuse radiation, whilst VIS and NIR stand for visible and near infra-red respectively.
 
-    gamma = np.deg2rad(
-        360.0 * (day(t) - 80.0) / 365.0
+    def deg2rad(x):
+        return x * np.pi / 180
+
+    def rad2deg(radians):
+        return radians * (180.0 / ca.pi)
+
+    def casadi_mod(a, b):
+        return a - b * ca.floor(a / b)
+
+    gamma = deg2rad(
+        360.0 * (ca.ceil(t / 86400) - 80.0) / 365.0
     )  # Year angle [rad] --- day counts from January 1st
     eqn_time = (
         -7.13 * np.cos(gamma)
@@ -521,27 +527,29 @@ def _model(
         - 0.69 * np.cos(2.0 * gamma)
         + 9.92 * np.sin(2.0 * gamma)
     )  # Equation of time [min]
-    az = np.deg2rad(
-        360.0 * ((t / (3600.0) % 24.0) + eqn_time / 60.0 - 12.0) / 24.0
+    az = deg2rad(
+        360.0
+        * (casadi_mod(t / (3600.0), 24.0) + eqn_time / 60.0 - 12.0)
+        / 24.0
     )  # Azimuth [rad]
-    delta = np.deg2rad(
+    delta = deg2rad(
         0.38 - 0.77 * np.cos(gamma) + 23.27 * np.cos(gamma)
     )  # Declination angle [rad]
-    lat = np.deg2rad(latitude)
+    lat = deg2rad(latitude)
     angler = np.arcsin(
         np.sin(lat) * np.sin(delta) + np.cos(lat) * np.cos(delta) * np.cos(az)
     )  # Angle of elevation [rad]
-    angle = np.rad2deg(angler)
+    angle = rad2deg(angler)
 
     # Radiation from artificial lighting
     QS_al_NIR = 0.0  # no artificial lighting
     QS_al_VIS = 0.0
 
     # Solar radiation incident on the cover
-    QS_tot_rNIR = 0.5 * SurfaceArea @ climate[t, 4:12]  # Direct
-    QS_tot_rVIS = 0.5 * SurfaceArea @ climate[t, 4:12]
-    QS_tot_fNIR = 0.5 * SurfaceArea @ climate[t, 12:20]  # Diffuse
-    QS_tot_fVIS = 0.5 * SurfaceArea @ climate[t, 12:20]
+    QS_tot_rNIR = 0.5 * SurfaceArea @ climate[4:12]  # Direct
+    QS_tot_rVIS = 0.5 * SurfaceArea @ climate[4:12]
+    QS_tot_fNIR = 0.5 * SurfaceArea @ climate[12:20]  # Diffuse
+    QS_tot_fVIS = 0.5 * SurfaceArea @ climate[12:20]
 
     # Transmitted solar radiation
     QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
@@ -671,7 +679,7 @@ def _model(
     MC_i_e = R_a * (C_c - C_ce)  # [kg/m^3/s]
 
     day_hour_c = (hour / 24 - np.floor(hour / 24)) * 24
-    track = day_hour_c > 6 and day_hour_c < 20
+    track = ca.logic_and(day_hour_c > 6, day_hour_c < 20)
     Value = (
         added_CO2 / Nz / 3600.0 / V
     )  # [kg/h / - / 3600 / m^3] -> [kg m^{-3} s^{-1}]
