@@ -60,8 +60,8 @@ def get_openmeteo(
             # "global_tilted_irradiance",
         ],
         "forecast_days": forecast,
-        "start_date": "",
-        "end_date": "",
+        "start_date": start_date,
+        "end_date": end_date,
     }
     responses = retry_session.get(url, params=params)
 
@@ -147,8 +147,18 @@ def get_irr_at_tilt_and_azimuth(
     if frequency == "current":
         date_time = pd.date_range(start=now, end=now, freq=freq)
     elif forecast is not None:
+        now = pd.Timestamp.now().normalize()
         end = now + pd.Timedelta(f"{forecast}D")
-        date_time = pd.date_range(start=now, end=end, freq=freq)
+        date_time = pd.date_range(
+            start=now, end=end, freq=freq, inclusive="left"
+        )
+    else:
+        # To align with the Open-Meteo API
+        if end_date is not None:
+            end_date_ = pd.to_datetime(end_date) + pd.DateOffset(days=1)
+        date_time = pd.date_range(
+            start=start_date, end=end_date_, freq=freq, inclusive="left"
+        )
 
     # Define location
     location = pvlib.location.Location(
