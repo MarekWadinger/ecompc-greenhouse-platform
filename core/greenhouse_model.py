@@ -46,13 +46,16 @@ A_c_roof = 271.0  # Area of roof
 
 # Air characteristics
 ias = 0.5  # internal air speed [m/s]
-R_a_max = V / 3600.0  # ventilation air change rate [m^3/s]
+ACH = 20  # air changes per hour
+R_a_max = V * ACH / 3600.0  # ventilation air change rate [m^3/s]
 T_sp_vent = 25.0 + T_k  # Ventilation set-point [K]
-ventilation = SimpleVentilation(R_a_max)
+ventilation = SimpleVentilation(R_a_max, power_per_unit=5)
 
 # Heater
 # Q_heater_max is computed as the mass of air we want to heat per second
 #  considering the heat capacity of air and the temperature difference
+# TODO: Scaling this value by 100 makes heater overly powerful and may kill the plant
+# TODO: Scaling this value by 100 makes the plant grow much faster
 Q_heater_max = rho_i * (T_sp_vent - T_k) * R_a_max * c_i  # watts
 heater = SimpleHeater(Q_heater_max)
 
@@ -481,10 +484,10 @@ def _model(
     wind_speed_H = wind_speed * c * H**a  # Wind speed at height H
     wind_pressure = (
         Cp * 0.5 * rho_i * wind_speed_H**2
-    )  # Equals DeltaP for wind pressure
+    )  # Equals DeltaP for wind pressure [Pa]
     stack_pressure_diff = (
         rho_i * g * H * (T_i - T_ext) / T_i
-    )  # DeltaP for stack pressure
+    )  # DeltaP for stack pressure [Pa]
 
     Qw = (
         Cd * crack_area * (2 * wind_pressure / rho_i) ** 0.5

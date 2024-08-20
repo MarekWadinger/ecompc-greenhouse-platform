@@ -10,22 +10,27 @@ class Actuator(ABC):
 
     Args:
         max_unit: Maximum reachable actuation [unit]
-        power_per_unit: Power per Actuation Unit [kWh/unit]
-        price_per_power: Price of Power [EUR/kWh]
-        co2_per_power: Carbon Intensity [gCO₂eq/kWh]
+        power_per_unit: Power per Actuation Unit [W/unit]
+        price_per_energy: Cost of Energy [EUR/kWh]
+        co2_per_energy: Carbon Intensity [gCO₂eq/kWh]
+        dt: Duration [s]
     """
 
     def __init__(
         self,
         max_unit: float,
-        power_per_unit: float = 1000.0,
-        price_per_power: float = 0.0612,
-        co2_per_power: float = 250.0,
+        power_per_unit: float = 1.0,
+        price_per_energy: float = 0.0612,
+        co2_per_energy: float = 250.0,
+        efficiency: float = 0.8,
+        dt: float = 1.0,
     ):
         self.max_unit = max_unit  # Maximum value of actuation
         self.power_per_unit = power_per_unit
-        self.price_per_power = price_per_power
-        self.co2_per_power = co2_per_power
+        self.price_per_energy = price_per_energy
+        self.co2_per_energy = co2_per_energy
+        self.efficiency = efficiency
+        self.dt = dt
 
     def signal_to_actuation(
         self, signal: float | ca.GenericExpressionCommon
@@ -42,17 +47,33 @@ class Actuator(ABC):
     def signal_to_power(
         self, signal: float | ca.GenericExpressionCommon
     ) -> float | ca.GenericExpressionCommon:
-        return self.signal_to_actuation(signal) * self.power_per_unit
+        return (
+            self.power_per_unit
+            * self.signal_to_actuation(signal)
+            / self.efficiency
+        )
 
-    def signal_to_price(
+    def signal_to_eur(
         self, signal: float | ca.GenericExpressionCommon
     ) -> float | ca.GenericExpressionCommon:
-        return self.signal_to_power(signal) * self.price_per_power
+        return (
+            self.price_per_energy
+            * self.signal_to_power(signal)
+            / 1000
+            * self.dt
+            / 3600
+        )
 
     def signal_to_co2(
         self, signal: float | ca.GenericExpressionCommon
     ) -> float | ca.GenericExpressionCommon:
-        return self.signal_to_power(signal) * self.co2_per_power
+        return (
+            self.co2_per_energy
+            * self.signal_to_power(signal)
+            / 1000
+            * self.dt
+            / 3600
+        )
 
 
 class SimpleHeater(Actuator):
@@ -86,7 +107,7 @@ class SimpleVentilation(Actuator):
     500.0
     """
 
-    def __init__(self, max_act, power_per_unit=5000):
+    def __init__(self, max_act, power_per_unit=10):
         super().__init__(
             max_act,
             power_per_unit,
