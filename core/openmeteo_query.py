@@ -1,6 +1,6 @@
 import warnings
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Sequence
 
 import pandas as pd
 import pvlib
@@ -95,8 +95,8 @@ def get_irr_at_tilt_and_azimuth(
     latitude: float,
     longitude: float,
     altitude: int,
-    tilt: float | int | list[float | int],
-    azimuth: float | int | str | list[float | int | str],
+    tilt: float | int | Sequence[float | int],
+    azimuth: float | int | str | Sequence[float | int | str],
     frequency: Literal["hourly", "minutely_15", "current"] = "current",
     forecast: int | None = None,
     start_date: str | None = None,
@@ -180,9 +180,9 @@ def get_irr_at_tilt_and_azimuth(
         dhi_ = dhi
 
     # Tilted surface radiation
-    if not isinstance(tilt, list):
+    if not isinstance(tilt, Sequence):
         tilt = [tilt]
-    if not isinstance(azimuth, list):
+    if not isinstance(azimuth, Sequence):
         azimuth = [azimuth]
     df_rad = pd.DataFrame()
     for t, a in zip(tilt, azimuth):
@@ -226,8 +226,8 @@ def sort_diffuse_last(df: pd.DataFrame) -> pd.DataFrame:
 def get_weather_data(
     latitude: float,
     longitude: float,
-    tilt: float | int | list[float | int],
-    azimuth: float | int | str | list[float | int | str],
+    tilt: float | int | Sequence[float | int],
+    azimuth: float | int | str | Sequence[float | int | str],
     frequency: Literal["hourly", "minutely_15", "current"] = "current",
     forecast: int | None = None,
     start_date: str | None = None,
@@ -284,8 +284,8 @@ if __name__ == "__main__":
     ]  # Azimuth angle of the surface in degrees (South facing)
     frequency: Literal["hourly", "minutely_15", "current"] = "hourly"
     forecast: int = 2
-    start_date: str = None
-    end_date: str = None
+    start_date = None
+    end_date = None
 
     df = get_weather_data(
         latitude,
