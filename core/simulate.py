@@ -5,6 +5,7 @@ from typing import Callable, Union
 
 import numpy as np
 from scipy.integrate import solve_ivp
+from tqdm import tqdm
 
 from core.generator import GenProt, validate_gen
 
@@ -33,7 +34,7 @@ def simulate(
     Returns:
         Simulation results for time, outputs and inputs
     """
-    t_out: list[int] = []
+    t_out: list[float] = []
     y_out: list[Union[list[float], float]] = []
     y_ref: list[Union[list[float], float]] = []
     u_out: list[Union[list[float], float]] = []
@@ -56,7 +57,7 @@ def simulate(
     if callable(u):
         validate_gen(u, **locals())
 
-    for t in range(sim_time):
+    for t in tqdm(range(0, sim_time * t_s - t_s, t_s)):
         tspan = [t, t + t_s]
 
         if ref_gen is not None:
@@ -77,7 +78,7 @@ def simulate(
         x_ode_prev = x_ode.y[:, -1]
 
         y_out.append(x_ode_prev)
-        t_out.append(t)
+        t_out.append(t / t_s)
         u_out.append(u_)
 
     t_out_ = np.array(t_out)
