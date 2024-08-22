@@ -58,19 +58,22 @@ C_c_0 = 7.5869e-4  # CO_2 density
 x_sdw = 0.72  # Structural dry weight of the plant [kg/m^2]
 x_nsdw = 2.7  # Non-structural dry weight of the plant [kg/m^2]
 
-z = [
-    T_c_0,
-    T_i_0,
-    T_v_0,
-    T_m_0,
-    T_p_0,
-    T_f_0,
-    T_s1_0,
-    C_w_0,
-    C_c_0,
-    x_sdw,
-    x_nsdw,
-]
+z = np.array(
+    [
+        T_c_0,
+        T_i_0,
+        T_v_0,
+        T_m_0,
+        T_p_0,
+        T_f_0,
+        T_s1_0,
+        C_w_0,
+        C_c_0,
+        x_sdw,
+        x_nsdw,
+    ],
+    dtype=float,
+)
 
 climdat = get_weather_data(
     latitude=52.52,  # Latitude of the location in degrees
