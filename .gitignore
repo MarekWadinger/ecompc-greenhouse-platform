@@ -15,8 +15,6 @@ cython_debug/
 
 # Data
 **/data/*
-!**/data/input/
-!**/data/output/
 
 # Distribution / packaging
 .Python
@@ -93,6 +91,7 @@ paho*
 plots/
 *.html
 *.pdf
+!publications/figures/*.pdf
 
 # MkDocs documentation
 /site
