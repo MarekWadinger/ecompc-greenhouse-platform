@@ -4,9 +4,12 @@ ipykernel~=6.26.0
 matplotlib~=3.8.1
 numpy~=1.26.1
 pandas~=2.1.2
+plotly
 pvlib~=0.10.3
 requests
 requests_cache
 retry-requests~=2.0.0
 scipy~=1.11.3
+stqdm
+streamlit~=1.38.0
 tqdm
