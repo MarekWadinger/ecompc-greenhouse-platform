@@ -182,31 +182,33 @@ if "params_form_submitted" not in st.session_state:
 st.sidebar.title("Greenhouse Location and Panel Orientation")
 
 with st.sidebar.form(key="gh_form", border=False):
-    latitude: int = st.slider(
+    latitude = st.slider(
         "Latitude of the location in degrees",
         -90.0,
         90.0,
         value=52.52,
     )
-    longitude: int = st.slider(
+    longitude = st.slider(
         "Longitude of the location in degrees",
         -90.0,
         90.0,
         value=13.41,
         key="slider_ref_size",
     )
-    tilt_: list[int] = st.multiselect(
+    tilt = st.multiselect(
         "Tilt of the solar panel in degrees",
         [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
         default=[90, 40],
     )
-    azimuth_: list[str] = st.multiselect(
+    azimuth = st.multiselect(
         "Azimuth of the solar panel in degrees",
         ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
         default=["NE", "SE", "SW", "NW"],
     )
 
-    tilt, azimuth = zip(*[(t, a) for a in azimuth_ for t in tilt_])
+    tilt_, azimuth_ = zip(*[(t, a) for a in azimuth for t in tilt])
+    tilt = list(tilt_)
+    azimuth = list(azimuth_)
 
     submit_gh = st.form_submit_button("Validate", on_click=set_gh_form_submit)
 
@@ -248,21 +250,21 @@ if st.session_state.gh_form_submitted:
             value=120,
             step=1,
         )
-        x_ref = st.text_input(
+        x_ref_ = st.text_input(
             "Reference state (comma-separated values)",
             value="50.0, 5.0",
         )
-        x_ref = np.array([float(x) for x in x_ref.split(",")])
-        u_min = st.text_input(
+        x_ref = np.array([float(x) for x in x_ref_.split(",")])
+        u_min_ = st.text_input(
             "Minimum control input (comma-separated values)",
             value="0.0, 0.0",
         )
-        u_min = [float(u) for u in u_min.split(",")]
-        u_max = st.text_input(
+        u_min = [float(u) for u in u_min_.split(",")]
+        u_max_ = st.text_input(
             "Maximum control input (comma-separated values)",
             value="100.0, 100.0",
         )
-        u_max = [float(u) for u in u_max.split(",")]
+        u_max = [float(u) for u in u_max_.split(",")]
 
         submit_params = st.form_submit_button(
             "Run", on_click=set_params_form_submit
@@ -344,7 +346,6 @@ if (
     y_nexts = []
     x0s = []
     ums = []
-    uos = []
     for step in stqdm(range(sim_steps)):
         if step * dt + N + 1 > len(climate):
             if climate.index[-1] < pd.Timestamp.now():
