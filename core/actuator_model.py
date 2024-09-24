@@ -11,8 +11,9 @@ class Actuator(ABC):
     Args:
         max_unit: Maximum reachable actuation [unit]
         power_per_unit: Power per Actuation Unit [W/unit]
-        price_per_energy: Cost of Energy [EUR/kWh]
-        co2_per_energy: Carbon Intensity [gCO₂eq/kWh]
+        energy_cost: Cost of Energy [EUR/kWh]
+        co2_per_energy: Carbon Intensity [gCO₂eq/kWh]  https://app.electricitymaps.com/zone/SK
+        co2_cost: Social cost of CO2 [EUR/gCO₂eq]  https://www.theguardian.com/environment/article/2024/may/17/economic-damage-climate-change-report
         dt: Duration [s]
     """
 
@@ -20,15 +21,17 @@ class Actuator(ABC):
         self,
         max_unit: float,
         power_per_unit: float = 1.0,
-        price_per_energy: float = 0.0612,
-        co2_per_energy: float = 250.0,
+        energy_cost: float = 0.0612,
+        co2_per_energy: float = 200.0,
+        co2_cost: float = 0.001,
         efficiency: float = 0.8,
         dt: float = 1.0,
     ):
         self.max_unit = max_unit  # Maximum value of actuation
         self.power_per_unit = power_per_unit
-        self.price_per_energy = price_per_energy
+        self.energy_cost = energy_cost
         self.co2_per_energy = co2_per_energy
+        self.co2_cost = co2_cost
         self.efficiency = efficiency
         self.dt = dt
 
@@ -57,7 +60,7 @@ class Actuator(ABC):
         self, signal: float | ca.GenericExpressionCommon
     ) -> float | ca.GenericExpressionCommon:
         return (
-            self.price_per_energy
+            self.energy_cost
             * self.signal_to_power(signal)
             / 1000
             * self.dt
@@ -74,6 +77,11 @@ class Actuator(ABC):
             * self.dt
             / 3600
         )
+
+    def signal_to_co2_eur(
+        self, signal: float | ca.GenericExpressionCommon
+    ) -> float | ca.GenericExpressionCommon:
+        return self.co2_cost * self.signal_to_co2(signal)
 
 
 class SimpleHeater(Actuator):

@@ -34,7 +34,7 @@ from scipy.integrate import solve_ivp
 
 sys.path.insert(1, str(Path().resolve()))
 from core.greenhouse_model import M_c, R, T_k, atm, model  # noqa: E402
-from core.openmeteo_query import get_weather_data  # noqa: E402
+from core.openmeteo_query import OpenMeteo  # noqa: E402
 
 results_dir = "examples/results"
 if not os.path.exists(results_dir):
@@ -75,7 +75,7 @@ z = np.array(
     dtype=float,
 )
 
-climdat = get_weather_data(
+openmeteo = OpenMeteo(
     latitude=52.52,  # Latitude of the location in degrees
     longitude=13.41,  # Longitude of the location in degrees
     tilt=[
@@ -99,8 +99,11 @@ climdat = get_weather_data(
         "NW",
     ],  # Azimuth angle of the surface in degrees (South facing)
     frequency="hourly",
-    forecast=3,
 )
+forecast: int = 3
+
+climdat = openmeteo.get_weather_data(forecast)
+
 climate = climdat.asfreq("1s").interpolate(method="time").values
 
 if __name__ == "__main__":
