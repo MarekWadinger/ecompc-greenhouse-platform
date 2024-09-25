@@ -26,6 +26,7 @@
 import os
 import sys
 import time
+from functools import partial
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -33,47 +34,21 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 sys.path.insert(1, str(Path().resolve()))
-from core.greenhouse_model import M_c, R, T_k, atm, model  # noqa: E402
+from core.greenhouse_model import (  # noqa: E402
+    Greenhouse,
+    M_c,
+    R,
+    T_k,
+    atm,
+    x_init,
+)
 from core.openmeteo_query import OpenMeteo  # noqa: E402
 
 results_dir = "examples/results"
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
-
-## Specify initial conditions**
-
-# Temperatures
-T_c_0 = 20.0 + T_k  # Cover temperature [K]
-T_i_0 = 12.0 + T_k  # Internal air temperature [K]
-T_v_0 = 12.0 + T_k  # Vegetation temperature [K]
-T_m_0 = 12.0 + T_k  # Growing medium temperature [K]
-T_p_0 = 12.0 + T_k  # Tray temperature [K]
-T_f_0 = 12.0 + T_k  # Floor temperature [K]
-T_s1_0 = 12.0 + T_k  # Temperature of soil layer 1 [K]
-
-C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
-C_c_0 = 7.5869e-4  # CO_2 density
-
-x_sdw = 0.72  # Structural dry weight of the plant [kg/m^2]
-x_nsdw = 2.7  # Non-structural dry weight of the plant [kg/m^2]
-
-z = np.array(
-    [
-        T_c_0,
-        T_i_0,
-        T_v_0,
-        T_m_0,
-        T_p_0,
-        T_f_0,
-        T_s1_0,
-        C_w_0,
-        C_c_0,
-        x_sdw,
-        x_nsdw,
-    ],
-    dtype=float,
-)
+gh_model = Greenhouse()
 
 openmeteo = OpenMeteo(
     latitude=52.52,  # Latitude of the location in degrees
@@ -104,7 +79,7 @@ forecast: int = 3
 
 climdat = openmeteo.get_weather_data(forecast)
 
-climate = climdat.asfreq("1s").interpolate(method="time").values
+climate = climdat.asfreq("1s").interpolate(method="time")
 
 if __name__ == "__main__":
     ## Simulate over time
@@ -119,11 +94,17 @@ if __name__ == "__main__":
     # Use solve_ivp with 'BDF' stiff solver to solve the ODEs
     perc_vent = 100.0
     perc_heater = 100.0
-    params = [(perc_vent, perc_heater), climate]
+    params = [(perc_vent, perc_heater)]
 
     # TODO: FIX: for some reason, the simulation requires longer weather forecast than the actual simulation time
     output = solve_ivp(
-        model, t, z, method="BDF", t_eval=tval, rtol=1e-5, args=params
+        partial(gh_model.model, climate=climate.values),
+        t,
+        x_init,
+        method="BDF",
+        t_eval=tval,
+        rtol=1e-5,
+        args=params,
     )
 
     # Time simulation and print time taken
@@ -136,7 +117,7 @@ if __name__ == "__main__":
     ## Plot results
 
     Tout_i = np.transpose(output.y[1, :] - T_k)  # [°C]
-    Ccout = np.transpose(output.y[11, :])
+    Ccout = np.transpose(output.y[-3, :])
 
     ## Temperatures
 

@@ -115,7 +115,7 @@ class SimpleVentilation(Actuator):
     500.0
     """
 
-    def __init__(self, max_act, power_per_unit=10):
+    def __init__(self, max_act, power_per_unit=5):
         super().__init__(
             max_act,
             power_per_unit,

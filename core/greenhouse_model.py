@@ -6,8 +6,8 @@ import casadi as ca
 import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
-from core.actuator_model import SimpleHeater, SimpleVentilation  # noqa: E402
-from core.lettuce_model import get_f_resp, lettuce_growth_model  # noqa: E402
+from core.actuator_model import SimpleHeater, SimpleVentilation
+from core.lettuce_model import get_f_resp, lettuce_growth_model
 
 # CONSTANTS
 Nz = 1.0
@@ -18,8 +18,6 @@ sigm = 5.67e-8  # Stefan-Boltzmann constant [W/m^2/K^4]
 T_k = 273.15  # zero celsius [K]
 g = 9.81  # acceleration due to gravity [m/s^2]
 atm = 1.013e5  # standard atmospheric pressure [Pa]
-latitude = 53.193583  #  latitude of greenhouse
-longitude = -2.434920  # longitude of greenhouse
 N_A = 6.02214e23  # Avogadro's number
 M_a = 0.029  # molar mass of dry air [kg/mol]
 lam = 0.025  # thermal conductivity of air [W/m/K]
@@ -33,31 +31,10 @@ M_carb = 0.03  # molar mass of CH2O [kg/mol]
 nu = 15.1e-6  # kinematic viscosity [m^2/s]
 rho_i = 1.2  # density of air [kg/m^3]
 rho_w = 1000.0  # density of water [kg/m^3]
-
-# Geometry
-A_f = 250.0  # greenhouse floor area [m^2]
-V = 1000.0  # greenhouse volume [m^3]
-# surface areas NE Wall NE Roof SE Wall SE Roof SW Wall SW Roof NW Wall NW Roof [m^2]
-SurfaceArea = np.array([40.0, 0.0, 75.0, 135.0, 40.0, 0.0, 75.0, 135.0])
-A_c = np.sum(SurfaceArea)
 a_obs = 0.05  # fraction of solar radiation hitting obstructions [-]
-H = 5.0  # Height of greenhouse [m]
-A_c_roof = 271.0  # Area of roof
 
 # Air characteristics
 ias = 0.5  # internal air speed [m/s]
-ACH = 20  # air changes per hour
-R_a_max = V * ACH / 3600.0  # ventilation air change rate [m^3/s]
-T_sp_vent = 25.0 + T_k  # Ventilation set-point [K]
-ventilation = SimpleVentilation(R_a_max, power_per_unit=5)
-
-# Heater
-# Q_heater_max is computed as the mass of air we want to heat per second
-#  considering the heat capacity of air and the temperature difference
-# TODO: Scaling this value by 100 makes heater overly powerful and may kill the plant
-# TODO: Scaling this value by 100 makes the plant grow much faster
-Q_heater_max = rho_i * (T_sp_vent - T_k) * R_a_max * c_i  # watts
-heater = SimpleHeater(Q_heater_max)
 
 # Cover
 # Glass
@@ -112,9 +89,6 @@ p_v = 0.75  # cultivated fraction of floor
 msd_v = 1.326  # surface density [kg/m^2]
 
 # Tray/mat
-A_p = p_v * A_f  # Area of cultivated floor [m^2]
-A_v = A_p  # Area of plants [m^2]
-A_m = A_p  # Area of mat for conduction to tray [m^2]
 d_p = 1.0  # characteristic dimension of tray (width)
 d_m = 0.1  # characteristic dimension of mat (width)
 lam_m = 0.5  # thermal conductivity of mat [W/mK]
@@ -204,9 +178,6 @@ crack_length_total = 350.0
 # View Factors
 F_f_c = 1 - p_v  # Floor to cover
 F_f_p = p_v  # Floor to tray
-F_c_f = A_f / A_c_roof * F_f_c  # Cover to floor
-# F_c_v = min((1-F_c_f)*LAI,(1-F_c_f)) # Cover to vegetation
-# F_c_m = max((1-F_c_f)*(1-LAI),0) # Cover to mat
 F_v_c = 0.5  # Vegetation to cover
 F_v_m = 0.5  # Vegetation to mat
 F_v_p = 0.0  # Vegetation to tray
@@ -216,6 +187,39 @@ F_m_p = 0.0  # Mat to tray
 F_p_v = 0.0  # Tray to vegetation
 F_p_m = 0.0  # Tray to mat
 F_p_f = 1.0  # Tray to floor
+
+## Initial conditions
+# Temperatures
+T_c_0 = 20.0 + T_k  # Cover temperature [K]
+T_i_0 = 12.0 + T_k  # Internal air temperature [K]
+T_v_0 = 12.0 + T_k  # Vegetation temperature [K]
+T_m_0 = 12.0 + T_k  # Growing medium temperature [K]
+T_p_0 = 12.0 + T_k  # Tray temperature [K]
+T_f_0 = 12.0 + T_k  # Floor temperature [K]
+T_s1_0 = 12.0 + T_k  # Temperature of soil layer 1 [K]
+
+C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
+C_c_0 = 7.5869e-4  # CO_2 density
+
+x_sdw = 0.72  # Structural dry weight of the plant [kg/m^2]
+x_nsdw = 2.7  # Non-structural dry weight of the plant [kg/m^2]
+
+x_init = np.array(
+    [
+        T_c_0,
+        T_i_0,
+        T_v_0,
+        T_m_0,
+        T_p_0,
+        T_f_0,
+        T_s1_0,
+        C_w_0,
+        C_c_0,
+        x_sdw,
+        x_nsdw,
+    ],
+    dtype=float,
+)
 
 
 # FUNCTIONS
@@ -282,495 +286,651 @@ def sat_conc(T):
     return a
 
 
-def model(
-    t,
-    z: tuple,
-    u: tuple,
-    c: dict[str, float] = {},
-    climate: tuple | np.ndarray | None = None,
-) -> np.ndarray:
-    """Greenhouse model.
-
-    This function models the greenhouse system with
-
-    Args:
-        t: Elapsed time [s]
-        z: System states
-        u: System inputs
-        c: System parameters
-        climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length.
-
-    Returns:
-        np.ndarray: System state derivatives
-    """
-    if climate is None:
-        raise ValueError("Climate information must be provided.")
-    dz_dt, __ = _model(t, z, u, climate, **c)
-    return dz_dt
-
-
-def _model(
-    t,
-    z: tuple,
-    u: tuple,
-    climate: tuple | np.ndarray,
-    **kwargs,
-) -> tuple[np.ndarray, dict]:
-    T_c = z[0]
-    T_i = z[1]
-    T_v = z[2]
-    T_m = z[3]
-    T_p = z[4]
-    T_f = z[5]
-    T_s1 = z[6]
-    C_w = z[7]
-    C_c = z[8]
-    x_sdw = z[9]
-    x_nsdw = z[10]
-    perc_vent = u[0]
-    R_a = ventilation.signal_to_actuation(perc_vent)
-    perc_heater = u[1]
-    Q_heater = heater.signal_to_actuation(perc_heater)
-
-    # External weather and dependent internal parameter values
-    # n = int(np.ceil(t / deltaT))  # count
-    if isinstance(climate, np.ndarray):
-        climate = tuple(climate[int(t), :])
-    T_ext = climate[0] + T_k  # External air temperature (K)
-    T_sk = climate[1] + T_k  # External sky temperature (K)
-    wind_speed = climate[2]  # External wind speed (m/s)
-    RH_e = climate[3] / 100  # External relative humidity
-    Cw_ext = RH_e * sat_conc(T_ext)  # External air moisture content
-    p_w = C_w * R * T_i / M_w  # Partial pressure of water [Pa]
-    rho_i = ((atm - p_w) * M_a + p_w * M_w) / (
-        R * T_i
-    )  # Internal density of air [kg/m^3]
-    # Let's assume all the bimass are leafs
-    LAI = ca.fmin(SLA * x_sdw, LAI_max)  # Leaf area index
-    C_ce = (
-        4.0e-4 * M_c * atm / (R * T_ext)
-    )  # External carbon dioxide concentration [kg/m^3]
-    C_c_ppm = (
-        C_c * R * T_i / (M_c * atm) * 1.0e6
-    )  # External carbon dioxide concentration [ppm]
-    h = 6.626e-34  # Planck's constant in Joule*Hz^{-1}
-
-    hour = np.floor(t / 3600) + 1
-
-    ## Lights
-    # _ = 0  # No additional lighting included
-    # _ = 0  # No ambient lighting included
-
-    ## Convection
-    # Convection external air -> cover
-
-    (QV_e_c, _, _) = convection(
-        d_c, A_c, T_ext, T_c, wind_speed, rho_i, c_i, C_w
-    )
-
-    # Convection internal air -> cover
-    (QV_i_c, QP_i_c, _) = convection(d_c, A_c, T_i, T_c, ias, rho_i, c_i, C_w)
-    QP_i_c = ca.fmax(
-        QP_i_c, 0
-    )  # assumed no evaporation from the cover, only condensation
-
-    # Convection internal air -> floor
-
-    (QV_i_f, QP_i_f, _) = convection(d_f, A_f, T_i, T_f, ias, rho_i, c_i, C_w)
-    QP_i_f = ca.fmax(
-        QP_i_f, 0
-    )  # assumed no evaporation from the floor, only condensation
-
-    # Convection internal air -> vegetation
-    A_v_exp = LAI * A_v
-    (QV_i_v, _, Nu_i_v) = convection(
-        d_v, A_v_exp, T_i, T_v, ias, rho_i, c_i, C_w
-    )
-    HV = Nu_i_v * lam / d_v
-
-    # Convection internal air -> mat
-    A_m_wool = 0.75 * A_m  # Area of mat exposed
-    A_m_water = 0.25 * A_m  # assumed 25% saturated
-
-    (QV_i_m, QP_i_m, _) = convection(
-        d_m, A_m_wool, T_i, T_m, ias, rho_i, c_i, C_w
-    )
-
-    QP_i_m = A_m_water / A_m_wool * QP_i_m  # Factored down
-
-    # Convection internal air -> tray
-    (QV_i_p, QP_i_p, _) = convection(d_p, A_p, T_i, T_p, ias, rho_i, c_i, C_w)
-    # QP_i_p = 0  # Assumed no condensation/evaporation from tray
-
-    ## Far-IR Radiation
-
-    A_vvf = ca.fmin(LAI * p_v * A_f, p_v * A_f)
-    F_c_v = ca.fmin((1 - F_c_f) * LAI, (1 - F_c_f))  # Cover to vegetation
-    F_c_m = ca.fmax((1 - F_c_f) * (1 - LAI), 0)  # Cover to mat
-    F_m_c = ca.fmax((1 - LAI), 0.0)  # Mat to cover
-    F_m_v = 1 - F_m_c  # Mat to vegetation
-
-    # Cover to sky
-    QR_c_sk = radiation(eps_ce, 1, 0, 0, 1, 0, A_c, T_c, T_sk)
-
-    # Radiation cover to floor
-    QR_c_f = radiation(
-        eps_ci, eps_s, rho_ci, rho_s, F_c_f, F_f_c, A_c_roof, T_c, T_f
-    )
-
-    # Radiation cover to vegetation
-    QR_c_v = radiation(
-        eps_ci, eps_v, rho_ci, rho_v, F_c_v, F_v_c, A_c_roof, T_c, T_v
-    )
-
-    # Radiation cover to mat
-    QR_c_m = radiation(
-        eps_ci, eps_m, rho_ci, rho_m, F_c_m, F_m_c, A_c_roof, T_c, T_m
-    )
-
-    # Radiation vegetation to cover
-    QR_v_c = radiation(
-        eps_v, eps_ci, rho_v, rho_ci, F_v_c, F_c_v, A_vvf, T_v, T_c
-    )
-
-    # Radiation vegetation to mat
-    QR_v_m = radiation(
-        eps_v, eps_m, rho_v, rho_m, F_v_m, F_m_v, A_vvf, T_v, T_m
-    )
-
-    # Radiation vegetation to tray
-    QR_v_p = radiation(
-        eps_v, eps_p, rho_v, rho_p, F_v_p, F_p_v, A_vvf, T_v, T_p
-    )
-
-    # Radiation mat to cover
-    QR_m_c = radiation(
-        eps_m, eps_ci, rho_m, rho_ci, F_m_c, F_c_m, A_m, T_m, T_c
-    )
-
-    # Radiation mat to vegetation
-    QR_m_v = radiation(eps_m, eps_v, rho_m, rho_v, F_m_v, F_v_m, A_m, T_m, T_v)
-
-    # Radiation mat to tray
-    QR_m_p = radiation(eps_m, eps_p, rho_m, rho_p, F_m_p, F_p_m, A_m, T_m, T_p)
-
-    # Radiation tray to vegetation
-    QR_p_v = radiation(eps_p, eps_v, rho_p, rho_v, F_p_v, F_v_p, A_p, T_p, T_v)
-
-    # Radiation tray to mat
-    QR_p_m = radiation(eps_p, eps_m, rho_p, rho_m, F_p_m, F_m_p, A_p, T_p, T_m)
-
-    # Radiation tray to floor
-    QR_p_f = radiation(eps_p, eps_s, rho_p, rho_s, F_p_f, F_f_p, A_p, T_p, T_f)
-
-    # Radiation floor to cover
-    QR_f_c = radiation(
-        eps_s, eps_ci, rho_s, rho_ci, F_f_c, F_c_f, A_f, T_f, T_c
-    )
-
-    # Radiation floor to tray
-    QR_f_p = radiation(eps_s, eps_p, rho_s, rho_p, F_f_p, F_p_f, A_f, T_f, T_p)
-
-    ## Conduction
-    # Conduction through floor
-    QD_sf1 = conduction(A_f, lam_s[0], l_s[0], T_f, T_s1)
-    QD_s12 = conduction(A_f, lam_s[1], l_s[1], T_s1, T_ss)
-
-    # Conduction mat to tray
-    QD_m_p = conduction(A_m, lam_p, l_m, T_m, T_p)
-
-    ## Ventilation
-    # Leakage (equations for orifice flow from Awbi, Ventilation of Buildings, Chapter 3)
-    wind_speed_H = wind_speed * c * H**a  # Wind speed at height H
-    wind_pressure = (
-        Cp * 0.5 * rho_i * wind_speed_H**2
-    )  # Equals DeltaP for wind pressure [Pa]
-    stack_pressure_diff = (
-        rho_i * g * H * (T_i - T_ext) / T_i
-    )  # DeltaP for stack pressure [Pa]
-
-    Qw = (
-        Cd * crack_area * (2 * wind_pressure / rho_i) ** 0.5
-    )  # Flow rate due to wind pressure
-    Qs = (
-        Cd * crack_area * (2 * ca.fabs(stack_pressure_diff) / rho_i) ** 0.5
-    )  # Flow rate due to stack pressure
-    Qt = (Qw**2 + Qs**2) ** 0.5  # Total flow rate
-
-    total_air_flow = Qt * crack_length_total / crack_length
-    R_a_min = total_air_flow / V
-
-    # Ventilation account for disturbance
-    R_a = R_a_min + R_a / V
-
-    QV_i_e = (
-        R_a * V * rho_i * c_i * (T_i - T_ext)
-    )  # Internal air to outside air [J/s]
-
-    MW_i_e = R_a * (C_w - Cw_ext)
-
-    ##      Solar radiation
-    # We first define the solar elevation angle that determines that absorption of solar radiation. Notation: r is direct radiation, f is diffuse radiation, whilst VIS and NIR stand for visible and near infra-red respectively.
-
-    def deg2rad(x):
-        return x * np.pi / 180
-
-    def rad2deg(radians):
-        return radians * (180.0 / ca.pi)
-
-    def casadi_mod(a, b):
-        return a - b * ca.floor(a / b)
-
-    gamma = deg2rad(
-        360.0 * (ca.ceil(t / 86400) - 80.0) / 365.0
-    )  # Year angle [rad] --- day counts from January 1st
-    eqn_time = (
-        -7.13 * np.cos(gamma)
-        - 1.84 * np.sin(gamma)
-        - 0.69 * np.cos(2.0 * gamma)
-        + 9.92 * np.sin(2.0 * gamma)
-    )  # Equation of time [min]
-    az = deg2rad(
-        360.0
-        * (casadi_mod(t / (3600.0), 24.0) + eqn_time / 60.0 - 12.0)
-        / 24.0
-    )  # Azimuth [rad]
-    delta = deg2rad(
-        0.38 - 0.77 * np.cos(gamma) + 23.27 * np.cos(gamma)
-    )  # Declination angle [rad]
-    lat = deg2rad(latitude)
-    angler = np.arcsin(
-        np.sin(lat) * np.sin(delta) + np.cos(lat) * np.cos(delta) * np.cos(az)
-    )  # Angle of elevation [rad]
-    angle = rad2deg(angler)
-
-    # Radiation from artificial lighting
-    QS_al_NIR = 0.0  # no artificial lighting
-    QS_al_VIS = 0.0
-
-    # Solar radiation incident on the cover
-    QS_tot_rNIR = 0.5 * SurfaceArea @ climate[4:12]  # Direct
-    QS_tot_rVIS = 0.5 * SurfaceArea @ climate[4:12]
-    QS_tot_fNIR = 0.5 * SurfaceArea @ climate[12:20]  # Diffuse
-    QS_tot_fVIS = 0.5 * SurfaceArea @ climate[12:20]
-
-    # Transmitted solar radiation
-    QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
-    QS_int_rVIS = tau_c_VIS * QS_tot_rVIS
-    QS_int_fNIR = tau_c_NIR * QS_tot_fNIR
-    QS_int_fVIS = tau_c_VIS * QS_tot_fVIS
-
-    # Solar radiation absorbed by the cover and the obstructions
-    QS_c = alph_c * (
-        QS_tot_rNIR + QS_tot_rVIS + QS_tot_fNIR + QS_tot_fVIS
-    )  # J/s
-    QS_i = a_obs * (QS_int_rNIR + QS_int_rVIS + QS_int_fNIR + QS_int_fVIS)
-
-    # Solar radiation absorbed by the vegetation
-    # Area = A_v i.e. planted area
-    # factor QS by A_v/A_f
-
-    k_fNIR = 0.27  # Near-IR diffuse extinction coefficient [-]
-    a_v_fNIR = 0.65 - 0.65 * np.exp(
-        -k_fNIR * LAI
-    )  # Near-IR diffuse absorption coefficient [-]
-
-    k_fVIS = 0.85  # Visible diffuse extinction coefficient [-]
-    a_v_fVIS = 0.95 - 0.9 * np.exp(
-        -k_fVIS * LAI
-    )  # Visible diffuse absorption coefficient [-]
-
-    k_rNIR = 0.25 + 0.38 * np.exp(
-        -0.12 * angle
-    )  # Near-IR direct extinction coefficient [-]
-    a_v_rNIR = (
-        0.67
-        - 0.06 * np.exp(-0.08 * angle)
-        - (0.68 - 0.5 * np.exp(-0.11 * angle)) * np.exp(-k_rNIR * LAI)
-    )  # Near-IR direct absorption coefficient [-]
-
-    k_rVIS = 0.88 + 2.6 * np.exp(
-        -0.18 * angle
-    )  # Visible direct extinction coefficient [-]
-    a_v_rVIS = 0.94 - 0.95 * np.exp(
-        -k_rVIS * LAI
-    )  # Visible direct absorption coefficient [-]
-
-    QS_v_rNIR = (QS_int_rNIR * (1 - a_obs) + QS_al_NIR) * a_v_rNIR * A_v / A_f
-    QS_v_fNIR = (QS_int_fNIR * (1 - a_obs)) * a_v_fNIR * A_v / A_f
-    QS_v_NIR = QS_v_rNIR + QS_v_fNIR  # factor as planted area not entire floor
-
-    QS_v_rVIS = (QS_int_rVIS * (1 - a_obs) + QS_al_VIS) * a_v_rVIS * A_v / A_f
-    QS_v_fVIS = (QS_int_fVIS * (1 - a_obs)) * a_v_fVIS * A_v / A_f
-    QS_v_VIS = QS_v_rVIS + QS_v_fVIS  # Used for photosynthesis calc
-
-    # Solar radiation absorbed by the mat
-    a_m_fNIR = 0.05 + 0.91 * np.exp(
-        -0.5 * LAI
-    )  # Near-IR diffuse absorption coefficient [-]
-    a_m_rNIR = (
-        0.05
-        + 0.06 * np.exp(-0.08 * angle)
-        + (0.92 - 0.53 * np.exp(-0.18 * angle))
-        * np.exp(-(0.48 + 0.54 * np.exp(-0.13 * angle)) * LAI)
-    )  # Near-IR direct absorption coefficient [-]
-
-    QS_m_rNIR = (QS_int_rNIR * (1 - a_obs) + QS_al_NIR) * a_m_rNIR * A_v / A_f
-    QS_m_fNIR = QS_int_fNIR * (1 - a_obs) * a_m_fNIR * A_v / A_f  # W
-    QS_m_NIR = QS_m_rNIR + QS_m_fNIR
-
-    # Solar radiation absorbed by the floor
-    # factor by (A_f-A_v)/A_f
-
-    QS_s_rNIR = QS_int_rNIR * (1 - a_obs) * alphS_s * (A_f - A_v) / A_f
-    QS_s_fNIR = QS_int_fNIR * (1 - a_obs) * alphS_s * (A_f - A_v) / A_f
-    QS_s_NIR = QS_s_rNIR + QS_s_fNIR
-
-    ## Transpiration
-    QS_int = (
-        (QS_int_rNIR + QS_int_rVIS + QS_int_fNIR + QS_int_fVIS)
-        * (1 - a_obs)
-        * A_v
-        / A_f
-    )  # J/s
-
-    #  Vapour pressure deficit at leaf surface
-    xa = C_w / rho_i  # [-]
-    xv = sat_conc(T_v) / rho_i  # [-]
-    vpd = atm * (xv / (xv + 0.622) - xa / (xa + 0.622))  # [Pa]
-
-    # Stomatal resistance according to Stanghellini
-    x = np.exp(-0.24 * LAI)  # [-]
-    a_v_short = (
-        0.83
-        * (1 - 0.70 * x)
-        * (1 + 0.58 * x**2)
-        * (0.88 - x**2 + 0.12 * x ** (8 / 3))
-    )  # [-]Absorption for shortwave radiation
-    I_s_bar = (
-        QS_int * a_v_short / (2 * LAI)
-    )  # [J/s] Mean radiation interacting with leaf surface
-
-    Heavy_CO2 = I_s_bar > 0.0
-    r_i_CO2 = 1 + Heavy_CO2 * 6.1e-7 * (C_c_ppm - 200) ** 2
-    Heavy_vpd = vpd / 1000 < 0.8
-    r_i_vpd = Heavy_vpd * (1 + 4.3 * (vpd / 1000) ** 2) + (1 - Heavy_vpd) * 3.8
-    r_st = (
-        82
-        * ((QS_int + 4.3) / (QS_int + 0.54))
-        * (1 + 0.023 * (T_v - T_k - 24.5) ** 2)
-        * r_i_CO2
-        * r_i_vpd
-    )  # [s/m]
-
-    hL_v_i = (
-        2
-        * LAI
-        * H_fg
-        / (rho_i * c_i)
-        * (Le ** (2 / 3) / HV + r_st / (rho_i * c_i)) ** (-1)
-    )
-
-    QT_St = A_v * hL_v_i * (sat_conc(T_v) - C_w)  # J/s
-
-    QT_v_i = ca.fmax(QT_St, 0)
-
-    ## Dehumidification
-    MW_cc_i = 0  # No dehumidification included
-
-    # CO2 exchange with outside
-    MC_i_e = R_a * (C_c - C_ce)  # [kg/m^3/s]
-
-    day_hour_c = (hour / 24 - np.floor(hour / 24)) * 24
-    track = ca.logic_and(day_hour_c > 6, day_hour_c < 20)
-    Value = (
-        added_CO2 / Nz / 3600.0 / V
-    )  # [kg/h / - / 3600 / m^3] -> [kg m^{-3} s^{-1}]
-
-    MC_cc_i = Value * track  # [kg m^{-3} s^{-1}]
-
-    ## Photosynthesis model - Vanthoor
-
-    # Consider photosynthetically active radiation to be visible radiation
-
-    I_VIS = QS_v_VIS  # J/s incident on planted area
-
-    PAR = I_VIS / heat_phot / N_A / A_v  # [mol{photons}.s−1.m−2]
-
-    # The number of moles of photosynthetically active photons per unit area of planted floor [mol{phot}/m^2/s]
-    # J/s/(J/photon)/(photons/mol)/m^2 cf Vanthoor 2.3mumol(photons)/J
-
-    # Maintenance respiration
-    f_resp = get_f_resp(x_sdw, T_i - T_k)
-
-    # Temperature components
-    dT_c_dt = (1 / (A_c * cd_c)) * (
-        QV_i_c + QP_i_c - QR_c_f - QR_c_v - QR_c_m + QV_e_c - QR_c_sk + QS_c
-    )
-
-    dT_i_dt = (1 / (V * rho_i * c_i)) * (
-        -QV_i_m - QV_i_v - QV_i_f - QV_i_c - QV_i_e - QV_i_p + QS_i + Q_heater
-    )
-
-    dT_v_dt = (1 / (c_v * A_v * msd_v)) * (
-        QV_i_v - QR_v_c - QR_v_m - QR_v_p + QS_v_NIR - QT_v_i
-    )
-
-    dT_m_dt = (1 / (A_m * c_m)) * (
-        QV_i_m + QP_i_m - QR_m_v - QR_m_c - QR_m_p - QD_m_p + QS_m_NIR
-    )
-    dT_p_dt = (1 / (A_p * c_p)) * (
-        QD_m_p + QV_i_p + QP_i_p - QR_p_f - QR_p_v - QR_p_m
-    )
-    dT_f_dt = (1 / (rhod_s[0] * A_f * c_s[0] * l_s[0])) * (
-        QV_i_f + QP_i_f - QR_f_c - QR_f_p - QD_sf1 + QS_s_NIR
-    )
-    dT_s1_dt = (1 / (rhod_s[1] * c_s[1] * l_s[1] * A_f)) * (QD_sf1 - QD_s12)
-
-    # Water vapour
-    dC_w_dt = (
-        (1 / (V * H_fg)) * (QT_v_i - QP_i_c - QP_i_f - QP_i_m - QP_i_p)
-        - MW_i_e
-        + MW_cc_i
-    )
-    # dC_wdt = -MW_i_e
-
-    # Carbon Dioxide
-    dC_c_dt = (
-        MC_cc_i
-        - MC_i_e  # [kg/m^3/s]
-        + (M_c / M_carb)  # [-]
-        * (A_v / V)  # [m^2 / m^3]
-        * (f_resp)
-        / 1000  # [g m^{-2}] / 1000 -> [g m^{-2} s^{-1}]
-    )
-
-    # Salaatia growth
-    cLight = 3.0e8  # Speed of light [m/s]
-    lambda_nm = 550  # Wavelength [nm]
-    lambda_m = lambda_nm * 1e-9
-    E = h * cLight / lambda_m  # [J/num{photons}]
-    u_par = PAR * E * N_A  # [W/m^2]
-    u_co2 = C_c_ppm  # [ppm] >> external C_c_ppm
-    dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(
-        t, (x_sdw, x_nsdw), (T_i - T_k, u_par, u_co2)
-    )
-
-    return (
-        np.array(
-            [
-                dT_c_dt,
-                dT_i_dt,
-                dT_v_dt,
-                dT_m_dt,
-                dT_p_dt,
-                dT_f_dt,
-                dT_s1_dt,
-                dC_w_dt,
-                dC_c_dt,
-                dx_sdw_dt,
-                dx_nsdw_dt,
-            ]
-        ),
-        locals(),
-    )
+class GreenHouse:
+    def __init__(
+        self,
+        length: float = 25.0,
+        width: float = 10.0,
+        height: float = 4.0,
+        roof_tilt: float = 30.0,
+        max_vent: float | None = None,
+        max_heat: float | None = None,
+        latitude: float = 53.193583,  #  latitude of greenhouse
+        longitude: float = 5.799383,  # longitude of greenhouse
+    ) -> None:
+        self.length = length
+        self.width = width
+        self.height = height
+        self.roof_tilt = roof_tilt
+        self.latitude = latitude
+        self.longitude = longitude
+
+        # Geometry
+        roof_height = width / 2 * np.tan(np.radians(roof_tilt))
+        roof_width = np.sqrt(width**2 + roof_height**2)
+        self.A_f = length * width  # greenhouse floor area [m^2]
+        wall_surface = [width * height] * 2 + [length * height] * 2
+        roof_surface = [roof_width * roof_height] * 2 + [
+            roof_width * length
+        ] * 2
+
+        self.surface_area = np.array(
+            wall_surface + roof_surface
+        )  # surface areas [m^2]
+        self.area = np.sum(self.surface_area)
+        self.area_roof = np.sum(roof_surface)
+        self.volume = (
+            length * width * height + roof_width * roof_height * length
+        )  # greenhouse volume [m^3]
+
+        # Air characteristics
+        ACH = 20  # air changes per hour
+        R_a_max = (
+            self.volume * ACH / 3600.0
+        )  # ventilation air change rate [m^3/s]
+        T_sp_vent = 25.0 + T_k  # setpoint temperature for ventilation [K]
+
+        if max_vent is not None:
+            R_a_max = max_vent
+        self.ventilation = SimpleVentilation(R_a_max)
+
+        # Heater
+        # Q_heater_max is computed as the mass of air we want to heat per second
+        #  considering the heat capacity of air and the temperature difference
+        # TODO: Scaling this value by 100 makes heater overly powerful and may kill the plant
+        # TODO: Scaling this value by 100 makes the plant grow much faster
+        if max_heat is not None:
+            Q_heater_max = max_heat
+        else:
+            Q_heater_max = rho_i * (T_sp_vent - T_k) * R_a_max * c_i
+        self.heater = SimpleHeater(Q_heater_max)
+
+        # Tray/mat
+        self.A_c = p_v * self.A_f  # Area of cultivated floor [m^2]
+        self.A_p = self.A_c  # Area of plants [m^2]
+        self.A_m = self.A_c  # Area of mat for conduction to tray [m^2]
+        self.A_f_c = self.A_p / self.A_f  # Fraction of floor covered by plants
+        self.A_f_nc = (
+            self.A_f - self.A_p
+        ) / self.A_f  # Fraction of floor not covered by plants
+
+        # View Factors
+        self.F_c_f = self.A_f / self.area_roof * F_f_c  # Cover to floor
+        # F_c_v = min((1-F_c_f)*LAI,(1-F_c_f)) # Cover to vegetation
+        # F_c_m = max((1-F_c_f)*(1-LAI),0) # Cover to mat
+
+    def model(
+        self,
+        t,
+        x: tuple,
+        u: tuple,
+        climate: tuple | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Greenhouse model.
+
+        This function models the greenhouse system with
+
+        Args:
+            t: Elapsed time [s]
+            z: System states
+            u: System inputs
+            c: System parameters
+            climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length.
+
+        Returns:
+            np.ndarray: System state derivatives
+        """
+        if climate is None:
+            raise ValueError("Climate information must be provided.")
+        dz_dt, __ = self._model(t, x, u, climate)
+        return dz_dt
+
+    def _model(
+        self,
+        t,
+        z: tuple,
+        u: tuple,
+        climate: tuple | np.ndarray,
+    ) -> tuple[np.ndarray, dict]:
+        T_c = z[0]
+        T_i = z[1]
+        T_v = z[2]
+        T_m = z[3]
+        T_p = z[4]
+        T_f = z[5]
+        T_s1 = z[6]
+        C_w = z[7]
+        C_c = z[8]
+        x_sdw = z[9]
+        x_nsdw = z[10]
+        perc_vent = u[0]
+        perc_heater = u[1]
+
+        R_a = self.ventilation.signal_to_actuation(perc_vent)
+        Q_heater = self.heater.signal_to_actuation(perc_heater)
+
+        # External weather and dependent internal parameter values
+        # n = int(np.ceil(t / deltaT))  # count
+        if isinstance(climate, np.ndarray):
+            climate = tuple(climate[int(t), :])
+        T_ext = climate[0] + T_k  # External air temperature (K)
+        T_sk = climate[1] + T_k  # External sky temperature (K)
+        wind_speed = climate[2]  # External wind speed (m/s)
+        RH_e = climate[3] / 100  # External relative humidity
+        Cw_ext = RH_e * sat_conc(T_ext)  # External air moisture content
+        p_w = C_w * R * T_i / M_w  # Partial pressure of water [Pa]
+        rho_i = ((atm - p_w) * M_a + p_w * M_w) / (
+            R * T_i
+        )  # Internal density of air [kg/m^3]
+        # Let's assume all the bimass are leafs
+        LAI = ca.fmin(SLA * x_sdw, LAI_max)  # Leaf area index
+        C_ce = (
+            4.0e-4 * M_c * atm / (R * T_ext)
+        )  # External carbon dioxide concentration [kg/m^3]
+        C_c_ppm = (
+            C_c * R * T_i / (M_c * atm) * 1.0e6
+        )  # External carbon dioxide concentration [ppm]
+        h = 6.626e-34  # Planck's constant in Joule*Hz^{-1}
+
+        hour = np.floor(t / 3600) + 1
+
+        ## Lights
+        # _ = 0  # No additional lighting included
+        # _ = 0  # No ambient lighting included
+
+        ## Convection
+        # Convection external air -> cover
+
+        (QV_e_c, _, _) = convection(
+            d_c, self.area, T_ext, T_c, wind_speed, rho_i, c_i, C_w
+        )
+
+        # Convection internal air -> cover
+        (QV_i_c, QP_i_c, _) = convection(
+            d_c, self.area, T_i, T_c, ias, rho_i, c_i, C_w
+        )
+        QP_i_c = ca.fmax(
+            QP_i_c, 0
+        )  # assumed no evaporation from the cover, only condensation
+
+        # Convection internal air -> floor
+
+        (QV_i_f, QP_i_f, _) = convection(
+            d_f, self.A_f, T_i, T_f, ias, rho_i, c_i, C_w
+        )
+        QP_i_f = ca.fmax(
+            QP_i_f, 0
+        )  # assumed no evaporation from the floor, only condensation
+
+        # Convection internal air -> vegetation
+        A_v_exp = LAI * self.A_p
+        (QV_i_v, _, Nu_i_v) = convection(
+            d_v, A_v_exp, T_i, T_v, ias, rho_i, c_i, C_w
+        )
+        HV = Nu_i_v * lam / d_v
+
+        # Convection internal air -> mat
+        A_m_wool = 0.75 * self.A_m  # Area of mat exposed
+        A_m_water = 0.25 * self.A_m  # assumed 25% saturated
+
+        (QV_i_m, QP_i_m, _) = convection(
+            d_m, A_m_wool, T_i, T_m, ias, rho_i, c_i, C_w
+        )
+
+        QP_i_m = A_m_water / A_m_wool * QP_i_m  # Factored down
+
+        # Convection internal air -> tray
+        (QV_i_p, QP_i_p, _) = convection(
+            d_p, self.A_c, T_i, T_p, ias, rho_i, c_i, C_w
+        )
+        # QP_i_p = 0  # Assumed no condensation/evaporation from tray
+
+        ## Far-IR Radiation
+
+        A_vvf = ca.fmin(LAI * p_v * self.A_f, p_v * self.A_f)
+        F_c_v = ca.fmin(
+            (1 - self.F_c_f) * LAI, (1 - self.F_c_f)
+        )  # Cover to vegetation
+        F_c_m = ca.fmax((1 - self.F_c_f) * (1 - LAI), 0)  # Cover to mat
+        F_m_c = ca.fmax((1 - LAI), 0.0)  # Mat to cover
+        F_m_v = 1 - F_m_c  # Mat to vegetation
+
+        # Cover to sky
+        QR_c_sk = radiation(eps_ce, 1, 0, 0, 1, 0, self.area, T_c, T_sk)
+
+        # Radiation cover to floor
+        QR_c_f = radiation(
+            eps_ci,
+            eps_s,
+            rho_ci,
+            rho_s,
+            self.F_c_f,
+            F_f_c,
+            self.area_roof,
+            T_c,
+            T_f,
+        )
+
+        # Radiation cover to vegetation
+        QR_c_v = radiation(
+            eps_ci,
+            eps_v,
+            rho_ci,
+            rho_v,
+            F_c_v,
+            F_v_c,
+            self.area_roof,
+            T_c,
+            T_v,
+        )
+
+        # Radiation cover to mat
+        QR_c_m = radiation(
+            eps_ci,
+            eps_m,
+            rho_ci,
+            rho_m,
+            F_c_m,
+            F_m_c,
+            self.area_roof,
+            T_c,
+            T_m,
+        )
+
+        # Radiation vegetation to cover
+        QR_v_c = radiation(
+            eps_v, eps_ci, rho_v, rho_ci, F_v_c, F_c_v, A_vvf, T_v, T_c
+        )
+
+        # Radiation vegetation to mat
+        QR_v_m = radiation(
+            eps_v, eps_m, rho_v, rho_m, F_v_m, F_m_v, A_vvf, T_v, T_m
+        )
+
+        # Radiation vegetation to tray
+        QR_v_p = radiation(
+            eps_v, eps_p, rho_v, rho_p, F_v_p, F_p_v, A_vvf, T_v, T_p
+        )
+
+        # Radiation mat to cover
+        QR_m_c = radiation(
+            eps_m, eps_ci, rho_m, rho_ci, F_m_c, F_c_m, self.A_m, T_m, T_c
+        )
+
+        # Radiation mat to vegetation
+        QR_m_v = radiation(
+            eps_m, eps_v, rho_m, rho_v, F_m_v, F_v_m, self.A_m, T_m, T_v
+        )
+
+        # Radiation mat to tray
+        QR_m_p = radiation(
+            eps_m, eps_p, rho_m, rho_p, F_m_p, F_p_m, self.A_m, T_m, T_p
+        )
+
+        # Radiation tray to vegetation
+        QR_p_v = radiation(
+            eps_p, eps_v, rho_p, rho_v, F_p_v, F_v_p, self.A_c, T_p, T_v
+        )
+
+        # Radiation tray to mat
+        QR_p_m = radiation(
+            eps_p, eps_m, rho_p, rho_m, F_p_m, F_m_p, self.A_c, T_p, T_m
+        )
+
+        # Radiation tray to floor
+        QR_p_f = radiation(
+            eps_p, eps_s, rho_p, rho_s, F_p_f, F_f_p, self.A_c, T_p, T_f
+        )
+
+        # Radiation floor to cover
+        QR_f_c = radiation(
+            eps_s, eps_ci, rho_s, rho_ci, F_f_c, self.F_c_f, self.A_f, T_f, T_c
+        )
+
+        # Radiation floor to tray
+        QR_f_p = radiation(
+            eps_s, eps_p, rho_s, rho_p, F_f_p, F_p_f, self.A_f, T_f, T_p
+        )
+
+        ## Conduction
+        # Conduction through floor
+        QD_sf1 = conduction(self.A_f, lam_s[0], l_s[0], T_f, T_s1)
+        QD_s12 = conduction(self.A_f, lam_s[1], l_s[1], T_s1, T_ss)
+
+        # Conduction mat to tray
+        QD_m_p = conduction(self.A_m, lam_p, l_m, T_m, T_p)
+
+        ## Ventilation
+        # Leakage (equations for orifice flow from Awbi, Ventilation of Buildings, Chapter 3)
+        wind_speed_H = (
+            wind_speed * c * self.height**a
+        )  # Wind speed at height H
+        wind_pressure = (
+            Cp * 0.5 * rho_i * wind_speed_H**2
+        )  # Equals DeltaP for wind pressure [Pa]
+        stack_pressure_diff = (
+            rho_i * g * self.height * (T_i - T_ext) / T_i
+        )  # DeltaP for stack pressure [Pa]
+
+        Qw = (
+            Cd * crack_area * (2 * wind_pressure / rho_i) ** 0.5
+        )  # Flow rate due to wind pressure
+        Qs = (
+            Cd * crack_area * (2 * ca.fabs(stack_pressure_diff) / rho_i) ** 0.5
+        )  # Flow rate due to stack pressure
+        Qt = (Qw**2 + Qs**2) ** 0.5  # Total flow rate
+
+        total_air_flow = Qt * crack_length_total / crack_length
+        R_a_min = total_air_flow / self.volume
+
+        # Ventilation account for disturbance
+        R_a = R_a_min + R_a / self.volume
+
+        QV_i_e = (
+            R_a * self.volume * rho_i * c_i * (T_i - T_ext)
+        )  # Internal air to outside air [J/s]
+
+        MW_i_e = R_a * (C_w - Cw_ext)
+
+        ##      Solar radiation
+        # We first define the solar elevation angle that determines that absorption of solar radiation. Notation: r is direct radiation, f is diffuse radiation, whilst VIS and NIR stand for visible and near infra-red respectively.
+
+        def deg2rad(x):
+            return x * np.pi / 180
+
+        def rad2deg(radians):
+            return radians * (180.0 / ca.pi)
+
+        def casadi_mod(a, b):
+            return a - b * ca.floor(a / b)
+
+        gamma = deg2rad(
+            360.0 * (ca.ceil(t / 86400) - 80.0) / 365.0
+        )  # Year angle [rad] --- day counts from January 1st
+        eqn_time = (
+            -7.13 * np.cos(gamma)
+            - 1.84 * np.sin(gamma)
+            - 0.69 * np.cos(2.0 * gamma)
+            + 9.92 * np.sin(2.0 * gamma)
+        )  # Equation of time [min]
+        az = deg2rad(
+            360.0
+            * (casadi_mod(t / (3600.0), 24.0) + eqn_time / 60.0 - 12.0)
+            / 24.0
+        )  # Azimuth [rad]
+        delta = deg2rad(
+            0.38 - 0.77 * np.cos(gamma) + 23.27 * np.cos(gamma)
+        )  # Declination angle [rad]
+        lat = deg2rad(self.latitude)  # Latitude [rad]
+        angler = np.arcsin(
+            np.sin(lat) * np.sin(delta)
+            + np.cos(lat) * np.cos(delta) * np.cos(az)
+        )  # Angle of elevation [rad]
+        angle = rad2deg(angler)
+
+        # Radiation from artificial lighting
+        QS_al_NIR = 0.0  # no artificial lighting
+        QS_al_VIS = 0.0
+
+        # Solar radiation incident on the cover
+        QS_tot_rNIR = 0.5 * self.surface_area @ climate[4:12]  # Direct
+        QS_tot_rVIS = 0.5 * self.surface_area @ climate[4:12]
+        QS_tot_fNIR = 0.5 * self.surface_area @ climate[12:20]  # Diffuse
+        QS_tot_fVIS = 0.5 * self.surface_area @ climate[12:20]
+
+        # Transmitted solar radiation
+        QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
+        QS_int_rVIS = tau_c_VIS * QS_tot_rVIS
+        QS_int_fNIR = tau_c_NIR * QS_tot_fNIR
+        QS_int_fVIS = tau_c_VIS * QS_tot_fVIS
+
+        # Solar radiation absorbed by the cover and the obstructions
+        QS_c = alph_c * (
+            QS_tot_rNIR + QS_tot_rVIS + QS_tot_fNIR + QS_tot_fVIS
+        )  # J/s
+        QS_i = a_obs * (QS_int_rNIR + QS_int_rVIS + QS_int_fNIR + QS_int_fVIS)
+
+        # Solar radiation absorbed by the vegetation
+        # Area = A_v i.e. planted area
+        # factor QS by A_v/self.A_f
+
+        k_fNIR = 0.27  # Near-IR diffuse extinction coefficient [-]
+        a_v_fNIR = 0.65 - 0.65 * np.exp(
+            -k_fNIR * LAI
+        )  # Near-IR diffuse absorption coefficient [-]
+
+        k_fVIS = 0.85  # Visible diffuse extinction coefficient [-]
+        a_v_fVIS = 0.95 - 0.9 * np.exp(
+            -k_fVIS * LAI
+        )  # Visible diffuse absorption coefficient [-]
+
+        k_rNIR = 0.25 + 0.38 * np.exp(
+            -0.12 * angle
+        )  # Near-IR direct extinction coefficient [-]
+        a_v_rNIR = (
+            0.67
+            - 0.06 * np.exp(-0.08 * angle)
+            - (0.68 - 0.5 * np.exp(-0.11 * angle)) * np.exp(-k_rNIR * LAI)
+        )  # Near-IR direct absorption coefficient [-]
+
+        k_rVIS = 0.88 + 2.6 * np.exp(
+            -0.18 * angle
+        )  # Visible direct extinction coefficient [-]
+        a_v_rVIS = 0.94 - 0.95 * np.exp(
+            -k_rVIS * LAI
+        )  # Visible direct absorption coefficient [-]
+
+        QS_v_rNIR = (
+            (QS_int_rNIR * (1 - a_obs) + QS_al_NIR)
+            * a_v_rNIR
+            * self.A_p
+            / self.A_f
+        )
+        QS_v_fNIR = (QS_int_fNIR * (1 - a_obs)) * a_v_fNIR * self.A_f_c
+        QS_v_NIR = (
+            QS_v_rNIR + QS_v_fNIR
+        )  # factor as planted area not entire floor
+
+        QS_v_rVIS = (
+            (QS_int_rVIS * (1 - a_obs) + QS_al_VIS)
+            * a_v_rVIS
+            * self.A_p
+            / self.A_f
+        )
+        QS_v_fVIS = (QS_int_fVIS * (1 - a_obs)) * a_v_fVIS * self.A_f_c
+        QS_v_VIS = QS_v_rVIS + QS_v_fVIS  # Used for photosynthesis calc
+
+        # Solar radiation absorbed by the mat
+        a_m_fNIR = 0.05 + 0.91 * np.exp(
+            -0.5 * LAI
+        )  # Near-IR diffuse absorption coefficient [-]
+        a_m_rNIR = (
+            0.05
+            + 0.06 * np.exp(-0.08 * angle)
+            + (0.92 - 0.53 * np.exp(-0.18 * angle))
+            * np.exp(-(0.48 + 0.54 * np.exp(-0.13 * angle)) * LAI)
+        )  # Near-IR direct absorption coefficient [-]
+
+        QS_m_rNIR = (
+            (QS_int_rNIR * (1 - a_obs) + QS_al_NIR)
+            * a_m_rNIR
+            * self.A_p
+            / self.A_f
+        )
+        QS_m_fNIR = QS_int_fNIR * (1 - a_obs) * a_m_fNIR * self.A_f_c  # W
+        QS_m_NIR = QS_m_rNIR + QS_m_fNIR
+
+        # Solar radiation absorbed by the floor
+        # factor by (self.A_f-self.A_v)/self.A_f
+
+        QS_s_rNIR = QS_int_rNIR * (1 - a_obs) * alphS_s * self.A_f_nc
+        QS_s_fNIR = QS_int_fNIR * (1 - a_obs) * alphS_s * self.A_f_nc
+        QS_s_NIR = QS_s_rNIR + QS_s_fNIR
+
+        ## Transpiration
+        QS_int = (
+            (QS_int_rNIR + QS_int_rVIS + QS_int_fNIR + QS_int_fVIS)
+            * (1 - a_obs)
+            * self.A_p
+            / self.A_f
+        )  # J/s
+
+        #  Vapour pressure deficit at leaf surface
+        xa = C_w / rho_i  # [-]
+        xv = sat_conc(T_v) / rho_i  # [-]
+        vpd = atm * (xv / (xv + 0.622) - xa / (xa + 0.622))  # [Pa]
+
+        # Stomatal resistance according to Stanghellini
+        x = np.exp(-0.24 * LAI)  # [-]
+        a_v_short = (
+            0.83
+            * (1 - 0.70 * x)
+            * (1 + 0.58 * x**2)
+            * (0.88 - x**2 + 0.12 * x ** (8 / 3))
+        )  # [-]Absorption for shortwave radiation
+        I_s_bar = (
+            QS_int * a_v_short / (2 * LAI)
+        )  # [J/s] Mean radiation interacting with leaf surface
+
+        Heavy_CO2 = I_s_bar > 0.0
+        r_i_CO2 = 1 + Heavy_CO2 * 6.1e-7 * (C_c_ppm - 200) ** 2
+        Heavy_vpd = vpd / 1000 < 0.8
+        r_i_vpd = (
+            Heavy_vpd * (1 + 4.3 * (vpd / 1000) ** 2) + (1 - Heavy_vpd) * 3.8
+        )
+        r_st = (
+            82
+            * ((QS_int + 4.3) / (QS_int + 0.54))
+            * (1 + 0.023 * (T_v - T_k - 24.5) ** 2)
+            * r_i_CO2
+            * r_i_vpd
+        )  # [s/m]
+
+        hL_v_i = (
+            2
+            * LAI
+            * H_fg
+            / (rho_i * c_i)
+            * (Le ** (2 / 3) / HV + r_st / (rho_i * c_i)) ** (-1)
+        )
+
+        QT_St = self.A_p * hL_v_i * (sat_conc(T_v) - C_w)  # J/s
+
+        QT_v_i = ca.fmax(QT_St, 0)
+
+        ## Dehumidification
+        MW_cc_i = 0  # No dehumidification included
+
+        # CO2 exchange with outside
+        MC_i_e = R_a * (C_c - C_ce)  # [kg/m^3/s]
+
+        day_hour_c = (hour / 24 - np.floor(hour / 24)) * 24
+        track = ca.logic_and(day_hour_c > 6, day_hour_c < 20)
+        Value = (
+            added_CO2 / Nz / 3600.0 / self.volume
+        )  # [kg/h / - / 3600 / m^3] -> [kg m^{-3} s^{-1}]
+
+        MC_cc_i = Value * track  # [kg m^{-3} s^{-1}]
+
+        ## Photosynthesis model - Vanthoor
+
+        # Consider photosynthetically active radiation to be visible radiation
+
+        I_VIS = QS_v_VIS  # J/s incident on planted area
+
+        PAR = I_VIS / heat_phot / N_A / self.A_p  # [mol{photons}.s−1.m−2]
+
+        # The number of moles of photosynthetically active photons per unit area of planted floor [mol{phot}/m^2/s]
+        # J/s/(J/photon)/(photons/mol)/m^2 cf Vanthoor 2.3mumol(photons)/J
+
+        # Maintenance respiration
+        f_resp = get_f_resp(x_sdw, T_i - T_k)
+
+        # Temperature components
+        dT_c_dt = (1 / (self.area * cd_c)) * (
+            QV_i_c
+            + QP_i_c
+            - QR_c_f
+            - QR_c_v
+            - QR_c_m
+            + QV_e_c
+            - QR_c_sk
+            + QS_c
+        )
+
+        dT_i_dt = (1 / (self.volume * rho_i * c_i)) * (
+            -QV_i_m
+            - QV_i_v
+            - QV_i_f
+            - QV_i_c
+            - QV_i_e
+            - QV_i_p
+            + QS_i
+            + Q_heater
+        )
+
+        dT_v_dt = (1 / (c_v * self.A_p * msd_v)) * (
+            QV_i_v - QR_v_c - QR_v_m - QR_v_p + QS_v_NIR - QT_v_i
+        )
+
+        dT_m_dt = (1 / (self.A_m * c_m)) * (
+            QV_i_m + QP_i_m - QR_m_v - QR_m_c - QR_m_p - QD_m_p + QS_m_NIR
+        )
+        dT_p_dt = (1 / (self.A_c * c_p)) * (
+            QD_m_p + QV_i_p + QP_i_p - QR_p_f - QR_p_v - QR_p_m
+        )
+        dT_f_dt = (1 / (rhod_s[0] * self.A_f * c_s[0] * l_s[0])) * (
+            QV_i_f + QP_i_f - QR_f_c - QR_f_p - QD_sf1 + QS_s_NIR
+        )
+        dT_s1_dt = (1 / (rhod_s[1] * c_s[1] * l_s[1] * self.A_f)) * (
+            QD_sf1 - QD_s12
+        )
+
+        # Water vapour
+        dC_w_dt = (
+            (1 / (self.volume * H_fg))
+            * (QT_v_i - QP_i_c - QP_i_f - QP_i_m - QP_i_p)
+            - MW_i_e
+            + MW_cc_i
+        )
+        # dC_wdt = -MW_i_e
+
+        # Carbon Dioxide
+        dC_c_dt = (
+            MC_cc_i
+            - MC_i_e  # [kg/m^3/s]
+            + (M_c / M_carb)  # [-]
+            * (self.A_p / self.volume)  # [m^2 / m^3]
+            * (f_resp)
+            / 1000  # [g m^{-2}] / 1000 -> [g m^{-2} s^{-1}]
+        )
+
+        # Salaatia growth
+        cLight = 3.0e8  # Speed of light [m/s]
+        lambda_nm = 550  # Wavelength [nm]
+        lambda_m = lambda_nm * 1e-9
+        E = h * cLight / lambda_m  # [J/num{photons}]
+        u_par = PAR * E * N_A  # [W/m^2]
+        u_co2 = C_c_ppm  # [ppm] >> external C_c_ppm
+        dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(
+            t, (x_sdw, x_nsdw), (T_i - T_k, u_par, u_co2)
+        )
+
+        return (
+            np.array(
+                [
+                    dT_c_dt,
+                    dT_i_dt,
+                    dT_v_dt,
+                    dT_m_dt,
+                    dT_p_dt,
+                    dT_f_dt,
+                    dT_s1_dt,
+                    dC_w_dt,
+                    dC_c_dt,
+                    dx_sdw_dt,
+                    dx_nsdw_dt,
+                ]
+            ),
+            locals(),
+        )

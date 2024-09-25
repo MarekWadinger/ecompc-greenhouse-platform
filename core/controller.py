@@ -5,23 +5,25 @@ from do_mpc.controller import MPC
 from do_mpc.model import Model
 from do_mpc.simulator import Simulator
 
-from core.greenhouse_model import A_p as greenhouse_area
-from core.greenhouse_model import heater, ventilation
-from core.greenhouse_model import model as gh_model
-from examples.GES_Example import z
+from core.greenhouse_model import GreenHouse, x_init
 
 
 class GreenHouseModel(Model):  # Create a model instance
     def __init__(
         self,
+        gh_model: GreenHouse,
         climate_vars,
         dt=60,
     ):
+        self.gh = gh_model
+
         super().__init__("discrete")
 
         # Define state and control variables
         t = self.set_variable(var_type="_tvp", var_name="t", shape=(1, 1))
-        x = self.set_variable(var_type="_x", var_name="x", shape=(len(z), 1))
+        x = self.set_variable(
+            var_type="_x", var_name="x", shape=(len(x_init), 1)
+        )
         u = self.set_variable(var_type="_u", var_name="u", shape=(2, 1))
         tvp = {
             name: self.set_variable(var_type="_tvp", var_name=name)
@@ -31,7 +33,7 @@ class GreenHouseModel(Model):  # Create a model instance
         # Define the model equations
         def f(t, x, u, tvp):
             return vertcat(
-                *gh_model(
+                *gh_model.model(
                     t, vertsplit(x), vertsplit(u), climate=tuple(tvp.values())
                 )
             )
@@ -52,10 +54,9 @@ class GreenHouseModel(Model):  # Create a model instance
 class EconomicMPC(MPC):
     def __init__(
         self,
-        model,
+        model: GreenHouseModel,
         climate,
         lettuce_price=0.0054,  # EUR/g
-        greenhouse_area=greenhouse_area,  # m^2
         N=60,  # number of control intervals
         dt=60,  # sampling time in seconds
         x_ref=np.array([50.0, 5.0]),  # reference state
@@ -69,7 +70,7 @@ class EconomicMPC(MPC):
         self.climate = climate
 
         self.lettuce_price = lettuce_price
-        self.greenhouse_area = greenhouse_area
+        self.cultivated_area = model.gh.A_c
 
         assert len(u_min) == model.n_u
         assert len(u_max) == model.n_u
@@ -104,28 +105,28 @@ class EconomicMPC(MPC):
             * 0,  # ca.DM(0)
             lterm=(
                 -dot(
-                    self.lettuce_price * self.x[-2] * self.greenhouse_area,
-                    self.lettuce_price * self.x[-2] * self.greenhouse_area,
+                    self.lettuce_price * self.x[-2] * self.cultivated_area,
+                    self.lettuce_price * self.x[-2] * self.cultivated_area,
                 )
                 + dot(
-                    ventilation.signal_to_eur(self.u[0]),
-                    ventilation.signal_to_eur(self.u[0]),
+                    model.gh.ventilation.signal_to_eur(self.u[0]),
+                    model.gh.ventilation.signal_to_eur(self.u[0]),
                 )
                 + dot(
-                    ventilation.signal_to_co2_eur(self.u[0]),
-                    ventilation.signal_to_co2_eur(self.u[0]),
+                    model.gh.ventilation.signal_to_co2_eur(self.u[0]),
+                    model.gh.ventilation.signal_to_co2_eur(self.u[0]),
                 )
                 + dot(
-                    heater.signal_to_eur(self.u[1]),
-                    heater.signal_to_eur(self.u[1]),
+                    model.gh.heater.signal_to_eur(self.u[1]),
+                    model.gh.heater.signal_to_eur(self.u[1]),
                 )
                 + dot(
-                    heater.signal_to_co2_eur(self.u[1]),
-                    heater.signal_to_co2_eur(self.u[1]),
+                    model.gh.heater.signal_to_co2_eur(self.u[1]),
+                    model.gh.heater.signal_to_co2_eur(self.u[1]),
                 )
                 + dot(
-                    self.lettuce_price * z[-2] * self.greenhouse_area,
-                    self.lettuce_price * self.x[-2] * self.greenhouse_area,
+                    self.lettuce_price * x_init[-2] * self.cultivated_area,
+                    self.lettuce_price * self.x[-2] * self.cultivated_area,
                 )
             ),
         )

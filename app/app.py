@@ -6,14 +6,13 @@ from io import BytesIO
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 from stqdm import stqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
-from core.greenhouse_model import model as gh_model
+from core.greenhouse_model import GreenHouse, x_init
 from core.openmeteo_query import OpenMeteo
 from core.plot import plot_greenhouse, plotly_response
 
@@ -98,6 +97,14 @@ if "gh_form_submitted" not in st.session_state:
     st.session_state["gh_form_submitted"] = False
 
 
+def set_gh_shape_form_submit():
+    st.session_state["gh_shape_form_submitted"] = True
+
+
+if "gh_shape_form_submitted" not in st.session_state:
+    st.session_state["gh_shape_form_submitted"] = False
+
+
 def set_params_form_submit():
     st.session_state["params_form_submitted"] = True
 
@@ -105,8 +112,66 @@ def set_params_form_submit():
 if "params_form_submitted" not in st.session_state:
     st.session_state["params_form_submitted"] = False
 
-# === Sidebar ===
-st.sidebar.title("Greenhouse Location and Panel Orientation")
+#  === Sidebar ===
+st.sidebar.title("Greenhouse Shape and Orientation")
+
+with st.sidebar.form(key="gh_shape_form", border=False):
+    st.sidebar.markdown("Select the dimensions of the greenhouse")
+    # Input for length and width
+    length = st.number_input(
+        "Length (meters)",
+        min_value=0.0,
+        value=25.0,
+        step=0.1,
+        format="%.1f",
+    )
+
+    width = st.number_input(
+        "Width (meters)",
+        min_value=0.0,
+        value=10.0,
+        step=0.1,
+        format="%.1f",
+    )
+
+    height = st.number_input(
+        "Wall Height (meters)",
+        min_value=1.0,
+        value=4.0,
+        step=0.1,
+        format="%.1f",
+    )
+
+    st.markdown("### Orientation and Roof Tilt")
+
+    # Compass azimuth selection (slider from 0° to 360°)
+    azimuth_face = st.slider(
+        "Azimuth (degrees - greenhouse width faces)",
+        min_value=0,
+        max_value=360,
+        value=90,  # Default to South
+        format="%d°",
+        help="Direction your greenhouse faces: North = 0°, South = 180°",
+    )
+
+    # Tilt for roof (0° to 90°)
+    roof_tilt = st.slider(
+        "Roof Tilt (degrees)",
+        min_value=0,
+        max_value=45,
+        value=30,
+        step=1,
+        format="%d°",
+        help="Tilt angle of the roof: 0° = flat, 90° = vertical",
+    )
+    wall_tilt = 90
+
+    submit_gh_shape = st.form_submit_button(
+        "Validate", on_click=set_gh_shape_form_submit
+    )
+
+
+st.sidebar.title("Greenhouse Location")
 
 with st.sidebar.form(key="gh_form", border=False):
     latitude = st.slider(
@@ -122,20 +187,6 @@ with st.sidebar.form(key="gh_form", border=False):
         value=13.41,
         key="slider_ref_size",
     )
-    tilt = st.multiselect(
-        "Tilt of the solar panel in degrees",
-        [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
-        default=[90, 40],
-    )
-    azimuth = st.multiselect(
-        "Azimuth of the solar panel in degrees",
-        ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
-        default=["NE", "SE", "SW", "NW"],
-    )
-
-    tilt_, azimuth_ = zip(*[(t, a) for a in azimuth for t in tilt])
-    tilt = list(tilt_)
-    azimuth = list(azimuth_)
 
     submit_gh = st.form_submit_button("Validate", on_click=set_gh_form_submit)
 
@@ -240,20 +291,23 @@ if (
     runtime_info.success("Skadoosh ...")
 
 if (
-    st.session_state.gh_form_submitted
+    st.session_state.gh_shape_form_submitted
+    and st.session_state.gh_form_submitted
     and st.session_state.params_form_submitted
 ):
     runtime_info.info("Preparing simulation ...")
 
-    greenhouse_model = partial(gh_model, climate=climate.values)
+    gh_model = GreenHouse(
+        length, width, height, roof_tilt, latitude, longitude
+    )
+    greenhouse_model = partial(gh_model.model, climate=climate.values)
 
-    model = GreenHouseModel(climate_vars=climate.columns)
+    model = GreenHouseModel(gh_model, climate_vars=climate.columns)
 
     mpc = EconomicMPC(
         model,
         climate,
         lettuce_price / 1000,
-        cultivated_area,
         N,
         dt,
         x_ref,
@@ -266,7 +320,7 @@ if (
     runtime_info.info("Simulating ...")
 
     # Find feasible initial state
-    x0 = z
+    x0 = x_init
     u0 = np.array([0.0, 0.0])
     for k in range(N):
         k1 = greenhouse_model(k, x0, u0)
