@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from plotly.subplots import make_subplots
 from stqdm import stqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
@@ -16,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
 from core.greenhouse_model import model as gh_model
 from core.openmeteo_query import OpenMeteo
-from examples.GES_Example import z
+from core.plot import plot_greenhouse, plotly_response
 
 
 @contextmanager
@@ -67,90 +66,18 @@ def concat_results(X, scores_dmd, scores_dmd_diff):
 
 
 @st.cache_data
-def plot(
+def plot_greenhouse_(length, width, height, roof_tilt, azimuth):
+    return plot_greenhouse(length, width, height, roof_tilt, azimuth)
+
+
+@st.cache_data
+def plot_(
     _timestamps,
     y_nexts,
     u0s,
     ums,
 ):
-    y_nexts_ = np.array(y_nexts).reshape(-1, 2)
-    fig = make_subplots(
-        rows=2,
-        cols=1,
-        shared_xaxes=True,
-        subplot_titles=("Lettuce Dry Weight (g)", "Actuation [%]"),
-    )
-
-    # Plot Lettuce Dry Weight
-    fig.add_trace(
-        go.Scatter(
-            x=_timestamps,
-            y=y_nexts_[:, -2],
-            mode="lines",
-            name="structural",
-        ),
-        row=1,
-        col=1,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=_timestamps,
-            y=y_nexts_[:, -1],
-            mode="lines",
-            name="nonstructural",
-        ),
-        row=1,
-        col=1,
-    )
-
-    # Plot Actuation
-    labels = ["fan", "heater"]
-    colors = ["#1f77b4", "#ff7f0e"]
-    for i, (label, color) in enumerate(zip(labels, colors)):
-        fig.add_trace(
-            go.Scatter(
-                x=_timestamps,
-                y=np.array(u0s).reshape(-1, 2)[:, i],
-                mode="lines",
-                name=label,
-                line=dict(color=color),
-            ),
-            row=2,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=_timestamps,
-                y=np.array(ums).reshape(-1, 4)[:, i],
-                mode="lines",
-                name=f"{label} min",
-                line=dict(color=color, dash="dash"),
-            ),
-            row=2,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=_timestamps,
-                y=np.array(ums).reshape(-1, 4)[:, i + 2],
-                mode="lines",
-                name=f"{label} max",
-                line=dict(color=color, dash="dash"),
-            ),
-            row=2,
-            col=1,
-        )
-
-    fig.update_layout(height=600, width=800, title_text="Greenhouse Control")
-    fig.update_yaxes(title_text="Lettuce Dry Weight (g)", row=1, col=1)
-    fig.update_yaxes(title_text="Actuation [%]", row=2, col=1)
-
-    return fig
-
-
-@st.cache_data
-def export_df(df):
-    return df.to_csv().encode("utf-8")
+    return plotly_response(_timestamps, y_nexts, u0s, ums)
 
 
 # --- Page Config ---
@@ -274,7 +201,21 @@ if st.session_state.gh_form_submitted:
 st.title("Economic MPC for Greenhouse Climate Control")
 
 # === Enable after submitting parameters ===
-if st.session_state.gh_form_submitted:
+if st.session_state.gh_shape_form_submitted:
+    fig_gh = plot_greenhouse_(length, width, height, roof_tilt, azimuth_face)
+    st.pyplot(fig_gh)
+
+if (
+    st.session_state.gh_shape_form_submitted
+    and st.session_state.gh_form_submitted
+):
+    tilt = [90, 90, 90, 90, 89, 89, roof_tilt, roof_tilt]
+    azimuth = [
+        azimuth_face,  # Front
+        azimuth_face + 180,  # Back
+        azimuth_face + 90,  # Right
+        azimuth_face + 270,  # Left
+    ] * 2
     # Initialize runtime
     openmeteo = OpenMeteo(
         latitude=latitude,  # Latitude of the location in degrees
@@ -381,7 +322,7 @@ if (
     timestamps = pd.date_range(
         start=start_date, periods=sim_steps, freq=pd.Timedelta(seconds=dt)
     )
-    st.plotly_chart(plot(timestamps, y_nexts, u0s, ums))
+    st.plotly_chart(plotly_response(timestamps, y_nexts, u0s, ums))
 
     runtime_info.success(
         f"Congrats, your greenhouse generated profit of {np.sqrt(-np.mean(np.array(mpc.solver_stats["iterations"]["obj"]))):.2f} EUR! 🤑"
