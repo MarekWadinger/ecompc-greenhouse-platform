@@ -388,8 +388,8 @@ class GreenHouse:
     def _model(
         self,
         t,
-        z: tuple,
-        u: tuple,
+        z: tuple | np.ndarray,
+        u: tuple | np.ndarray,
         climate: tuple | np.ndarray,
     ) -> tuple[np.ndarray, dict]:
         T_c = z[0]

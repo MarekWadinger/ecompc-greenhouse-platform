@@ -29,21 +29,6 @@ def suppress_stdout():
 
 
 # --- Functions ---
-def update_selection_X():
-    st.session_state.selected_X = st.session_state.multiselect_X
-    st.session_state.m = len(st.session_state.selected_X)
-    st.session_state.m
-    if st.session_state.m > 0:
-        st.session_state.disable_params = False
-    else:
-        st.session_state.disable_params = True
-
-
-def update_selection_U():
-    st.session_state.selected_U = st.session_state.multiselect_U
-    st.session_state.l = len(st.session_state.selected_U)
-
-
 def export_fig(fig) -> bytes:
     buf = BytesIO()
     fig.savefig(buf, format="pdf")
@@ -208,13 +193,6 @@ if st.session_state.gh_form_submitted:
             step=0.01,
             format="%.2f",
         )
-        cultivated_area = st.number_input(
-            "Greenhouse area (m^2)",
-            min_value=0.0,
-            value=187.5,
-            step=0.5,
-            format="%.1f",
-        )
         N = st.number_input(
             "Number of control intervals",
             min_value=1,
@@ -224,7 +202,7 @@ if st.session_state.gh_form_submitted:
         dt = st.number_input(
             "Sampling time (seconds)",
             min_value=1,
-            max_value=120,
+            max_value=180,
             value=120,
             step=1,
         )
@@ -250,9 +228,10 @@ if st.session_state.gh_form_submitted:
 
 # === Main ===
 st.title("Economic MPC for Greenhouse Climate Control")
-
+runtime_info = st.empty()
 # === Enable after submitting parameters ===
 if st.session_state.gh_shape_form_submitted:
+    st.header("Greenhouse Visualization")
     fig_gh = plot_greenhouse_(length, width, height, roof_tilt, azimuth_face)
     st.pyplot(fig_gh)
 
@@ -260,6 +239,7 @@ if (
     st.session_state.gh_shape_form_submitted
     and st.session_state.gh_form_submitted
 ):
+    st.header("Weather Forecast")
     tilt = [90, 90, 90, 90, 89, 89, roof_tilt, roof_tilt]
     azimuth = [
         azimuth_face,  # Front
@@ -276,7 +256,7 @@ if (
         frequency="minutely_15",  # Frequency of the data
     )
 
-    start_date = pd.Timestamp.now() - pd.Timedelta(days=16)
+    start_date = pd.Timestamp.now() - pd.Timedelta(days=1)
     climdat = openmeteo.get_weather_data(
         start_date=start_date.strftime("%Y-%m-%d"),
         end_date=pd.Timestamp.now().strftime("%Y-%m-%d"),
@@ -284,10 +264,10 @@ if (
 
     climate = climdat.asfreq("1s").interpolate(method="time")
     start_date = pd.Timestamp(climate.index[0])
-    runtime_info = st.info("Plotting forecast ...")
+    runtime_info.info("Plotting forecast ...")
 
-    forecast_plot = st.empty()
-    forecast_plot.plotly_chart(climdat.plot(backend="plotly"))
+    weather_plot = st.empty()
+    weather_plot.plotly_chart(climdat.plot(backend="plotly"))
     runtime_info.success("Skadoosh ...")
 
 if (
@@ -295,6 +275,7 @@ if (
     and st.session_state.gh_form_submitted
     and st.session_state.params_form_submitted
 ):
+    st.header("Simulation Results")
     runtime_info.info("Preparing simulation ...")
 
     gh_model = GreenHouse(
@@ -356,7 +337,7 @@ if (
                 climate = climdat.asfreq("1s").interpolate(method="time")
                 mpc.climate = climate
                 simulator.climate = climate
-                forecast_plot.plotly_chart(climdat.plot(backend="plotly"))
+                weather_plot.plotly_chart(climdat.plot(backend="plotly"))
                 runtime_info.info("Simulating ...")
             else:
                 break
@@ -376,7 +357,8 @@ if (
     timestamps = pd.date_range(
         start=start_date, periods=sim_steps, freq=pd.Timedelta(seconds=dt)
     )
-    st.plotly_chart(plotly_response(timestamps, y_nexts, u0s, ums))
+    forecast_plot = st.empty()
+    forecast_plot.plotly_chart(plotly_response(timestamps, y_nexts, u0s, ums))
 
     runtime_info.success(
         f"Congrats, your greenhouse generated profit of {np.sqrt(-np.mean(np.array(mpc.solver_stats["iterations"]["obj"]))):.2f} EUR! 🤑"

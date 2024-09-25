@@ -9,20 +9,11 @@ from plotly.subplots import make_subplots
 
 plt.rcParams.update(
     {
-        "text.usetex": True,
-        "font.family": "CMU Serif",
-        "font.serif": "CMU Serif",
         "axes.grid": True,
-        # "axes.labelsize": 8,
-        # "font.size": 8,
-        # "legend.fontsize": 8,
-        # "xtick.labelsize": 8,
-        # "ytick.labelsize": 8,
         "figure.subplot.left": 0.1,
         "figure.subplot.bottom": 0.2,
         "figure.subplot.right": 0.95,
         "figure.subplot.top": 0.85,
-        # "backend": "macOsX"
     }
 )
 

@@ -35,7 +35,7 @@ from scipy.integrate import solve_ivp
 
 sys.path.insert(1, str(Path().resolve()))
 from core.greenhouse_model import (  # noqa: E402
-    Greenhouse,
+    GreenHouse,
     M_c,
     R,
     T_k,
@@ -48,7 +48,7 @@ results_dir = "examples/results"
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
-gh_model = Greenhouse()
+gh_model = GreenHouse()
 
 openmeteo = OpenMeteo(
     latitude=52.52,  # Latitude of the location in degrees
