@@ -101,7 +101,6 @@ if "params_form_submitted" not in st.session_state:
 st.sidebar.title("Greenhouse Shape and Orientation")
 
 with st.sidebar.form(key="gh_shape_form", border=False):
-    st.sidebar.markdown("Select the dimensions of the greenhouse")
     # Input for length and width
     length = st.number_input(
         "Length (meters)",
@@ -156,24 +155,27 @@ with st.sidebar.form(key="gh_shape_form", border=False):
     )
 
 
-st.sidebar.title("Greenhouse Location")
+if st.session_state.gh_shape_form_submitted:
+    st.sidebar.title("Greenhouse Location")
 
-with st.sidebar.form(key="gh_form", border=False):
-    latitude = st.slider(
-        "Latitude of the location in degrees",
-        -90.0,
-        90.0,
-        value=52.52,
-    )
-    longitude = st.slider(
-        "Longitude of the location in degrees",
-        -90.0,
-        90.0,
-        value=13.41,
-        key="slider_ref_size",
-    )
+    with st.sidebar.form(key="gh_form", border=False):
+        latitude = st.slider(
+            "Latitude of the location in degrees",
+            -90.0,
+            90.0,
+            value=52.52,
+        )
+        longitude = st.slider(
+            "Longitude of the location in degrees",
+            -90.0,
+            90.0,
+            value=13.41,
+            key="slider_ref_size",
+        )
 
-    submit_gh = st.form_submit_button("Validate", on_click=set_gh_form_submit)
+        submit_gh = st.form_submit_button(
+            "Validate", on_click=set_gh_form_submit
+        )
 
 if st.session_state.gh_form_submitted:
     st.sidebar.title("Control Parameters")

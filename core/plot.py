@@ -167,7 +167,7 @@ def plotly_response(
         rows=2,
         cols=1,
         shared_xaxes=True,
-        subplot_titles=("Lettuce Dry Weight (g)", "Actuation [%]"),
+        # subplot_titles=("Lettuce Dry Weight (g)", "Actuation [%]"),
     )
 
     # Plot Lettuce Dry Weight
@@ -230,7 +230,6 @@ def plotly_response(
             col=1,
         )
 
-    fig.update_layout(height=600, width=800, title_text="Greenhouse Control")
     fig.update_yaxes(title_text="Lettuce Dry Weight (g)", row=1, col=1)
     fig.update_yaxes(title_text="Actuation [%]", row=2, col=1)
 
