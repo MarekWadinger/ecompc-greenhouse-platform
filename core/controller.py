@@ -87,9 +87,10 @@ class EconomicMPC(MPC):
             "nlpsol_opts": {
                 "ipopt": {  # https://coin-or.github.io/Ipopt/OPTIONS.html
                     # "max_iter": 3,
-                    "linear_solver": "MA57",  # https://licences.stfc.ac.uk/product/coin-hsl
+                    # "linear_solver": "MA57",  # https://licences.stfc.ac.uk/product/coin-hsl
                     "warm_start_init_point": "yes",
                     "mu_allow_fast_monotone_decrease": "yes",
+                    "fast_step_computation": "yes",
                     "print_level": 0,
                     # "output_file": "ipopt.out",
                     # "print_user_options": "yes",
