@@ -86,15 +86,15 @@ class EconomicMPC(MPC):
             "state_discretization": "discrete",
             "nlpsol_opts": {
                 "ipopt": {  # https://coin-or.github.io/Ipopt/OPTIONS.html
-                    "max_iter": 3,
+                    # "max_iter": 3,
                     "linear_solver": "MA57",  # https://licences.stfc.ac.uk/product/coin-hsl
                     "warm_start_init_point": "yes",
                     "mu_allow_fast_monotone_decrease": "yes",
                     "print_level": 0,
                     # "output_file": "ipopt.out",
-                    "print_user_options": "yes",
-                    "print_options_documentation": "yes",
-                    "print_frequency_iter": 4,
+                    # "print_user_options": "yes",
+                    # "print_options_documentation": "yes",
+                    "print_frequency_iter": 10,
                 }
             },
         }
