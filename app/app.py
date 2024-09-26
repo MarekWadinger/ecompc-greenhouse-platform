@@ -363,5 +363,5 @@ if (
     forecast_plot.plotly_chart(plotly_response(timestamps, y_nexts, u0s, ums))
 
     runtime_info.success(
-        f"Congrats, your greenhouse generated profit of {np.sqrt(-np.mean(np.array(mpc.solver_stats["iterations"]["obj"]))):.2f} EUR! 🤑"
+        f"Congrats, your greenhouse generated profit of {np.sqrt(-np.mean(np.array(mpc.solver_stats['iterations']['obj']))):.2f} EUR! 🤑"
     )
