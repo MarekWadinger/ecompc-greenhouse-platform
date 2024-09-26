@@ -11,7 +11,6 @@ from core.lettuce_model import get_f_resp, lettuce_growth_model
 
 # CONSTANTS
 Nz = 1.0
-deltaT = 60  # s
 
 # Constants
 sigm = 5.67e-8  # Stefan-Boltzmann constant [W/m^2/K^4]
@@ -297,6 +296,7 @@ class GreenHouse:
         max_heat: float | None = None,
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
+        dt=60,  # sampling time in seconds
     ) -> None:
         self.length = length
         self.width = width
@@ -304,6 +304,7 @@ class GreenHouse:
         self.roof_tilt = roof_tilt
         self.latitude = latitude
         self.longitude = longitude
+        self.dt = dt
 
         # Geometry
         roof_height = width / 2 * np.tan(np.radians(roof_tilt))
@@ -410,9 +411,8 @@ class GreenHouse:
         Q_heater = self.heater.signal_to_actuation(perc_heater)
 
         # External weather and dependent internal parameter values
-        # n = int(np.ceil(t / deltaT))  # count
         if isinstance(climate, np.ndarray):
-            climate = tuple(climate[int(t), :])
+            climate = tuple(climate[int(t) // self.dt, :])
         T_ext = climate[0] + T_k  # External air temperature (K)
         T_sk = climate[1] + T_k  # External sky temperature (K)
         wind_speed = climate[2]  # External wind speed (m/s)

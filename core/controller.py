@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from casadi import dot, vertcat, vertsplit
 from do_mpc.controller import MPC
 from do_mpc.model import Model
@@ -155,13 +154,13 @@ class EconomicMPC(MPC):
         def tvp_mpc_fun(t_now):
             if isinstance(t_now, np.ndarray):
                 t_now = t_now[0]
+            t_ = int(t_now // dt)
             # N is the horizon with given ts
             for k in range(N + 1):
-                tvp_mpc_template["_tvp", k, "t"] = t_now + k
+                tvp_mpc_template["_tvp", k, "t"] = t_now + k * dt
                 for key in self.climate.columns:
-                    tvp_mpc_template["_tvp", k, key] = self.climate[key][
-                        pd.Timestamp(self.climate.index[0])
-                        + pd.Timedelta(seconds=t_now + k)
+                    tvp_mpc_template["_tvp", k, key] = self.climate[key].iloc[
+                        t_ + k
                     ]
             return tvp_mpc_template
 
@@ -188,12 +187,10 @@ class GreenhouseSimulator(Simulator):
         def tvp_sim_fun(t_now):
             if isinstance(t_now, np.ndarray):
                 t_now = t_now[0]
+            t_ = int(t_now // dt)
             tvp_sim_template["t"] = t_now
             for key in climate.columns:
-                tvp_sim_template[key] = climate[key][
-                    pd.Timestamp(self.climate.index[0])
-                    + pd.Timedelta(seconds=t_now)
-                ]
+                tvp_sim_template[key] = climate[key].iloc[t_]
             return tvp_sim_template
 
         # Set the tvp_fun:

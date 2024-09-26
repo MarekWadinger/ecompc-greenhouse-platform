@@ -371,7 +371,7 @@ def plot_compass_with_greenhouse(azimuth, length, width, ax=None):
     radii = np.sqrt(rotated_corners[:, 0] ** 2 + rotated_corners[:, 1] ** 2)
 
     # Close the rectangle by appending the first point again
-    angles = np.concatenate([angles, [angles[0]]])
+    angles = np.concatenate([angles, [angles[0]]])  # type: ignore
     radii = np.concatenate([radii, [radii[0]]])
 
     # Plot the rectangle by connecting the corners

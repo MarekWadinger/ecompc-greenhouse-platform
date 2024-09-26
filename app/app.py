@@ -243,7 +243,7 @@ if (
 ):
     st.header("Weather Forecast")
     tilt = [90, 90, 90, 90, 89, 89, roof_tilt, roof_tilt]
-    azimuth = [
+    azimuth: list[int | str] = [
         azimuth_face,  # Front
         azimuth_face + 180,  # Back
         azimuth_face + 90,  # Right
@@ -259,17 +259,21 @@ if (
     )
 
     start_date = pd.Timestamp.now() - pd.Timedelta(days=1)
-    climdat = openmeteo.get_weather_data(
-        start_date=start_date.strftime("%Y-%m-%d"),
-        end_date=pd.Timestamp.now().strftime("%Y-%m-%d"),
+    climate = (
+        openmeteo.get_weather_data(
+            start_date=start_date.strftime("%Y-%m-%d"),
+            end_date=pd.Timestamp.now().strftime("%Y-%m-%d"),
+        )
+        .asfreq(f"{dt}s")
+        .interpolate(method="time")
     )
-
-    climate = climdat.asfreq("1s").interpolate(method="time")
     start_date = pd.Timestamp(climate.index[0])
     runtime_info.info("Plotting forecast ...")
 
     weather_plot = st.empty()
-    weather_plot.plotly_chart(climdat.plot(backend="plotly"))
+    weather_plot.plotly_chart(
+        climate.resample("1H").median().plot(backend="plotly")
+    )
     runtime_info.success("Skadoosh ...")
 
 if (
@@ -281,7 +285,13 @@ if (
     runtime_info.info("Preparing simulation ...")
 
     gh_model = GreenHouse(
-        length, width, height, roof_tilt, latitude, longitude
+        length,
+        width,
+        height,
+        roof_tilt,
+        latitude=latitude,
+        longitude=longitude,
+        dt=dt,
     )
     greenhouse_model = partial(gh_model.model, climate=climate.values)
 
@@ -329,20 +339,23 @@ if (
             if climate.index[-1] < pd.Timestamp.now():
                 runtime_info.info("Fetching new forecast")
                 start_date = start_date + pd.Timedelta(seconds=step * dt)
-                climdat = openmeteo.get_weather_data(
-                    start_date=start_date.strftime("%Y-%m-%d"),
-                    end_date=(start_date + pd.Timedelta(days=8)).strftime(
-                        "%Y-%m-%d"
-                    ),
+                climate = (
+                    openmeteo.get_weather_data(
+                        start_date=start_date.strftime("%Y-%m-%d"),
+                        end_date=(start_date + pd.Timedelta(days=8)).strftime(
+                            "%Y-%m-%d"
+                        ),
+                    )
+                    .asfreq(f"{dt}s")
+                    .interpolate(method="time")
                 )
 
-                climate = climdat.asfreq("1s").interpolate(method="time")
                 mpc.climate = climate
                 simulator.climate = climate
-                weather_plot.plotly_chart(climdat.plot(backend="plotly"))
+                weather_plot.plotly_chart(
+                    climate.resample("1H").median().plot(backend="plotly")
+                )
                 runtime_info.info("Simulating ...")
-            else:
-                break
 
         ums.append([u_min, u_max])
         with suppress_stdout():
@@ -363,5 +376,5 @@ if (
     forecast_plot.plotly_chart(plotly_response(timestamps, y_nexts, u0s, ums))
 
     runtime_info.success(
-        f"Congrats, your greenhouse generated profit of {np.sqrt(-np.mean(np.array(mpc.solver_stats['iterations']['obj']))):.2f} EUR! 🤑"
+        f"Congrats, your greenhouse generated profit of {np.sqrt(-np.array(mpc.solver_stats['iterations']['obj'][-1])):.2f} EUR! 🤑"
     )

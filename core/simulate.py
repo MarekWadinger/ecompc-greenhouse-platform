@@ -18,7 +18,6 @@ def simulate(
     x0: Union[list[float], None] = None,
     ref_gen: Union[GenProt, None] = None,
     method: str = "RK45",
-    **kwargs,
 ) -> tuple:
     """Simulation of the system in the open-loop/closed-loop.
 
@@ -71,7 +70,7 @@ def simulate(
             system,
             tspan,
             x_ode_prev,
-            args=(u_, kwargs),
+            args=(u_,),
             method=method,
             first_step=t_s,
         )

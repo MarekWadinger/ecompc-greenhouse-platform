@@ -1,6 +1,6 @@
 import warnings
 from datetime import datetime, timezone
-from typing import Literal, Sequence
+from typing import Literal
 
 import pandas as pd
 import pvlib
@@ -14,8 +14,8 @@ class OpenMeteo:
         self,
         latitude: float,
         longitude: float,
-        tilt: float | int | Sequence[float | int],
-        azimuth: float | int | str | Sequence[float | int | str],
+        tilt: int | list[int],
+        azimuth: int | str | list[int | str],
         frequency: Literal["hourly", "minutely_15", "current"] = "current",
     ):
         self.latitude = latitude
@@ -217,11 +217,11 @@ class OpenMeteo:
             dhi_ = dhi
 
         # Tilted surface radiation
-        if not isinstance(self.tilt, (list, Sequence)):
+        if not isinstance(self.tilt, list):
             tilt = [self.tilt]
         else:
             tilt = self.tilt
-        if not isinstance(self.azimuth, (list, Sequence)):
+        if not isinstance(self.azimuth, list):
             azimuth = [self.azimuth]
         else:
             azimuth = self.azimuth
