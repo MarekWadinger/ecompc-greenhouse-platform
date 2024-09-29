@@ -17,6 +17,10 @@ from core.greenhouse_model import GreenHouse, x_init
 from core.openmeteo_query import OpenMeteo, get_city_geocoding
 from core.plot import plotly_greenhouse, plotly_response
 
+# CONSTANTS
+sim_steps_max = 60 * 24
+N_max = 60
+
 
 @contextmanager
 def suppress_stdout():
@@ -197,8 +201,8 @@ if st.session_state.gh_form_submitted:
     with st.sidebar.form(key="params_form", border=False):
         sim_steps = st.slider(
             "Simulation steps (1/dt)",
-            0,
-            60 * 24,
+            min_value=0,
+            max_value=sim_steps_max,
             value=60,
             step=1,
         )
@@ -210,8 +214,9 @@ if st.session_state.gh_form_submitted:
             format="%.2f",
         )
         N = st.number_input(
-            "Number of control intervals",
+            "Prediction horizon",
             min_value=1,
+            max_value=N_max,
             value=30,
             step=1,
         )
@@ -228,12 +233,14 @@ if st.session_state.gh_form_submitted:
         )
         x_ref = np.array([float(x) for x in x_ref_.split(",")])
         u_min_ = st.text_input(
-            "Minimum control input (comma-separated values)",
+            "Minimum control input (%)",
+            help="(comma-separated values)",
             value="0.0, 0.0",
         )
         u_min = [float(u) for u in u_min_.split(",")]
         u_max_ = st.text_input(
-            "Maximum control input (comma-separated values)",
+            "Maximum control input (%)",
+            help="(comma-separated values)",
             value="100.0, 100.0",
         )
         u_max = [float(u) for u in u_max_.split(",")]
@@ -273,12 +280,16 @@ if (
         azimuth=azimuth,  # Azimuth angle of the surface in degrees (South facing)
         frequency="minutely_15",  # Frequency of the data
     )
-
-    start_date = pd.Timestamp.now() - pd.Timedelta(days=1)
+    start_date = pd.Timestamp.now()
     climate = (
         openmeteo.get_weather_data(
-            start_date=start_date.strftime("%Y-%m-%d"),
-            end_date=pd.Timestamp.now().strftime("%Y-%m-%d"),
+            start_date=start_date,
+            end_date=(
+                start_date
+                + pd.Timedelta(
+                    days=(sim_steps_max + N_max) * dt // (3600 * 24)
+                )
+            ),
         )
         .asfreq(f"{dt}s")
         .interpolate(method="time")
@@ -352,13 +363,13 @@ if (
     ums = []
     for step in stqdm(range(sim_steps)):
         if step * dt + N + 1 > len(climate):
-            if climate.index[-1] < pd.Timestamp.now():
+            if step + N == len(climate):
                 runtime_info.info("Fetching new forecast")
                 start_date = start_date + pd.Timedelta(seconds=step * dt)
                 climate = (
                     openmeteo.get_weather_data(
-                        start_date=start_date.strftime("%Y-%m-%d"),
-                        end_date=(start_date + pd.Timedelta(days=8)).strftime(
+                        start_date=start_date,
+                        end_date=(start_date + pd.Timedelta(days=1)).strftime(
                             "%Y-%m-%d"
                         ),
                     )
