@@ -200,6 +200,7 @@ T_s1_0 = 12.0 + T_k  # Temperature of soil layer 1 [K]
 C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
 C_c_0 = 7.5869e-4  # CO_2 density
 
+# The proportion should be somewhere between 40:60 - 30:70 for lettuce
 x_sdw = 0.72  # Structural dry weight of the plant [kg/m^2]
 x_nsdw = 2.7  # Non-structural dry weight of the plant [kg/m^2]
 

@@ -228,11 +228,22 @@ if st.session_state.gh_form_submitted:
             value=120,
             step=1,
         )
-        x_ref_ = st.text_input(
-            "Reference state (comma-separated values)",
-            value="50.0, 5.0",
+        x_lettuce_wet_init = st.number_input(
+            "Initial crop wet weight (g/m^2)",
+            help=(
+                "1 seedling ~ 5g."
+                "For mature lettuce and seedling, we assume that 10 % is dry weight.\n"
+                "Ratio of structural to non-structural dry weight is "
+                "assumed to be 3:7."
+            ),
+            min_value=5,
+            max_value=500,
+            value=500,
+            step=1,
         )
-        x_ref = np.array([float(x) for x in x_ref_.split(",")])
+        x_lettuce_dry_init = x_lettuce_wet_init * 0.1 / 1000  # kg/m^2
+
+        x_sn_init = x_lettuce_dry_init * np.array([0.3, 0.7])
         u_min_ = st.text_input(
             "Minimum control input (%)",
             help="(comma-separated values)",
@@ -331,17 +342,18 @@ if (
         lettuce_price / 1000,
         N,
         dt,
-        x_ref,
+        x_sn_init,
         u_min,
         u_max,
     )
 
-    simulator = GreenhouseSimulator(model, climate, dt)
+    simulator = GreenhouseSimulator(model, climate, dt, x_sn_init)
 
     runtime_info.info("Simulating ...")
 
-    # Find feasible initial state
+    # Find feasible initial state for given climate
     x0 = x_init
+    x0[-2:] = x_sn_init
     u0 = np.array([0.0, 0.0])
     for k in range(N):
         k1 = greenhouse_model(k, x0, u0)
@@ -359,7 +371,6 @@ if (
 
     # Run the MPC simulation
     u0s = []
-    y_nexts = []
     x0s = []
     ums = []
     for step in stqdm(range(sim_steps)):
@@ -389,12 +400,10 @@ if (
         with suppress_stdout():
             u0 = mpc.make_step(x0)
             u0s.append(u0)
-            y_next = simulator.make_step(u0)
-            y_nexts.append(y_next[-2:])
-            x0 = y_next
+            x0 = simulator.make_step(u0)
             if np.isnan(x0).any():
                 raise ValueError("x0 contains NaN values.")
-            x0s.append(x0)
+            x0s.append(x0[-2:])
 
     runtime_info.info("Plotting results ...")
     timestamps = pd.date_range(

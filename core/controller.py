@@ -58,7 +58,7 @@ class EconomicMPC(MPC):
         lettuce_price=0.0054,  # EUR/g
         N=60,  # number of control intervals
         dt=60,  # sampling time in seconds
-        x_ref=np.array([50.0, 5.0]),  # reference state
+        x_weight_init=x_init[-2:],
         u_min=[0.0, 0.0],
         u_max=[100.0, 100.0],
     ):
@@ -76,6 +76,9 @@ class EconomicMPC(MPC):
 
         # Create an MPC instance
         super().__init__(model)
+        x_init_ = x_init
+        x_init_[-2:] = x_weight_init
+        self.x0 = x_init_
 
         # Set parameters
         setup_mpc = {
@@ -101,8 +104,7 @@ class EconomicMPC(MPC):
         self.set_param(**setup_mpc)
         # Define objective
         self.set_objective(
-            mterm=dot(self.x[-2] - x_ref[0], self.x[-2] - x_ref[0])
-            * 0,  # ca.DM(0)
+            mterm=dot(self.x[-2] * 0, self.x[-2] * 0),  # ca.DM(0)
             lterm=(
                 -dot(
                     self.lettuce_price * self.x[-2] * self.cultivated_area,
@@ -125,8 +127,12 @@ class EconomicMPC(MPC):
                     model.gh.heater.signal_to_co2_eur(self.u[1]),
                 )
                 + dot(
-                    self.lettuce_price * x_init[-2] * self.cultivated_area,
-                    self.lettuce_price * self.x[-2] * self.cultivated_area,
+                    self.lettuce_price
+                    * self.x0["x"][-2]
+                    * self.cultivated_area,
+                    self.lettuce_price
+                    * self.x0["x"][-2]
+                    * self.cultivated_area,
                 )
             ),
         )
@@ -168,10 +174,17 @@ class EconomicMPC(MPC):
         self.set_tvp_fun(tvp_mpc_fun)
 
         self.setup()
+        self.set_initial_guess()
 
 
 class GreenhouseSimulator(Simulator):
-    def __init__(self, model, climate, dt=60):
+    def __init__(
+        self,
+        model,
+        climate,
+        dt=60,
+        x_weight_init=x_init,
+    ):
         super().__init__(model)
 
         self.climate = climate
@@ -197,3 +210,8 @@ class GreenhouseSimulator(Simulator):
         self.set_tvp_fun(tvp_sim_fun)
 
         self.setup()
+
+        x_init_ = x_init
+        x_init_[-2:] = x_weight_init
+        self.x0 = x_init_
+        self.set_initial_guess()
