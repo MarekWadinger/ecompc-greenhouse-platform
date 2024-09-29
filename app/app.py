@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from stqdm import stqdm
+from streamlit_theme import st_theme
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
@@ -98,6 +99,15 @@ if "params_form_submitted" not in st.session_state:
     st.session_state["params_form_submitted"] = False
 
 #  === Sidebar ===
+theme: dict | None = st_theme()
+if theme is not None and theme.get("base", "light") == "dark":
+    st.sidebar.image(
+        "/Users/mw/pyprojects/dynamic_opt_growth_model/app/qr-white_transparent.png"
+    )
+else:
+    st.sidebar.image(
+        "/Users/mw/pyprojects/dynamic_opt_growth_model/app/qr-black_transparent.png"
+    )
 st.sidebar.title("Greenhouse Shape and Orientation")
 
 with st.sidebar.form(key="gh_shape_form", border=False):

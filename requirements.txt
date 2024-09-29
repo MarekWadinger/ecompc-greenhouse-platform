@@ -10,6 +10,7 @@ requests
 requests_cache
 retry-requests~=2.0.0
 scipy~=1.11.3
+st-theme~=1.2.3
 stqdm
 streamlit~=1.38.0
 tqdm
