@@ -256,7 +256,7 @@ if (
     st.session_state.gh_shape_form_submitted
     and st.session_state.gh_form_submitted
 ):
-    st.header("Weather Forecast for {city} ({country})")
+    st.header(f"Weather Forecast for {city} ({country})")
     tilt = [90, 90, 90, 90, 89, 89, roof_tilt, roof_tilt]
     azimuth: list[int | str] = [
         azimuth_face,  # Front
@@ -268,6 +268,7 @@ if (
     openmeteo = OpenMeteo(
         latitude=latitude,  # Latitude of the location in degrees
         longitude=longitude,  # Longitude of the location in degrees
+        altitude=altitude,
         tilt=tilt,  # Tilt angle of the surface in degrees
         azimuth=azimuth,  # Azimuth angle of the surface in degrees (South facing)
         frequency="minutely_15",  # Frequency of the data

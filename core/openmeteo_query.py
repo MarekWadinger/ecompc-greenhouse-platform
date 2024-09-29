@@ -30,22 +30,26 @@ class OpenMeteo:
         self,
         latitude: float,
         longitude: float,
+        altitude: int | None,
         tilt: int | list[int],
         azimuth: int | str | list[int | str],
         frequency: Literal["hourly", "minutely_15", "current"] = "current",
     ):
         self.latitude = latitude
         self.longitude = longitude
-        # Get altitude based on latitude and longitude
-        altitude_url = f"https://api.opentopodata.org/v1/test-dataset?locations={self.latitude},{self.longitude}"
-        altitude_response = requests.get(altitude_url)
-        if altitude_response.ok:
-            altitude_data = altitude_response.json()
-            self.altitude = altitude_data["results"][0]["elevation"]
+        if altitude is None:
+            # Get altitude based on latitude and longitude
+            altitude_url = f"https://api.opentopodata.org/v1/test-dataset?locations={self.latitude},{self.longitude}"
+            altitude_response = requests.get(altitude_url)
+            if altitude_response.ok:
+                altitude_data = altitude_response.json()
+                self.altitude: int = altitude_data["results"][0]["elevation"]
+            else:
+                raise ValueError(
+                    f"Failed to fetch altitude data: {altitude_response.text}"
+                )
         else:
-            raise ValueError(
-                f"Failed to fetch altitude data: {altitude_response.text}"
-            )
+            self.altitude = altitude
 
         self.tilt = tilt
         self.azimuth = azimuth
@@ -72,9 +76,9 @@ class OpenMeteo:
         end_date: str | pd.Timestamp | None = None,
     ):
         if isinstance(start_date, pd.Timestamp):
-            start_date = start_date.strftime("%Y-%m-%d")
+            start_date = start_date.strftime("%Y-%m-%dT%H:%M")
         if isinstance(end_date, pd.Timestamp):
-            end_date = end_date.strftime("%Y-%m-%d")
+            end_date = end_date.strftime("%Y-%m-%dT%H:%M")
 
         if self.frequency != "current":
             if forecast is not None and (
@@ -107,8 +111,8 @@ class OpenMeteo:
                 # "global_tilted_irradiance",
             ],
             "forecast_days": forecast,
-            "start_date": start_date,
-            "end_date": end_date,
+            f"start_{self.frequency.rstrip("ly")}": start_date,
+            f"end_{self.frequency.rstrip("ly")}": end_date,
         }
         responses = retry_session.get(url, params=params)
 
@@ -289,12 +293,11 @@ class OpenMeteo:
         end_date: str | pd.Timestamp | None = None,
     ):
         if isinstance(start_date, pd.Timestamp):
-            start_date = start_date.strftime("%Y-%m-%d")
+            start_date = start_date.strftime("%Y-%m-%dT%H:%M")
         if isinstance(end_date, pd.Timestamp):
-            end_date = end_date.strftime("%Y-%m-%d")
+            end_date = end_date.strftime("%Y-%m-%dT%H:%M")
 
         df = self.get_openmeteo(forecast, start_date, end_date)
-
         df_rad = self.get_irr_at_tilt_and_azimuth(
             forecast,
             start_date,
@@ -315,6 +318,7 @@ if __name__ == "__main__":
     openmeteo = OpenMeteo(
         latitude=52.52,  # Latitude of the location in degrees
         longitude=13.41,  # Longitude of the location in degrees
+        altitude=157,
         tilt=[
             90,
             40,
