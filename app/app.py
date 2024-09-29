@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
 from core.greenhouse_model import GreenHouse, x_init
-from core.openmeteo_query import OpenMeteo
+from core.openmeteo_query import OpenMeteo, get_city_geocoding
 from core.plot import plotly_greenhouse, plotly_response
 
 
@@ -169,19 +169,23 @@ if st.session_state.gh_shape_form_submitted:
     st.sidebar.title("Greenhouse Location")
 
     with st.sidebar.form(key="gh_form", border=False):
-        latitude = st.slider(
-            "Latitude of the location in degrees",
-            -90.0,
-            90.0,
-            value=52.52,
+        city_ = st.text_input("City", "Bratislava")
+        city, country, latitude, longitude, altitude = get_city_geocoding(
+            city_
         )
-        longitude = st.slider(
-            "Longitude of the location in degrees",
-            -90.0,
-            90.0,
-            value=13.41,
-            key="slider_ref_size",
-        )
+        # latitude = st.slider(
+        #     "Latitude of the location in degrees",
+        #     -90.0,
+        #     90.0,
+        #     value=52.52,
+        # )
+        # longitude = st.slider(
+        #     "Longitude of the location in degrees",
+        #     -90.0,
+        #     90.0,
+        #     value=13.41,
+        #     key="slider_ref_size",
+        # )
 
         submit_gh = st.form_submit_button(
             "Validate", on_click=set_gh_form_submit
@@ -252,7 +256,7 @@ if (
     st.session_state.gh_shape_form_submitted
     and st.session_state.gh_form_submitted
 ):
-    st.header("Weather Forecast")
+    st.header("Weather Forecast for {city} ({country})")
     tilt = [90, 90, 90, 90, 89, 89, roof_tilt, roof_tilt]
     azimuth: list[int | str] = [
         azimuth_face,  # Front

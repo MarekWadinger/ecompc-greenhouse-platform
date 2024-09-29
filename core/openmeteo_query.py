@@ -9,6 +9,22 @@ import requests_cache
 from retry_requests import retry
 
 
+def get_city_geocoding(city: str):
+    url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
+    response = requests.get(url)
+    if response.ok:
+        data = response.json()["results"][0]
+        return (
+            data["name"],
+            data["country"],
+            data["latitude"],
+            data["longitude"],
+            data["elevation"],
+        )
+    else:
+        raise ValueError(f"Failed to fetch city data: {response.text}")
+
+
 class OpenMeteo:
     def __init__(
         self,
