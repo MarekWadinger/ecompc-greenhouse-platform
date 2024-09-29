@@ -79,20 +79,22 @@ st.set_page_config(
 
 
 # # --- Initialize session ---
+def set_gh_shape_form_submit():
+    st.session_state["gh_shape_form_submitted"] = True
+    st.session_state["gh_form_submitted"] = False
+    st.session_state["params_form_submitted"] = False
+
+
+if "gh_shape_form_submitted" not in st.session_state:
+    st.session_state["gh_shape_form_submitted"] = False
+
+
 def set_gh_form_submit():
     st.session_state["gh_form_submitted"] = True
 
 
 if "gh_form_submitted" not in st.session_state:
     st.session_state["gh_form_submitted"] = False
-
-
-def set_gh_shape_form_submit():
-    st.session_state["gh_shape_form_submitted"] = True
-
-
-if "gh_shape_form_submitted" not in st.session_state:
-    st.session_state["gh_shape_form_submitted"] = False
 
 
 def set_params_form_submit():
@@ -112,7 +114,7 @@ else:
     st.sidebar.image(
         "/Users/mw/pyprojects/dynamic_opt_growth_model/app/qr-black_transparent.png"
     )
-st.sidebar.title("Greenhouse Shape and Orientation")
+st.sidebar.title("Greenhouse Shape")
 
 with st.sidebar.form(key="gh_shape_form", border=False):
     # Input for length and width
@@ -139,19 +141,6 @@ with st.sidebar.form(key="gh_shape_form", border=False):
         step=0.1,
         format="%.1f",
     )
-
-    st.markdown("### Orientation and Roof Tilt")
-
-    # Compass azimuth selection (slider from 0° to 360°)
-    azimuth_face = st.slider(
-        "Azimuth (degrees - greenhouse width faces)",
-        min_value=0,
-        max_value=360,
-        value=90,  # Default to South
-        format="%d°",
-        help="Direction your greenhouse faces: North = 0°, South = 180°",
-    )
-
     # Tilt for roof (0° to 90°)
     roof_tilt = st.slider(
         "Roof Tilt (degrees)",
@@ -163,6 +152,18 @@ with st.sidebar.form(key="gh_shape_form", border=False):
         help="Tilt angle of the roof: 0° = flat, 90° = vertical",
     )
     wall_tilt = 90
+
+    st.markdown("### Orientation")
+
+    # Compass azimuth selection (slider from 0° to 360°)
+    azimuth_face = st.slider(
+        "Azimuth (degrees - greenhouse width faces)",
+        min_value=0,
+        max_value=360,
+        value=90,  # Default to South
+        format="%d°",
+        help="Direction your greenhouse faces: North = 0°, South = 180°",
+    )
 
     submit_gh_shape = st.form_submit_button(
         "Validate", on_click=set_gh_shape_form_submit
