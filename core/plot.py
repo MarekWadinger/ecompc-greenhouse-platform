@@ -4,12 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from plotly.subplots import make_subplots
 
 plt.rcParams.update(
     {
-        "axes.grid": True,
         "figure.subplot.left": 0.1,
         "figure.subplot.bottom": 0.2,
         "figure.subplot.right": 0.95,
@@ -236,24 +234,36 @@ def plotly_response(
     return fig
 
 
-def plot_greenhouse(length, width, height, roof_tilt, azimuth):
-    fig = plt.figure()
-    ax1 = fig.add_subplot(121, projection="3d")
-    ax2 = fig.add_subplot(122, projection="polar")
-    plot_3d_greenhouse(length, width, height, roof_tilt, ax=ax1)
-    plot_compass_with_greenhouse(azimuth, length, width, ax=ax2)
-    fig.tight_layout(pad=2.0)
-    fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, wspace=0.5)
+def plotly_greenhouse(length, width, height, roof_tilt, azimuth):
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        specs=[[{"type": "scatter3d"}, {"type": "polar"}]],
+        # subplot_titles=("3D Greenhouse Model", "Greenhouse Orientation"),
+    )
+
+    # Plot the 3D Greenhouse
+    plotly_3d_greenhouse(length, width, height, roof_tilt, azimuth, fig, 1, 1)
+
+    # Plot the 2D Compass with Greenhouse Orientation
+    plotly_compass_with_greenhouse(azimuth, length, width, fig, 1, 2)
+
+    fig.update_layout(
+        height=600, width=1200, title_text="Greenhouse Visualization"
+    )
     return fig
 
 
-# Function to plot a 3D greenhouse
-def plot_3d_greenhouse(length, width, height, roof_tilt, ax=None):
-    if ax is None:
-        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    else:
-        fig = ax.get_figure()
-
+def plotly_3d_greenhouse(
+    length: float,
+    width: float,
+    height: float,
+    roof_tilt: float,
+    azimuth,
+    fig: go.Figure,
+    row: int,
+    col: int,
+):
     # Vertices of the greenhouse base (rectangle)
     base = np.array(
         [
@@ -261,34 +271,49 @@ def plot_3d_greenhouse(length, width, height, roof_tilt, ax=None):
             [length, 0, 0],
             [length, width, 0],
             [0, width, 0],
-            [0, 0, 0],  # Close the base
-        ]
+            [0, 0, 0],
+        ]  # Closed base
     )
 
-    # Height of the roof peak (using roof tilt)
-    peak_height = height + np.tan(np.radians(roof_tilt)) * (width / 2)
-
     # Roof vertices
+    peak_height = height + np.tan(np.radians(roof_tilt)) * (width / 2)
     roof = np.array(
         [
             [0, 0, height],
             [length, 0, height],
             [length, width, height],
             [0, width, height],
-            [0, width / 2, peak_height],  # Roof peak
-            [length, width / 2, peak_height],  # Roof peak
+            [0, width / 2, peak_height],
+            [length, width / 2, peak_height],
         ]
     )
 
     # Define the faces of the greenhouse
     vertices = [
-        # Base
-        [base[0], base[1], base[2], base[3]],
-        # Walls
         [base[0], base[1], roof[1], roof[0]],  # Side wall 1
         [base[1], base[2], roof[2], roof[1]],  # Side wall 2
         [base[2], base[3], roof[3], roof[2]],  # Side wall 3
         [base[3], base[0], roof[0], roof[3]],  # Side wall 4
+    ]
+
+    # Plot the 4 side walls
+    for face in vertices:
+        x = [v[0] for v in face] + [face[0][0]]  # Close the face
+        y = [v[1] for v in face] + [face[0][1]]
+        z = [v[2] for v in face] + [face[0][2]]
+        fig.add_trace(
+            go.Scatter3d(
+                x=x,
+                y=y,
+                z=z,
+                mode="lines",
+                line=dict(color="blue", width=5),
+                showlegend=False,
+            ),
+            row=row,
+            col=col,
+        )
+    vertices = [
         # Roof
         [roof[0], roof[1], roof[5], roof[4]],  # Roof face 1
         [roof[2], roof[3], roof[4], roof[5]],  # Roof face 2
@@ -296,97 +321,140 @@ def plot_3d_greenhouse(length, width, height, roof_tilt, ax=None):
         [roof[1], roof[2], roof[5]],  # Roof face 4
     ]
 
-    # Create the 3D polyhedron using the vertices
-    ax.add_collection(
-        Poly3DCollection(
-            vertices,
-            facecolors="tab:blue",
-            linewidths=1,
-            edgecolors="tab:blue",
-            alpha=0.05,
+    # Plot the 4 side walls
+    for face in vertices:
+        x = [v[0] for v in face] + [face[0][0]]  # Close the face
+        y = [v[1] for v in face] + [face[0][1]]
+        z = [v[2] for v in face] + [face[0][2]]
+        fig.add_trace(
+            go.Scatter3d(
+                x=x,
+                y=y,
+                z=z,
+                mode="lines",
+                line=dict(color="green", width=5),
+                showlegend=False,
+            ),
+            row=row,
+            col=col,
         )
+
+    fig.update_scenes(
+        camera=dict(
+            eye=dict(
+                x=np.cos(np.radians(azimuth)),  # Controls azimuth angle
+                y=np.sin(np.radians(azimuth)),
+                z=0.5,  # You can adjust the z to control elevation
+            )
+        ),
+        xaxis=dict(range=[0, length]),
+        yaxis=dict(range=[0, width]),
+        zaxis=dict(range=[0, peak_height]),
+        aspectratio=dict(
+            x=0.8, y=width / length * 0.8, z=peak_height / length * 0.8
+        ),
+        row=row,
+        col=col,
     )
 
-    # Set labels and limits for clarity
-    ax.set_xlabel("Length (m)")
-    ax.set_ylabel("Width (m)")
-    ax.set_zlabel("Height (m)")
-    max_shape = max([length, width])
-    ax.set_xlim([-1 * max_shape * 0.1, max_shape * 1.1])
-    ax.set_ylim([-1 * max_shape * 0.1, max_shape * 1.1])
-    ax.set_zlim([-1 * length * 0.1, peak_height * 1.1])
-    ax.xaxis.pane.fill = False
-    ax.yaxis.pane.fill = False
-    ax.zaxis.pane.fill = False
 
-    # Set the rotation of the 3D plot
-    ax.view_init(elev=20, azim=30)
+def plotly_compass_with_greenhouse(
+    azimuth: float,
+    length: float,
+    width: float,
+    fig: go.Figure,
+    row: int,
+    col: int,
+):
+    # Directions and their angles (0° for N, 90° for E, etc.)
+    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    angles = [0, 45, 90, 135, 180, 225, 270, 315]
 
-    # TODO: make titles at the same height
-    # ax.set_title("3D Greenhouse Model")
+    # Azimuth in degrees
+    azimuth_angle = azimuth % 360  # Ensure azimuth is within [0, 360]
 
-    return fig
+    # Base plot (empty compass)
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[1, 1, 1, 1],  # Radius for directions
+            theta=angles,  # Angles for N, E, S, W
+            mode="lines",
+            line=dict(width=0),
+            showlegend=False,
+        ),
+        row=row,
+        col=col,
+    )
 
-
-# Function to plot 2D compass
-def plot_compass_with_greenhouse(azimuth, length, width, ax=None):
-    if ax is None:
-        fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
-    else:
-        fig = ax.get_figure()
-
-    # Create a circular compass with directions
-    directions = ["N", "E", "S", "W"]
-    angles = [90, 180, 270, 0]
-
-    # Set up the ticks and labels for the compass
-    ax.set_xticks(np.radians(angles))
-    ax.set_xticklabels(directions)
-    ax.set_yticks([])
-
-    # Calculate the azimuth in radians
-    azimuth_radians = np.radians(azimuth + 90)
-
-    # Calculate the four corners of the rectangle in Cartesian coordinates
+    # Add an arrow to indicate the azimuth
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[0, max(length, width)],  # From center to outer edge
+            theta=[0, azimuth_angle],  # Pointing in the direction of azimuth
+            mode="lines",
+            line=dict(color="red", width=3),
+            showlegend=False,
+        ),
+        row=row,
+        col=col,
+    )
+    # Compute the four corners of the greenhouse rectangle in Cartesian coordinates
     corners = np.array(
         [
-            [-length / 2, -width / 2],  # Bottom-left
-            [length / 2, -width / 2],  # Bottom-right
-            [length / 2, width / 2],  # Top-right
-            [-length / 2, width / 2],  # Top-left
+            [-length, -width],  # Bottom-left
+            [length, -width],  # Bottom-right
+            [length, width],  # Top-right
+            [-length, width],  # Top-left
         ]
     )
 
-    # Rotate the rectangle to align with the azimuth angle
+    # Convert azimuth to radians and create a rotation matrix
+    azimuth_radians = np.radians(azimuth)
     rotation_matrix = np.array(
         [
             [np.cos(azimuth_radians), -np.sin(azimuth_radians)],
             [np.sin(azimuth_radians), np.cos(azimuth_radians)],
         ]
     )
+
+    # Rotate the corners by the azimuth angle
     rotated_corners = np.dot(corners, rotation_matrix.T)
 
-    # Convert the rotated corners to polar coordinates for plotting
-    angles = np.arctan2(rotated_corners[:, 1], rotated_corners[:, 0])
-    radii = np.sqrt(rotated_corners[:, 0] ** 2 + rotated_corners[:, 1] ** 2)
+    # Convert rotated Cartesian coordinates to polar coordinates (angle in degrees, radius)
+    theta = np.degrees(
+        np.arctan2(rotated_corners[:, 1], rotated_corners[:, 0])
+    )
+    r = np.sqrt(rotated_corners[:, 0] ** 2 + rotated_corners[:, 1] ** 2)
 
     # Close the rectangle by appending the first point again
-    angles = np.concatenate([angles, [angles[0]]])  # type: ignore
-    radii = np.concatenate([radii, [radii[0]]])
+    theta = np.append(theta, theta[0])
+    r = np.append(r, r[0])
 
-    # Plot the rectangle by connecting the corners
-    ax.plot(
-        angles, radii, color="tab:blue", linestyle="-", linewidth=2, alpha=0.7
+    # Add the rotated greenhouse rectangle to the polar plot
+    fig.add_trace(
+        go.Scatterpolar(
+            r=r,  # Radii
+            theta=theta,  # Angles in degrees
+            mode="lines",
+            line=dict(color="blue", width=2),
+            fill="toself",
+            name="Greenhouse",
+            showlegend=False,
+        ),
+        row=row,
+        col=col,
     )
 
-    # TODO: Draw an arrow indicating the azimuth
-    ax.annotate(
-        "",
-        xy=(azimuth_radians, 1),
-        xytext=(0, 0),
-        arrowprops=dict(facecolor="red", shrink=0.05),
+    fig.update_layout(
+        polar=dict(
+            bgcolor="rgba(0,0,0,0)",  # Transparent background
+            angularaxis=dict(
+                tickvals=angles,  # Set angular tick values
+                ticktext=directions,  # N, E, S, W labels
+            ),
+        ),
+        plot_bgcolor="rgba(0,0,0,0)",  # Transparent plot background
+        paper_bgcolor="rgba(0,0,0,0)",  # Transparent entire background
     )
 
-    # TODO: make titles at the same height
-    # ax.set_title(f"Greenhouse Orientation: {azimuth}°")
     return fig

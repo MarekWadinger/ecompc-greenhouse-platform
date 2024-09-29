@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
 from core.greenhouse_model import GreenHouse, x_init
 from core.openmeteo_query import OpenMeteo
-from core.plot import plot_greenhouse, plotly_response
+from core.plot import plotly_greenhouse, plotly_response
 
 
 @contextmanager
@@ -51,8 +51,8 @@ def concat_results(X, scores_dmd, scores_dmd_diff):
 
 
 @st.cache_data
-def plot_greenhouse_(length, width, height, roof_tilt, azimuth):
-    return plot_greenhouse(length, width, height, roof_tilt, azimuth)
+def plotly_greenhouse_(length, width, height, roof_tilt, azimuth):
+    return plotly_greenhouse(length, width, height, roof_tilt, azimuth)
 
 
 @st.cache_data
@@ -244,8 +244,9 @@ runtime_info = st.empty()
 # === Enable after submitting parameters ===
 if st.session_state.gh_shape_form_submitted:
     st.header("Greenhouse Visualization")
-    fig_gh = plot_greenhouse_(length, width, height, roof_tilt, azimuth_face)
-    st.pyplot(fig_gh)
+    fig_gh = plotly_greenhouse_(length, width, height, roof_tilt, azimuth_face)
+    st.plotly_chart(fig_gh)
+
 
 if (
     st.session_state.gh_shape_form_submitted
@@ -383,7 +384,7 @@ if (
         start=start_date, periods=sim_steps, freq=pd.Timedelta(seconds=dt)
     )
     forecast_plot = st.empty()
-    forecast_plot.plotly_chart(plotly_response(timestamps, y_nexts, u0s, ums))
+    forecast_plot.plotly_chart(plotly_response(timestamps, x0s, u0s, ums))
 
     runtime_info.success(
         f"Congrats, your greenhouse generated profit of {np.sqrt(-np.array(mpc.solver_stats['iterations']['obj'][-1])):.2f} EUR! 🤑"
