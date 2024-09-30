@@ -87,36 +87,55 @@ class Actuator(ABC):
 class SimpleHeater(Actuator):
     """Heater model
 
-    Simple Heater model that takes a signal percentage and returns the heating power
+    Simple Heater model that takes a signal percentage and returns the heating power.
 
     Examples:
-    >>> max_act = 1000  # Maximum heating power in watts
-    >>> heater = SimpleHeater(max_act)
+    >>> max_unit = 1000  # Maximum heating power in W
+    >>> heater = SimpleHeater(max_unit)
     >>> heater.signal_to_actuation(50)
     500.0
     """
 
-    def __init__(self, max_act, power_per_unit=1):
+    def __init__(self, max_unit, power_per_unit=1):
         super().__init__(
-            max_act,
+            max_unit,
             power_per_unit,
         )
 
 
-class SimpleVentilation(Actuator):
-    """Ventilation model
+class SimpleFan(Actuator):
+    """Fan model
 
-    Simple Ventilation model that takes a signal percentage and returns the airflow
+    Simple Fan model that takes a signal percentage and returns the airflow.
 
     Examples:
-    >>> max_flow = 1000  # Maximum airflow in m^3/s
-    >>> ventilation = SimpleVentilation(max_flow)
+    >>> max_unit = 1000  # Maximum airflow in m^3/s
+    >>> ventilation = SimpleFan(max_unit)
     >>> ventilation.signal_to_actuation(50)
     500.0
     """
 
-    def __init__(self, max_act, power_per_unit=5):
+    def __init__(self, max_unit, power_per_unit=5):
         super().__init__(
-            max_act,
+            max_unit,
+            power_per_unit,
+        )
+
+
+class SimpleEvaporativeHumidifier(Actuator):
+    """EvaporativeHumidifier model
+
+    Simple EvaporativeHumidifier model that takes a signal percentage and returns the humidification output.
+
+    Examples:
+    >>> max_unit = 10  # Maximum humidification output in l/h
+    >>> humidifier = SimpleEvaporativeHumidifier(max_unit)
+    >>> humidifier.signal_to_actuation(20)
+    2.0
+    """
+
+    def __init__(self, max_unit, power_per_unit=20):
+        super().__init__(
+            max_unit,
             power_per_unit,
         )

@@ -158,9 +158,51 @@ def plotly_response(
     _timestamps,
     y_nexts,
     u0s,
-    ums,
+    u_min,
+    u_max,
 ):
-    y_nexts_ = np.array(y_nexts).reshape(-1, 2)
+    def align_bounds_shape(array: np.ndarray, n):
+        if array.shape[1] == 1 and n != 1:
+            array = np.tile(array, (1, n))
+        return array
+
+    def add_bound_trace(_timestamps, u, fig: go.Figure, label, color):
+        # TODO: write issue to plotly to fix showlegend=False behavior on add_hline
+        kwargs = dict(
+            name=f"{label} bound",
+            line=dict(color=color, dash="dash"),
+            legendgroup=label,
+            showlegend=True,
+        )
+
+        if u.shape[0] == 1:
+            # TODO: write issue to plotly to fix typing
+            fig.add_hline(
+                y=u[0],
+                row=2,  # type: ignore
+                col=1,  # type: ignore
+                **kwargs,  # type: ignore
+            )
+        else:
+            fig.add_trace(
+                go.Scatter(
+                    x=_timestamps,
+                    y=u,
+                    mode="lines",
+                    **kwargs,
+                ),
+                row=2,
+                col=1,
+            )
+        return fig
+
+    y_nexts_ = np.array(y_nexts).squeeze()
+    u0s = np.array(u0s).squeeze()
+    u_min = np.array(u_min, ndmin=2)
+    u_max = np.array(u_max, ndmin=2)
+    u_min = align_bounds_shape(u_min, u0s.shape[1])
+    u_max = align_bounds_shape(u_max, u0s.shape[1])
+
     fig = make_subplots(
         rows=2,
         cols=1,
@@ -191,42 +233,23 @@ def plotly_response(
     )
 
     # Plot Actuation
-    labels = ["fan", "heater"]
-    colors = ["#1f77b4", "#ff7f0e"]
+    labels = ["fan", "heater", "humidifier"]
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
     for i, (label, color) in enumerate(zip(labels, colors)):
         fig.add_trace(
             go.Scatter(
                 x=_timestamps,
-                y=np.array(u0s).reshape(-1, 2)[:, i],
+                y=u0s[:, i],
                 mode="lines",
                 name=label,
                 line=dict(color=color),
+                legendgroup=label,
             ),
             row=2,
             col=1,
         )
-        fig.add_trace(
-            go.Scatter(
-                x=_timestamps,
-                y=np.array(ums).reshape(-1, 4)[:, i],
-                mode="lines",
-                name=f"{label} min",
-                line=dict(color=color, dash="dash"),
-            ),
-            row=2,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=_timestamps,
-                y=np.array(ums).reshape(-1, 4)[:, i + 2],
-                mode="lines",
-                name=f"{label} max",
-                line=dict(color=color, dash="dash"),
-            ),
-            row=2,
-            col=1,
-        )
+        fig = add_bound_trace(_timestamps, u_min[:, i], fig, label, color)
+        fig = add_bound_trace(_timestamps, u_max[:, i], fig, label, color)
 
     fig.update_yaxes(title_text="Lettuce Dry Weight (g)", row=1, col=1)
     fig.update_yaxes(title_text="Actuation [%]", row=2, col=1)
@@ -351,7 +374,7 @@ def plotly_3d_greenhouse(
         yaxis=dict(range=[0, width]),
         zaxis=dict(range=[0, peak_height]),
         aspectratio=dict(
-            x=0.8, y=width / length * 0.8, z=peak_height / length * 0.8
+            x=0.3, y=width / length * 0.3, z=peak_height / length * 0.3
         ),
         row=row,
         col=col,

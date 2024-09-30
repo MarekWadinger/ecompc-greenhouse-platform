@@ -6,7 +6,11 @@ import casadi as ca
 import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
-from core.actuator_model import SimpleHeater, SimpleVentilation
+from core.actuator_model import (
+    SimpleEvaporativeHumidifier,
+    SimpleFan,
+    SimpleHeater,
+)
 from core.lettuce_model import get_f_resp, lettuce_growth_model
 
 # CONSTANTS
@@ -28,7 +32,7 @@ M_w = 0.018  # molar mass of water [kg/mol]
 M_c = 0.044  # molar mass of CO2 [kg/mol]
 M_carb = 0.03  # molar mass of CH2O [kg/mol]
 nu = 15.1e-6  # kinematic viscosity [m^2/s]
-rho_i = 1.2  # density of air [kg/m^3]
+rho_i = 1.2  # density of dry air [kg/m^3]
 rho_w = 1000.0  # density of water [kg/m^3]
 a_obs = 0.05  # fraction of solar radiation hitting obstructions [-]
 
@@ -295,6 +299,7 @@ class GreenHouse:
         roof_tilt: float = 30.0,
         max_vent: float | None = None,
         max_heat: float | None = None,
+        max_humid: float | None = None,
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
         dt=60,  # sampling time in seconds
@@ -327,14 +332,12 @@ class GreenHouse:
 
         # Air characteristics
         ACH = 20  # air changes per hour
-        R_a_max = (
-            self.volume * ACH / 3600.0
-        )  # ventilation air change rate [m^3/s]
-        T_sp_vent = 25.0 + T_k  # setpoint temperature for ventilation [K]
+        R_a_max = self.volume * ACH / 3600.0  # fan air change rate [m^3/s]
+        T_sp_vent = 25.0 + T_k  # setpoint temperature for fan [K]
 
         if max_vent is not None:
             R_a_max = max_vent
-        self.ventilation = SimpleVentilation(R_a_max)
+        self.fan = SimpleFan(R_a_max)
 
         # Heater
         # Q_heater_max is computed as the mass of air we want to heat per second
@@ -346,6 +349,20 @@ class GreenHouse:
         else:
             Q_heater_max = rho_i * (T_sp_vent - T_k) * R_a_max * c_i
         self.heater = SimpleHeater(Q_heater_max)
+
+        # Humidifier
+        if max_humid is not None:
+            V_dot_max = max_humid
+        else:
+            # https://www.tis-gdv.de/tis_e/misc/klima-htm/
+            # RH_range = 40 % - 80 % [- / h]
+            AH_40 = 12.1  # [g/m^3]
+            AH_80 = 24.3  # [g/m^3]
+            max_AH_increase = AH_80 - AH_40  # [g/m^3/h]
+            V_dot_max = (
+                self.volume * max_AH_increase * 1 / rho_w
+            )  # [g/h] ~ [l/h]
+        self.humidifier = SimpleEvaporativeHumidifier(V_dot_max)
 
         # Tray/mat
         self.A_c = p_v * self.A_f  # Area of cultivated floor [m^2]
@@ -364,8 +381,8 @@ class GreenHouse:
     def model(
         self,
         t,
-        x: tuple,
-        u: tuple,
+        x: tuple | np.ndarray,
+        u: tuple | np.ndarray,
         climate: tuple | np.ndarray | None = None,
     ) -> np.ndarray:
         """Greenhouse model.
@@ -394,22 +411,24 @@ class GreenHouse:
         u: tuple | np.ndarray,
         climate: tuple | np.ndarray,
     ) -> tuple[np.ndarray, dict]:
-        T_c = z[0]
-        T_i = z[1]
-        T_v = z[2]
-        T_m = z[3]
-        T_p = z[4]
-        T_f = z[5]
-        T_s1 = z[6]
-        C_w = z[7]
-        C_c = z[8]
-        x_sdw = z[9]
-        x_nsdw = z[10]
+        T_c = z[0]  # Cover temperature [K]
+        T_i = z[1]  # Internal air temperature [K]
+        T_v = z[2]  # Vegetation temperature [K]
+        T_m = z[3]  # Growing medium temperature [K]
+        T_p = z[4]  # Tray temperature [K]
+        T_f = z[5]  # Floor temperature [K]
+        T_s1 = z[6]  # Temperature of soil layer 1 [K]
+        C_w = z[7]  # Water vapor concentration [kg/m^3]
+        C_c = z[8]  # CO2 concentration [kg/m^3]
+        x_sdw = z[9]  # Structural dry weight of the plant [kg/m^2]
+        x_nsdw = z[10]  # Non-structural dry weight of the plant [kg/m^2]
         perc_vent = u[0]
         perc_heater = u[1]
+        perc_humid = u[2]
 
-        R_a = self.ventilation.signal_to_actuation(perc_vent)
+        R_a = self.fan.signal_to_actuation(perc_vent)
         Q_heater = self.heater.signal_to_actuation(perc_heater)
+        V_dot_humid = self.humidifier.signal_to_actuation(perc_humid)
 
         # External weather and dependent internal parameter values
         if isinstance(climate, np.ndarray):
@@ -631,7 +650,9 @@ class GreenHouse:
             R_a * self.volume * rho_i * c_i * (T_i - T_ext)
         )  # Internal air to outside air [J/s]
 
-        MW_i_e = R_a * (C_w - Cw_ext)
+        MW_i_e = R_a * (
+            C_w - Cw_ext
+        )  # Internal moisture to outside air [kg/m^3/s]
 
         ##      Solar radiation
         # We first define the solar elevation angle that determines that absorption of solar radiation. Notation: r is direct radiation, f is diffuse radiation, whilst VIS and NIR stand for visible and near infra-red respectively.
@@ -820,7 +841,7 @@ class GreenHouse:
         QT_v_i = ca.fmax(QT_St, 0)
 
         ## Dehumidification
-        MW_cc_i = 0  # No dehumidification included
+        MW_cc_i = V_dot_humid / 1000 / 3600 / self.volume  # [kg/m^3/s]
 
         # CO2 exchange with outside
         MC_i_e = R_a * (C_c - C_ce)  # [kg/m^3/s]
@@ -894,7 +915,6 @@ class GreenHouse:
             - MW_i_e
             + MW_cc_i
         )
-        # dC_wdt = -MW_i_e
 
         # Carbon Dioxide
         dC_c_dt = (

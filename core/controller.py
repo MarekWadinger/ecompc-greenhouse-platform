@@ -23,7 +23,7 @@ class GreenHouseModel(Model):  # Create a model instance
         x = self.set_variable(
             var_type="_x", var_name="x", shape=(len(x_init), 1)
         )
-        u = self.set_variable(var_type="_u", var_name="u", shape=(2, 1))
+        u = self.set_variable(var_type="_u", var_name="u", shape=(3, 1))
         tvp = {
             name: self.set_variable(var_type="_tvp", var_name=name)
             for name in climate_vars
@@ -59,8 +59,8 @@ class EconomicMPC(MPC):
         N=60,  # number of control intervals
         dt=60,  # sampling time in seconds
         x_weight_init=x_init[-2:],
-        u_min=[0.0, 0.0],
-        u_max=[100.0, 100.0],
+        u_min: float | list[float] = 0.0,
+        u_max: float | list[float] = 100.0,
     ):
         # Define optimization variables
         self.x = model.x["x"]
@@ -71,8 +71,10 @@ class EconomicMPC(MPC):
         self.lettuce_price = lettuce_price
         self.cultivated_area = model.gh.A_c
 
-        assert len(u_min) == model.n_u
-        assert len(u_max) == model.n_u
+        if isinstance(u_min, list):
+            assert len(u_min) == model.n_u
+        if isinstance(u_max, list):
+            assert len(u_max) == model.n_u
 
         # Create an MPC instance
         super().__init__(model)
@@ -111,12 +113,12 @@ class EconomicMPC(MPC):
                     self.lettuce_price * self.x[-2] * self.cultivated_area,
                 )
                 + dot(
-                    model.gh.ventilation.signal_to_eur(self.u[0]),
-                    model.gh.ventilation.signal_to_eur(self.u[0]),
+                    model.gh.fan.signal_to_eur(self.u[0]),
+                    model.gh.fan.signal_to_eur(self.u[0]),
                 )
                 + dot(
-                    model.gh.ventilation.signal_to_co2_eur(self.u[0]),
-                    model.gh.ventilation.signal_to_co2_eur(self.u[0]),
+                    model.gh.fan.signal_to_co2_eur(self.u[0]),
+                    model.gh.fan.signal_to_co2_eur(self.u[0]),
                 )
                 + dot(
                     model.gh.heater.signal_to_eur(self.u[1]),
@@ -125,6 +127,14 @@ class EconomicMPC(MPC):
                 + dot(
                     model.gh.heater.signal_to_co2_eur(self.u[1]),
                     model.gh.heater.signal_to_co2_eur(self.u[1]),
+                )
+                + dot(
+                    model.gh.humidifier.signal_to_eur(self.u[2]),
+                    model.gh.humidifier.signal_to_eur(self.u[2]),
+                )
+                + dot(
+                    model.gh.humidifier.signal_to_co2_eur(self.u[2]),
+                    model.gh.humidifier.signal_to_co2_eur(self.u[2]),
                 )
                 + dot(
                     self.lettuce_price
@@ -183,7 +193,7 @@ class GreenhouseSimulator(Simulator):
         model,
         climate,
         dt=60,
-        x_weight_init=x_init,
+        x_weight_init=x_init[-2:],
     ):
         super().__init__(model)
 
