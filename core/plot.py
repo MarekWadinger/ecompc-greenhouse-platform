@@ -15,6 +15,19 @@ plt.rcParams.update(
     }
 )
 
+plotly_colors = [
+    "#636EFA",
+    "#EF553B",
+    "#00CC96",
+    "#AB63FA",
+    "#FFA15A",
+    "#19D3F3",
+    "#FF6692",
+    "#B6E880",
+    "#FF97FF",
+    "#FECB52",
+]
+
 
 def set_size(
     width: float
@@ -234,8 +247,7 @@ def plotly_response(
 
     # Plot Actuation
     labels = ["fan", "heater", "humidifier"]
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
-    for i, (label, color) in enumerate(zip(labels, colors)):
+    for i, (label, color) in enumerate(zip(labels, plotly_colors)):
         fig.add_trace(
             go.Scatter(
                 x=_timestamps,
@@ -330,7 +342,7 @@ def plotly_3d_greenhouse(
                 y=y,
                 z=z,
                 mode="lines",
-                line=dict(color="blue", width=5),
+                line=dict(color=plotly_colors[0], width=5),
                 showlegend=False,
             ),
             row=row,
@@ -355,7 +367,7 @@ def plotly_3d_greenhouse(
                 y=y,
                 z=z,
                 mode="lines",
-                line=dict(color="green", width=5),
+                line=dict(color=plotly_colors[0], width=5),
                 showlegend=False,
             ),
             row=row,
@@ -459,7 +471,7 @@ def plotly_compass_with_greenhouse(
             r=r,  # Radii
             theta=theta,  # Angles in degrees
             mode="lines",
-            line=dict(color="blue", width=2),
+            line=dict(color=plotly_colors[0], width=2),
             fill="toself",
             name="Greenhouse",
             showlegend=False,
@@ -468,6 +480,18 @@ def plotly_compass_with_greenhouse(
         col=col,
     )
 
+    # Add an arrow to indicate the azimuth
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[0, max(length, width)],  # From center to outer edge
+            theta=[0, azimuth_angle],  # Pointing in the direction of azimuth
+            mode="lines",
+            line=dict(color=plotly_colors[1], width=3),
+            showlegend=False,
+        ),
+        row=row,
+        col=col,
+    )
     fig.update_layout(
         polar=dict(
             bgcolor="rgba(0,0,0,0)",  # Transparent background
