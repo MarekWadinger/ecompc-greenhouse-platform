@@ -1,10 +1,11 @@
 import numpy as np
-from casadi import dot, vertcat, vertsplit
+from casadi import SX, vertcat, vertsplit
 from do_mpc.controller import MPC
 from do_mpc.model import Model
 from do_mpc.simulator import Simulator
 
 from core.greenhouse_model import GreenHouse, x_init
+from core.lettuce_model import DRY_TO_WET_RATIO
 
 
 class GreenHouseModel(Model):  # Create a model instance
@@ -106,43 +107,25 @@ class EconomicMPC(MPC):
         self.set_param(**setup_mpc)
         # Define objective
         self.set_objective(
-            mterm=dot(self.x[-2] * 0, self.x[-2] * 0),  # ca.DM(0)
+            mterm=SX(0.0),  # ca.DM(0)
             lterm=(
-                -dot(
-                    self.lettuce_price * self.x[-2] * self.cultivated_area,
-                    self.lettuce_price * self.x[-2] * self.cultivated_area,
-                )
-                + dot(
-                    model.gh.fan.signal_to_eur(self.u[0]),
-                    model.gh.fan.signal_to_eur(self.u[0]),
-                )
-                + dot(
-                    model.gh.fan.signal_to_co2_eur(self.u[0]),
-                    model.gh.fan.signal_to_co2_eur(self.u[0]),
-                )
-                + dot(
-                    model.gh.heater.signal_to_eur(self.u[1]),
-                    model.gh.heater.signal_to_eur(self.u[1]),
-                )
-                + dot(
-                    model.gh.heater.signal_to_co2_eur(self.u[1]),
-                    model.gh.heater.signal_to_co2_eur(self.u[1]),
-                )
-                + dot(
-                    model.gh.humidifier.signal_to_eur(self.u[2]),
-                    model.gh.humidifier.signal_to_eur(self.u[2]),
-                )
-                + dot(
-                    model.gh.humidifier.signal_to_co2_eur(self.u[2]),
-                    model.gh.humidifier.signal_to_co2_eur(self.u[2]),
-                )
-                + dot(
+                -(
                     self.lettuce_price
-                    * self.x0["x"][-2]
-                    * self.cultivated_area,
+                    * (self.x[-2] + self.x[-1])
+                    / DRY_TO_WET_RATIO
+                    * self.cultivated_area
+                )
+                + model.gh.fan.signal_to_eur(self.u[0])
+                + model.gh.fan.signal_to_co2_eur(self.u[0])
+                + model.gh.heater.signal_to_eur(self.u[1])
+                + model.gh.heater.signal_to_co2_eur(self.u[1])
+                + model.gh.humidifier.signal_to_eur(self.u[2])
+                + model.gh.humidifier.signal_to_co2_eur(self.u[2])
+                + (
                     self.lettuce_price
-                    * self.x0["x"][-2]
-                    * self.cultivated_area,
+                    * (self.x0["x"][-2] + self.x0["x"][-1])
+                    / DRY_TO_WET_RATIO
+                    * self.cultivated_area
                 )
             ),
         )

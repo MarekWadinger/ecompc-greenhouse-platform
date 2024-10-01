@@ -234,8 +234,8 @@ x_init_dict = {
     "Temperature of soil layer 1": T_s1_0,
     "Water vapor concentration": C_w_0,
     "CO2 concentration": C_c_0,
-    "Structural dry weight of the plant": x_sdw,
-    "Non-structural dry weight of the plant": x_nsdw,
+    "Structural dry weight": x_sdw,
+    "Non-structural dry weight": x_nsdw,
 }
 
 

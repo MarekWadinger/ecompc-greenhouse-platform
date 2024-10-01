@@ -14,6 +14,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
 from core.greenhouse_model import GreenHouse, x_init_dict
+from core.lettuce_model import DRY_TO_WET_RATIO, RATIO_SDW_NSDW
 from core.openmeteo_query import OpenMeteo, get_city_geocoding
 from core.plot import plotly_greenhouse, plotly_response
 
@@ -294,9 +295,11 @@ with st.sidebar:
                 value=500,
                 step=1,
             )
-            x_lettuce_dry_init = x_lettuce_wet_init * 0.1 / 1000  # kg/m²
+            x_lettuce_dry_init = (
+                x_lettuce_wet_init * DRY_TO_WET_RATIO / 1000
+            )  # kg/m²
 
-            x_sn_init = x_lettuce_dry_init * np.array([0.3, 0.7])
+            x_sn_init = x_lettuce_dry_init * RATIO_SDW_NSDW
             u_min = st.number_input(
                 "Minimum control input (%)",
                 help="(comma-separated values)",
@@ -418,7 +421,6 @@ if (
     u0s = []
     x0s = pd.DataFrame(columns=[*x_init_dict.keys()], index=range(sim_steps))
     for step in stqdm(range(sim_steps)):
-        print(step + N + 1, len(climate))
         if step * dt + N + 1 > len(climate):
             if step + N == len(climate):
                 runtime_info.info("Fetching new forecast")
@@ -459,5 +461,5 @@ if (
     )
 
     runtime_info.success(
-        f"Congrats, your greenhouse generated profit of {np.sqrt(-np.array(mpc.solver_stats['iterations']['obj'][-1])):.2f} EUR! 🤑"
+        f"Congrats, your greenhouse generated profit of {-np.array(mpc.solver_stats['iterations']['obj'][-1]):.2f} EUR! 🤑"
     )

@@ -1,6 +1,6 @@
 """Lettuce Growth Model"""
 
-from numpy import exp
+from numpy import array, exp
 
 # CONSTANTS
 # # Lettuce Growth Model Parameters
@@ -45,6 +45,12 @@ C_CAR1 = -1.32e-5
 C_CAR2 = 5.94e-4
 # [m s^{-1}] carboxilation parameter
 C_CAR3 = -2.64e-3
+
+# Dry to wet weight ratio for mature lettuce and seedlings
+DRY_TO_WET_RATIO = 0.1  # 10% dry to wet weight ratio
+RATIO_SDW_NSDW = array(
+    [0.3, 0.7]
+)  # 50% structural and non-structural dry weight ratio
 
 
 # FUNCTIONS
