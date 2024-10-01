@@ -62,7 +62,13 @@ def plotly_greenhouse_(length, width, height, roof_tilt, azimuth):
 
 @st.cache_data
 def plotly_weather_(climate):
-    return climate.resample("1H").median().plot(backend="plotly")
+    fig = climate.resample("1H").median().plot(backend="plotly")
+    fig.update_layout(
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+        )
+    )
+    return fig
 
 
 @st.cache_data

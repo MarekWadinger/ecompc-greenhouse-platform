@@ -111,8 +111,8 @@ class OpenMeteo:
                 # "global_tilted_irradiance",
             ],
             "forecast_days": forecast,
-            f"start_{self.frequency.rstrip("ly")}": start_date,
-            f"end_{self.frequency.rstrip("ly")}": end_date,
+            f"start_{self.frequency.rstrip('ly')}": start_date,
+            f"end_{self.frequency.rstrip('ly')}": end_date,
         }
         responses = retry_session.get(url, params=params)
 
