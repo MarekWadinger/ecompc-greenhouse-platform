@@ -173,19 +173,22 @@ def plotly_response(
     u0s,
     u_min,
     u_max,
+    y_visible: list[int] = [-1, -2],
 ):
     def align_bounds_shape(array: np.ndarray, n):
         if array.shape[1] == 1 and n != 1:
             array = np.tile(array, (1, n))
         return array
 
-    def add_bound_trace(_timestamps, u, fig: go.Figure, label, color):
+    def add_bound_trace(
+        _timestamps, u, fig: go.Figure, label, color, showlegend
+    ):
         # TODO: write issue to plotly to fix showlegend=False behavior on add_hline
         kwargs = dict(
-            name=f"{label} bound",
+            name=label,
             line=dict(color=color, dash="dash"),
             legendgroup=label,
-            showlegend=True,
+            showlegend=showlegend,
         )
 
         if u.shape[0] == 1:
@@ -209,7 +212,8 @@ def plotly_response(
             )
         return fig
 
-    y_nexts_ = np.array(y_nexts).squeeze()
+    y_visible = [y if y >= 0 else y + y_nexts.shape[1] for y in y_visible]
+    # y_nexts_ = np.array(y_nexts).squeeze()
     u0s = np.array(u0s).squeeze()
     u_min = np.array(u_min, ndmin=2)
     u_max = np.array(u_max, ndmin=2)
@@ -223,27 +227,18 @@ def plotly_response(
         # subplot_titles=("Lettuce Dry Weight (g)", "Actuation [%]"),
     )
 
-    # Plot Lettuce Dry Weight
-    fig.add_trace(
-        go.Scatter(
-            x=_timestamps,
-            y=y_nexts_[:, -2],
-            mode="lines",
-            name="structural",
-        ),
-        row=1,
-        col=1,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=_timestamps,
-            y=y_nexts_[:, -1],
-            mode="lines",
-            name="nonstructural",
-        ),
-        row=1,
-        col=1,
-    )
+    # Add each column from the DataFrame as a separate trace
+    for i, column in enumerate(y_nexts.columns):
+        fig.add_trace(
+            go.Scatter(
+                x=y_nexts.index,
+                y=y_nexts[column],
+                name=column,
+                visible=True if i in y_visible else "legendonly",
+            ),
+            row=1,
+            col=1,
+        )
 
     # Plot Actuation
     labels = ["fan", "heater", "humidifier"]
@@ -256,15 +251,25 @@ def plotly_response(
                 name=label,
                 line=dict(color=color),
                 legendgroup=label,
+                showlegend=False,
             ),
             row=2,
             col=1,
         )
-        fig = add_bound_trace(_timestamps, u_min[:, i], fig, label, color)
-        fig = add_bound_trace(_timestamps, u_max[:, i], fig, label, color)
+        fig = add_bound_trace(
+            _timestamps, u_min[:, i], fig, label, color, False
+        )
+        fig = add_bound_trace(
+            _timestamps, u_max[:, i], fig, label, color, True
+        )
 
     fig.update_yaxes(title_text="Lettuce Dry Weight (g)", row=1, col=1)
     fig.update_yaxes(title_text="Actuation [%]", row=2, col=1)
+    fig.update_layout(
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+        )
+    )
 
     return fig
 

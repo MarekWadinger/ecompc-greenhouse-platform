@@ -13,7 +13,7 @@ from streamlit_theme import st_theme
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
-from core.greenhouse_model import GreenHouse, x_init
+from core.greenhouse_model import GreenHouse, x_init_dict
 from core.openmeteo_query import OpenMeteo, get_city_geocoding
 from core.plot import plotly_greenhouse, plotly_response
 
@@ -115,13 +115,9 @@ if "params_form_submitted" not in st.session_state:
 with st.sidebar:
     theme: dict | None = st_theme()
     if theme is not None and theme.get("base", "light") == "dark":
-        st.image(
-            "/Users/mw/pyprojects/dynamic_opt_growth_model/app/qr-white_transparent.png"
-        )
+        st.image("app/qr-white_transparent.png")
     else:
-        st.image(
-            "/Users/mw/pyprojects/dynamic_opt_growth_model/app/qr-black_transparent.png"
-        )
+        st.image("app/qr-black_transparent.png")
 
     st.title("Greenhouse Design")
     st.markdown("Design new greenhouse or create digital twin of your own.")
@@ -395,7 +391,7 @@ if (
     runtime_info.info("Simulating ...")
 
     # Find feasible initial state for given climate
-    x0 = x_init
+    x0 = np.array([*x_init_dict.values()])
     x0[-2:] = x_sn_init
     u0 = np.array([0.0, 0.0, 0.0])
     for k in range(N):
@@ -414,8 +410,9 @@ if (
 
     # Run the MPC simulation
     u0s = []
-    x0s = []
+    x0s = pd.DataFrame(columns=[*x_init_dict.keys()], index=range(sim_steps))
     for step in stqdm(range(sim_steps)):
+        print(step + N + 1, len(climate))
         if step * dt + N + 1 > len(climate):
             if step + N == len(climate):
                 runtime_info.info("Fetching new forecast")
@@ -444,7 +441,7 @@ if (
             x0 = simulator.make_step(u0)
             if np.isnan(x0).any():
                 raise ValueError("x0 contains NaN values.")
-            x0s.append(x0[-2:])
+            x0s.iloc[step] = x0.flatten()
 
     runtime_info.info("Plotting results ...")
     timestamps = pd.date_range(

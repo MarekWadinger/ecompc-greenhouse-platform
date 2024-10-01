@@ -224,6 +224,19 @@ x_init = np.array(
     ],
     dtype=float,
 )
+x_init_dict = {
+    "Cover temperature": T_c_0,
+    "Internal air temperature": T_i_0,
+    "Vegetation temperature": T_v_0,
+    "Growing medium temperature": T_m_0,
+    "Tray temperature": T_p_0,
+    "Floor temperature": T_f_0,
+    "Temperature of soil layer 1": T_s1_0,
+    "Water vapor concentration": C_w_0,
+    "CO2 concentration": C_c_0,
+    "Structural dry weight of the plant": x_sdw,
+    "Non-structural dry weight of the plant": x_nsdw,
+}
 
 
 # FUNCTIONS
