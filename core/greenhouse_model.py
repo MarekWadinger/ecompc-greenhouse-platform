@@ -7,6 +7,7 @@ import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
 from core.actuator_model import (
+    SimpleCO2Generator,
     SimpleEvaporativeHumidifier,
     SimpleFan,
     SimpleHeater,
@@ -131,7 +132,6 @@ s_max_T24 = 1.3904  # differential switch function slope for maximum photosynthe
 s_prune = -50.0  # differential switch function slope for leaf pruning [m^2/kg]
 
 # Crop Growth Model
-added_CO2 = 0.0  # mass of CO2 pumped in per hour [kg/h] (100)
 SLA = 26.6  # specific leaf area index [m^2{leaf}/kg{CH2O}]
 LAI_max = 5.0  # the maximum allowed leaf area index [m^2{leaf}/m^2{floor}]
 Q_10 = 2.0  # see parameters for de Zwart model above [-]
@@ -377,6 +377,9 @@ class GreenHouse:
             )  # [g/h] ~ [l/h]
         self.humidifier = SimpleEvaporativeHumidifier(V_dot_max)
 
+        co2_gen_max = 0.01 * self.volume  # Maximum CO2 generation in kg/h
+        self.co2generator = SimpleCO2Generator(co2_gen_max)
+
         # Tray/mat
         self.A_c = p_v * self.A_f  # Area of cultivated floor [m^2]
         self.A_p = self.A_c  # Area of plants [m^2]
@@ -438,10 +441,13 @@ class GreenHouse:
         perc_vent = u[0]
         perc_heater = u[1]
         perc_humid = u[2]
+        perc_co2 = u[3]
 
         R_a = self.fan.signal_to_actuation(perc_vent)
         Q_heater = self.heater.signal_to_actuation(perc_heater)
         V_dot_humid = self.humidifier.signal_to_actuation(perc_humid)
+        # mass of CO2 pumped in per hour [kg/h]
+        added_CO2 = self.co2generator.signal_to_actuation(perc_co2)
 
         # External weather and dependent internal parameter values
         if isinstance(climate, np.ndarray):

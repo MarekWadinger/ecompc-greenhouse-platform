@@ -24,7 +24,7 @@ class GreenHouseModel(Model):  # Create a model instance
         x = self.set_variable(
             var_type="_x", var_name="x", shape=(len(x_init), 1)
         )
-        u = self.set_variable(var_type="_u", var_name="u", shape=(3, 1))
+        u = self.set_variable(var_type="_u", var_name="u", shape=(4, 1))
         tvp = {
             name: self.set_variable(var_type="_tvp", var_name=name)
             for name in climate_vars
@@ -111,7 +111,12 @@ class EconomicMPC(MPC):
             lterm=(
                 -(
                     self.lettuce_price
-                    * (self.x[-2] + self.x[-1])
+                    * (
+                        self.x[-2]
+                        + self.x[-1]
+                        - self.x0["x"][-2]
+                        - self.x0["x"][-1]
+                    )
                     / DRY_TO_WET_RATIO
                     * self.cultivated_area
                 )
@@ -121,18 +126,12 @@ class EconomicMPC(MPC):
                 + model.gh.heater.signal_to_co2_eur(self.u[1])
                 + model.gh.humidifier.signal_to_eur(self.u[2])
                 + model.gh.humidifier.signal_to_co2_eur(self.u[2])
-                + (
-                    self.lettuce_price
-                    * (self.x0["x"][-2] + self.x0["x"][-1])
-                    / DRY_TO_WET_RATIO
-                    * self.cultivated_area
-                )
+                + model.gh.co2generator.signal_to_eur(self.u[3])
+                + model.gh.co2generator.signal_to_co2_eur(self.u[3])
             ),
         )
 
-        self.set_rterm(
-            u=np.array([1] * model.n_u)
-        )  # Parametrize with size of greenhouse and Ts
+        self.set_rterm(u=np.array([1 / (dt * 1000)] * model.n_u))
 
         # Define path constraints
         self.bounds["lower", "_u", "u"] = u_min

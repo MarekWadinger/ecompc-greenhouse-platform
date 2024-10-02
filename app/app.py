@@ -220,7 +220,10 @@ with st.sidebar:
             dt=dt_default,
         )
 
-        st.header("Controls")
+        st.header(
+            "Controls",
+            help="Optimally scaled actuators for your greenhouse. But you're in control.",
+        )
         max_vent = st.slider(
             "Max. ventilation power (m³/s)",
             min_value=0.0,
@@ -242,6 +245,14 @@ with st.sidebar:
             min_value=0.0,
             max_value=gh_model.humidifier.max_unit * 2,
             value=gh_model.humidifier.max_unit,
+            step=1.0,
+            format="%.0f",
+        )
+        max_co2 = st.slider(
+            "Max. CO₂ generation (kg/h)",
+            min_value=0.0,
+            max_value=gh_model.co2generator.max_unit * 2,
+            value=gh_model.co2generator.max_unit,
             step=1.0,
             format="%.0f",
         )
@@ -380,6 +391,7 @@ if (
     gh_model.fan.max_unit = max_vent
     gh_model.heater.max_unit = max_heat
     gh_model.humidifier.max_unit = max_hum
+    gh_model.co2generator.max_unit = max_co2
     gh_model.dt = dt
     greenhouse_model = partial(gh_model.model, climate=climate.values)
 
@@ -403,7 +415,7 @@ if (
     # Find feasible initial state for given climate
     x0 = np.array([*x_init_dict.values()])
     x0[-2:] = x_sn_init
-    u0 = np.array([0.0, 0.0, 0.0])
+    u0 = np.array([50.0, 50.0, 50.0, 50.0])
     for k in range(N):
         k1 = greenhouse_model(k, x0, u0)
         k2 = greenhouse_model(k, x0 + dt / 2 * k1, u0)
@@ -461,6 +473,12 @@ if (
         plotly_response_(timestamps, x0s, u0s, [u_min], [u_max])
     )
 
-    runtime_info.success(
-        f"Congrats, your greenhouse generated profit of {-np.array(mpc.solver_stats['iterations']['obj'][-1]):.2f} EUR! 🤑"
-    )
+    profit = -np.array(mpc.solver_stats["iterations"]["obj"][-1])
+    if profit < 0:
+        runtime_info.error(
+            f"Unfortunately, your greenhouse generated a loss of {profit:.2f} EUR. 😢"
+        )
+    else:
+        runtime_info.success(
+            f"Congrats, your greenhouse generated profit of {profit:.2f} EUR! 🤑"
+        )

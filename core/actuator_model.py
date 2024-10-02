@@ -139,3 +139,24 @@ class SimpleEvaporativeHumidifier(Actuator):
             max_unit,
             power_per_unit,
         )
+
+
+class SimpleCO2Generator(Actuator):
+    """CO2 Generator model
+
+    Simple CO2Generator model that takes a signal percentage and returns the co2 generation.
+
+    https://www.hotboxworld.com/product/co2-generator
+
+    Examples:
+    >>> max_unit = 10  # Maximum co2 generation in kg/h
+    >>> co2generator = SimpleCO2Generator(max_unit)
+    >>> co2generator.signal_to_actuation(20)
+    2.0
+    """
+
+    def __init__(self, max_unit, power_per_unit=4.4):
+        super().__init__(
+            max_unit,
+            power_per_unit,
+        )

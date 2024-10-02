@@ -241,7 +241,7 @@ def plotly_response(
         )
 
     # Plot Actuation
-    labels = ["fan", "heater", "humidifier"]
+    labels = ["fan", "heater", "humidifier", "co2 generator"]
     for i, (label, color) in enumerate(zip(labels, plotly_colors)):
         fig.add_trace(
             go.Scatter(
@@ -288,9 +288,7 @@ def plotly_greenhouse(length, width, height, roof_tilt, azimuth):
     # Plot the 2D Compass with Greenhouse Orientation
     plotly_compass_with_greenhouse(azimuth, length, width, fig, 1, 2)
 
-    fig.update_layout(
-        height=600, width=1200, title_text="Greenhouse Visualization"
-    )
+    fig.update_layout(height=600, width=1200)
     return fig
 
 
