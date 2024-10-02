@@ -389,7 +389,7 @@ def plotly_3d_greenhouse(
         yaxis=dict(range=[0, width]),
         zaxis=dict(range=[0, peak_height]),
         aspectratio=dict(
-            x=0.3, y=width / length * 0.3, z=peak_height / length * 0.3
+            x=0.75, y=width / length * 0.75, z=peak_height / length * 0.75
         ),
         row=row,
         col=col,
