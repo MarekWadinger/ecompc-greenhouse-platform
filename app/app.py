@@ -10,7 +10,8 @@ import streamlit as st
 from stqdm import stqdm
 from streamlit_theme import st_theme
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
+os.environ["PYTHONPATH"] = os.path.dirname(os.path.abspath(__file__)) + "/.."
+sys.path.append(os.environ["PYTHONPATH"])
 
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
 from core.greenhouse_model import GreenHouse, x_init_dict
