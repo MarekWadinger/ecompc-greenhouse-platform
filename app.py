@@ -422,13 +422,20 @@ if (
         x0 = x_next
 
     mpc.x0 = x0
-    mpc.u0 = u0
+    mpc.u0 = np.array([50.0] * model.n_u)
     simulator.x0 = x0
     mpc.set_initial_guess()
     simulator.set_initial_guess()
 
     # Run the MPC simulation
-    u0s = []
+    u0s = pd.DataFrame(
+        columns=[
+            act
+            for act, active in gh_model.active_actuators.items()
+            if active == 1
+        ],
+        index=range(sim_steps),
+    )
     x0s = pd.DataFrame(columns=[*x_init_dict.keys()], index=range(sim_steps))
     for step in stqdm(range(sim_steps)):
         if step * dt + N + 1 > len(climate):
@@ -455,10 +462,11 @@ if (
 
         with suppress_stdout():
             u0 = mpc.make_step(x0)
-            u0s.append(u0)
+            u0s.iloc[step] = u0.flatten()
             x0 = simulator.make_step(u0)
             if np.isnan(x0).any():
-                raise ValueError("x0 contains NaN values.")
+                runtime_info.error("x0 contains NaN values.")
+                break
             x0s.iloc[step] = x0.flatten()
 
     runtime_info.info("Plotting results ...")

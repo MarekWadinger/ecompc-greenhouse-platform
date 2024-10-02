@@ -20,31 +20,40 @@ class GreenHouseModel(Model):  # Create a model instance
         super().__init__("discrete")
 
         # Define state and control variables
-        t = self.set_variable(var_type="_tvp", var_name="t", shape=(1, 1))
+        t = self.set_variable(var_type="_tvp", var_name="t")
         x = self.set_variable(
             var_type="_x", var_name="x", shape=(len(x_init), 1)
         )
-        u = self.set_variable(var_type="_u", var_name="u", shape=(4, 1))
+
+        actuators = []
+        for act, active in gh_model.active_actuators.items():
+            if active:
+                locals()[act] = self.set_variable(var_type="_u", var_name=act)
+            else:
+                locals()[act] = 0.0
+            actuators.append(locals()[act])
+
+        self.u_ = vertcat(*actuators)
         tvp = {
             name: self.set_variable(var_type="_tvp", var_name=name)
             for name in climate_vars
         }
 
         # Define the model equations
-        def f(t, x, u, tvp):
+        def gh_model_(t, x, u, tvp):
             return vertcat(
                 *gh_model.model(
                     t, vertsplit(x), vertsplit(u), climate=tuple(tvp.values())
                 )
             )
 
-        k1 = f(t, x, u, tvp)
-        k2 = f(t, x + dt / 2 * k1, u, tvp)
-        k3 = f(t, x + dt / 2 * k2, u, tvp)
-        k4 = f(t, x + dt * k3, u, tvp)
+        k1 = gh_model_(t, x, self.u_, tvp)
+        k2 = gh_model_(t, x + dt / 2 * k1, self.u_, tvp)
+        k3 = gh_model_(t, x + dt / 2 * k2, self.u_, tvp)
+        k4 = gh_model_(t, x + dt * k3, self.u_, tvp)
         x_next = x + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-        # x_next = backward_euler_step(f, t, x, u, tvp, dt)
-        # x_next = bdf2_step(f, t + dt, x, x_next, u, tvp, dt)
+        # x_next = backward_euler_step(f, t, x, self.u_, tvp, dt)
+        # x_next = bdf2_step(f, t + dt, x, x_next, self.u_, tvp, dt)
 
         self.set_rhs("x", x_next)
 
@@ -65,7 +74,7 @@ class EconomicMPC(MPC):
     ):
         # Define optimization variables
         self.x = model.x["x"]
-        self.u = model.u["u"]
+        self.u = model.u
 
         self.climate = climate
 
@@ -105,37 +114,25 @@ class EconomicMPC(MPC):
             },
         }
         self.set_param(**setup_mpc)
-        # Define objective
-        self.set_objective(
-            mterm=SX(0.0),  # ca.DM(0)
-            lterm=(
-                -(
-                    self.lettuce_price
-                    * (
-                        self.x[-2]
-                        + self.x[-1]
-                        - self.x0["x"][-2]
-                        - self.x0["x"][-1]
-                    )
-                    / DRY_TO_WET_RATIO
-                    * self.cultivated_area
-                )
-                + model.gh.fan.signal_to_eur(self.u[0])
-                + model.gh.fan.signal_to_co2_eur(self.u[0])
-                + model.gh.heater.signal_to_eur(self.u[1])
-                + model.gh.heater.signal_to_co2_eur(self.u[1])
-                + model.gh.humidifier.signal_to_eur(self.u[2])
-                + model.gh.humidifier.signal_to_co2_eur(self.u[2])
-                + model.gh.co2generator.signal_to_eur(self.u[3])
-                + model.gh.co2generator.signal_to_co2_eur(self.u[3])
-            ),
+        lterm = -(
+            self.lettuce_price
+            * (self.x[-2] + self.x[-1] - self.x0["x"][-2] - self.x0["x"][-1])
+            / DRY_TO_WET_RATIO
+            * self.cultivated_area
         )
+        for act in [
+            act for act, active in model.gh.active_actuators.items() if active
+        ]:
+            actuator = getattr(model.gh, act)
+            lterm += actuator.signal_to_eur(model.u[act])
+            lterm += actuator.signal_to_co2_eur(model.u[act])
+            self.set_rterm(**{act: (1 / (dt * 1000))})  # type: ignore
+            # Define path constraints
+            self.bounds["lower", "_u", act] = u_min
+            self.bounds["upper", "_u", act] = u_max
 
-        self.set_rterm(u=np.array([1 / (dt * 1000)] * model.n_u))
-
-        # Define path constraints
-        self.bounds["lower", "_u", "u"] = u_min
-        self.bounds["upper", "_u", "u"] = u_max
+        # Define objective
+        self.set_objective(mterm=SX(0.0), lterm=lterm)
 
         self.bounds["lower", "_x", "x"] = [0.0] * model.n_x
         # # Small violation due to numerical instability

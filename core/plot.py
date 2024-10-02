@@ -174,6 +174,7 @@ def plotly_response(
     u_min,
     u_max,
     y_visible: list[int] = [-1, -2],
+    u_labels: list[str] | None = None,
 ):
     def align_bounds_shape(array: np.ndarray, n):
         if array.shape[1] == 1 and n != 1:
@@ -214,7 +215,6 @@ def plotly_response(
 
     y_visible = [y if y >= 0 else y + y_nexts.shape[1] for y in y_visible]
     # y_nexts_ = np.array(y_nexts).squeeze()
-    u0s = np.array(u0s).squeeze()
     u_min = np.array(u_min, ndmin=2)
     u_max = np.array(u_max, ndmin=2)
     u_min = align_bounds_shape(u_min, u0s.shape[1])
@@ -241,12 +241,19 @@ def plotly_response(
         )
 
     # Plot Actuation
-    labels = ["fan", "heater", "humidifier", "co2 generator"]
-    for i, (label, color) in enumerate(zip(labels, plotly_colors)):
+    if u_labels is None:
+        if isinstance(u0s, pd.DataFrame):
+            u_labels_ = u0s.columns
+        else:
+            u_labels_ = [f"u_{i}" for i in range(u0s.shape[1])]
+    else:
+        u_labels_ = u_labels
+
+    for i, (label, color) in enumerate(zip(u_labels_, plotly_colors)):
         fig.add_trace(
             go.Scatter(
                 x=_timestamps,
-                y=u0s[:, i],
+                y=u0s[label],
                 mode="lines",
                 name=label,
                 line=dict(color=color),

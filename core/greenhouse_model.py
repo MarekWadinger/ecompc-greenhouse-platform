@@ -313,6 +313,7 @@ class GreenHouse:
         max_vent: float | None = None,
         max_heat: float | None = None,
         max_humid: float | None = None,
+        max_co2: float | None = None,
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
         dt=60,  # sampling time in seconds
@@ -377,7 +378,11 @@ class GreenHouse:
             )  # [g/h] ~ [l/h]
         self.humidifier = SimpleEvaporativeHumidifier(V_dot_max)
 
-        co2_gen_max = 0.01 * self.volume  # Maximum CO2 generation in kg/h
+        if max_co2 is not None:
+            co2_gen_max = max_co2
+        else:
+            # https://www.hotboxworld.com/product/co2-generator
+            co2_gen_max = 0.01 * self.volume  # Maximum CO2 generation in kg/h
         self.co2generator = SimpleCO2Generator(co2_gen_max)
 
         # Tray/mat
@@ -393,6 +398,16 @@ class GreenHouse:
         self.F_c_f = self.A_f / self.area_roof * F_f_c  # Cover to floor
         # F_c_v = min((1-F_c_f)*LAI,(1-F_c_f)) # Cover to vegetation
         # F_c_m = max((1-F_c_f)*(1-LAI),0) # Cover to mat
+
+    @property
+    def active_actuators(self) -> dict[str, bool]:
+        """Return the list of active actuators."""
+        return {
+            "fan": self.fan.max_unit > 0,
+            "heater": self.heater.max_unit > 0,
+            "humidifier": self.humidifier.max_unit > 0,
+            "co2generator": self.co2generator.max_unit > 0,
+        }
 
     def model(
         self,
