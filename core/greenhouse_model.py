@@ -6,7 +6,7 @@ import casadi as ca
 import numpy as np
 
 sys.path.insert(1, str(Path().resolve()))
-from core.actuator_model import (
+from core.actuators import (
     SimpleCO2Generator,
     SimpleEvaporativeHumidifier,
     SimpleFan,
