@@ -464,12 +464,34 @@ if (
         plotly_response_(timestamps, x0s, u0s, [u_min], [u_max])
     )
 
-    profit = -np.array(mpc.solver_stats["iterations"]["obj"][-1])
-    if profit < 0:
+    # Export results to table
+    profit = pd.Series(
+        mpc.lettuce_price
+        * (x0[-2:].sum() - x_sn_init.sum())
+        / DRY_TO_WET_RATIO
+        * mpc.cultivated_area,
+        index=["Lettuce profit "],
+    )
+    costs = pd.Series(
+        index=[f"Energy ({i})" for i in u0s.columns]
+        + [f"CO2 ({i})" for i in u0s.columns]
+    )
+    for act in [
+        act for act, active in model.gh.active_actuators.items() if active
+    ]:
+        actuator = getattr(model.gh, act)
+        costs[f"Energy ({act})"] = -actuator.signal_to_eur(u0s[act]).sum()
+        costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(u0s[act]).sum()
+    profit_costs = pd.concat([profit, costs]).rename("EUR")
+    profit_costs["Total"] = profit_costs.sum()
+
+    st.table(profit_costs.to_frame().style.format("{:.3f}"))
+
+    if profit_costs["Total"] < 0:
         runtime_info.error(
-            f"Unfortunately, your greenhouse generated a loss of {profit:.2f} EUR. 😢"
+            f"Unfortunately, your greenhouse generated a loss of {profit_costs["Total"]:.2f} EUR. 😢"
         )
     else:
         runtime_info.success(
-            f"Congrats, your greenhouse generated profit of {profit:.2f} EUR! 🤑"
+            f"Congrats, your greenhouse generated profit of {profit_costs["Total"]:.2f} EUR! 🤑"
         )
