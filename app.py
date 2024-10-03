@@ -489,9 +489,9 @@ if (
 
     if profit_costs["Total"] < 0:
         runtime_info.error(
-            f"Unfortunately, your greenhouse generated a loss of {profit_costs["Total"]:.2f} EUR. 😢"
+            f"Unfortunately, your greenhouse generated a loss of {profit_costs['Total']:.2f} EUR. 😢"
         )
     else:
         runtime_info.success(
-            f"Congrats, your greenhouse generated profit of {profit_costs["Total"]:.2f} EUR! 🤑"
+            f"Congrats, your greenhouse generated profit of {profit_costs['Total']:.2f} EUR! 🤑"
         )
