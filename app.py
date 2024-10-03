@@ -19,7 +19,7 @@ from core.plot import plotly_greenhouse, plotly_response
 # CONSTANTS
 sim_steps_max = 60 * 24
 N_max = 60
-dt_default = 120
+dt_default = 300
 
 
 @contextmanager
@@ -188,19 +188,6 @@ with st.sidebar:
             city, country, latitude, longitude, altitude = get_city_geocoding(
                 city_
             )
-            # latitude = st.slider(
-            #     "Latitude of the location in degrees",
-            #     -90.0,
-            #     90.0,
-            #     value=52.52,
-            # )
-            # longitude = st.slider(
-            #     "Longitude of the location in degrees",
-            #     -90.0,
-            #     90.0,
-            #     value=13.41,
-            #     key="slider_ref_size",
-            # )
 
             submit_gh = st.form_submit_button(
                 "Validate", on_click=set_location_form_submit
@@ -287,7 +274,7 @@ with st.sidebar:
             dt = st.number_input(
                 "Sampling time (s)",
                 min_value=1,
-                max_value=180,
+                max_value=300,
                 value=dt_default,
                 step=1,
             )
@@ -362,7 +349,7 @@ if (
             end_date=(
                 start_date
                 + pd.Timedelta(
-                    days=(sim_steps_max + N_max) * dt // (3600 * 24)
+                    days=min(15, (sim_steps_max + N_max) * dt // (3600 * 24))
                 )
             ),
         )
@@ -399,20 +386,19 @@ if (
         climate,
         lettuce_price / 1000,
         N,
-        dt,
         x_sn_init,
         u_min,
         u_max,
     )
 
-    simulator = GreenhouseSimulator(model, climate, dt, x_sn_init)
+    simulator = GreenhouseSimulator(model, climate, x_sn_init)
 
     runtime_info.info("Simulating ...")
 
     # Find feasible initial state for given climate
     x0 = np.array([*x_init_dict.values()])
     x0[-2:] = x_sn_init
-    u0 = np.array([50.0, 50.0, 50.0, 50.0])
+    u0 = np.array([50.0] * len(gh_model.active_actuators))
     for k in range(N):
         k1 = greenhouse_model(k, x0, u0)
         k2 = greenhouse_model(k, x0 + dt / 2 * k1, u0)

@@ -176,20 +176,13 @@ def plotly_response(
     y_visible: list[int] = [-1, -2],
     u_labels: list[str] | None = None,
 ):
-    def align_bounds_shape(array: np.ndarray, n):
-        if array.shape[1] == 1 and n != 1:
-            array = np.tile(array, (1, n))
-        return array
-
-    def add_bound_trace(
-        _timestamps, u, fig: go.Figure, label, color, showlegend
-    ):
+    def add_bound_trace(_timestamps, u, fig: go.Figure, label, color):
         # TODO: write issue to plotly to fix showlegend=False behavior on add_hline
         kwargs = dict(
             name=label,
             line=dict(color=color, dash="dash"),
             legendgroup=label,
-            showlegend=showlegend,
+            showlegend=False,
         )
 
         if u.shape[0] == 1:
@@ -217,8 +210,6 @@ def plotly_response(
     # y_nexts_ = np.array(y_nexts).squeeze()
     u_min = np.array(u_min, ndmin=2)
     u_max = np.array(u_max, ndmin=2)
-    u_min = align_bounds_shape(u_min, u0s.shape[1])
-    u_max = align_bounds_shape(u_max, u0s.shape[1])
 
     fig = make_subplots(
         rows=2,
@@ -258,17 +249,23 @@ def plotly_response(
                 name=label,
                 line=dict(color=color),
                 legendgroup=label,
-                showlegend=False,
+                showlegend=True,
             ),
             row=2,
             col=1,
         )
-        fig = add_bound_trace(
-            _timestamps, u_min[:, i], fig, label, color, False
-        )
-        fig = add_bound_trace(
-            _timestamps, u_max[:, i], fig, label, color, True
-        )
+        print()
+        if u_min.shape[1] == 1:
+            if i == 0:
+                fig = add_bound_trace(
+                    _timestamps, u_min[:, i], fig, None, "gray"
+                )
+                fig = add_bound_trace(
+                    _timestamps, u_max[:, i], fig, None, "gray"
+                )
+        else:
+            fig = add_bound_trace(_timestamps, u_min[:, i], fig, label, color)
+            fig = add_bound_trace(_timestamps, u_max[:, i], fig, label, color)
 
     fig.update_yaxes(title_text="Lettuce Dry Weight (g)", row=1, col=1)
     fig.update_yaxes(title_text="Actuation [%]", row=2, col=1)

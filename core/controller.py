@@ -13,9 +13,9 @@ class GreenHouseModel(Model):  # Create a model instance
         self,
         gh_model: GreenHouse,
         climate_vars,
-        dt=60,
     ):
         self.gh = gh_model
+        self.dt = self.gh.dt
 
         super().__init__("discrete")
 
@@ -48,10 +48,10 @@ class GreenHouseModel(Model):  # Create a model instance
             )
 
         k1 = gh_model_(t, x, self.u_, tvp)
-        k2 = gh_model_(t, x + dt / 2 * k1, self.u_, tvp)
-        k3 = gh_model_(t, x + dt / 2 * k2, self.u_, tvp)
-        k4 = gh_model_(t, x + dt * k3, self.u_, tvp)
-        x_next = x + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        k2 = gh_model_(t, x + self.dt / 2 * k1, self.u_, tvp)
+        k3 = gh_model_(t, x + self.dt / 2 * k2, self.u_, tvp)
+        k4 = gh_model_(t, x + self.dt * k3, self.u_, tvp)
+        x_next = x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
         # x_next = backward_euler_step(f, t, x, self.u_, tvp, dt)
         # x_next = bdf2_step(f, t + dt, x, x_next, self.u_, tvp, dt)
 
@@ -67,7 +67,6 @@ class EconomicMPC(MPC):
         climate,
         lettuce_price=0.0054,  # EUR/g
         N=60,  # number of control intervals
-        dt=60,  # sampling time in seconds
         x_weight_init=x_init[-2:],
         u_min: float | list[float] = 0.0,
         u_max: float | list[float] = 100.0,
@@ -95,7 +94,7 @@ class EconomicMPC(MPC):
         # Set parameters
         setup_mpc = {
             "n_horizon": N,
-            "t_step": dt,
+            "t_step": model.dt,
             "supress_ipopt_output": True,
             "state_discretization": "discrete",
             "nlpsol_opts": {
@@ -126,7 +125,7 @@ class EconomicMPC(MPC):
             actuator = getattr(model.gh, act)
             lterm += actuator.signal_to_eur(model.u[act])
             lterm += actuator.signal_to_co2_eur(model.u[act])
-            self.set_rterm(**{act: (1 / (dt * 1000))})  # type: ignore
+            self.set_rterm(**{act: (1 / (model.dt * 1000))})  # type: ignore
             # Define path constraints
             self.bounds["lower", "_u", act] = u_min
             self.bounds["upper", "_u", act] = u_max
@@ -149,10 +148,10 @@ class EconomicMPC(MPC):
         def tvp_mpc_fun(t_now):
             if isinstance(t_now, np.ndarray):
                 t_now = t_now[0]
-            t_ = int(t_now // dt)
+            t_ = int(t_now // model.dt)
             # N is the horizon with given ts
             for k in range(N + 1):
-                tvp_mpc_template["_tvp", k, "t"] = t_now + k * dt
+                tvp_mpc_template["_tvp", k, "t"] = t_now + k * model.dt
                 for key in self.climate.columns:
                     tvp_mpc_template["_tvp", k, key] = self.climate[key].iloc[
                         t_ + k
@@ -171,14 +170,13 @@ class GreenhouseSimulator(Simulator):
         self,
         model,
         climate,
-        dt=60,
         x_weight_init=x_init[-2:],
     ):
         super().__init__(model)
 
         self.climate = climate
 
-        params_simulator = {"t_step": dt}
+        params_simulator = {"t_step": model.dt}
 
         self.set_param(**params_simulator)
 
@@ -189,7 +187,7 @@ class GreenhouseSimulator(Simulator):
         def tvp_sim_fun(t_now):
             if isinstance(t_now, np.ndarray):
                 t_now = t_now[0]
-            t_ = int(t_now // dt)
+            t_ = int(t_now // model.dt)
             tvp_sim_template["t"] = t_now
             for key in climate.columns:
                 tvp_sim_template[key] = climate[key].iloc[t_]

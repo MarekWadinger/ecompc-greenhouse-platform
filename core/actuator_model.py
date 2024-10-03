@@ -1,6 +1,7 @@
 from abc import ABC
 
 import casadi as ca
+from numpy import clip
 
 
 class Actuator(ABC):
@@ -42,7 +43,7 @@ class Actuator(ABC):
             signal = ca.if_else(signal < 0, 0, signal)
             signal = ca.if_else(signal > 100, 100, signal)
         else:
-            signal = max(0.0, min(100.0, signal))
+            signal = clip(signal, 0.0, 100.0)
 
         # Calculate heating power based on the signal
         return (signal / 100.0) * self.max_unit
