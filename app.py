@@ -26,6 +26,10 @@ N_max = 60
 Ts_default = 300
 
 
+get_city_geocoding = st.cache_data(get_city_geocoding)
+get_co2_intensity = st.cache_data(get_co2_intensity)
+
+
 @contextmanager
 def suppress_stdout():
     with open(os.devnull, "w") as devnull:
@@ -45,25 +49,12 @@ def export_fig(fig) -> bytes:
     return buf.getvalue()
 
 
-@st.cache_data
-def concat_results(X, scores_dmd, scores_dmd_diff):
-    df = pd.concat(
-        [
-            X,
-            pd.Series(scores_dmd.real, index=X.index, name="DMD"),
-            pd.Series(scores_dmd_diff.real, index=X.index, name="DMD (diff)"),
-        ],
-        axis=1,
-    )
-    return df
-
-
-@st.cache_data
+@st.cache_resource(ttl=5 * 60, max_entries=10)
 def plotly_greenhouse_(length, width, height, roof_tilt, azimuth):
     return plotly_greenhouse(length, width, height, roof_tilt, azimuth)
 
 
-@st.cache_data
+@st.cache_resource(ttl=5 * 60, max_entries=2)
 def plotly_weather_(climate):
     fig = climate.resample("1H").median().plot(backend="plotly")
     # Hide all traces after the first 4
@@ -81,7 +72,7 @@ def plotly_weather_(climate):
     return fig
 
 
-@st.cache_data
+@st.cache_resource(ttl=5 * 60, max_entries=1)
 def plotly_response_(
     _timestamps,
     y_nexts,
@@ -96,6 +87,7 @@ def plotly_response_(
 
 st.set_page_config(
     page_title="Green House Control",
+    page_icon="🌱",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -211,15 +203,6 @@ with st.sidebar:
         ):
             with st.form(key="location_form", border=False):
                 city_ = st.text_input("City", "Bratislava")
-                (
-                    city,
-                    country,
-                    country_code,
-                    tz,
-                    latitude,
-                    longitude,
-                    altitude,
-                ) = get_city_geocoding(city_)
 
                 grid = st.columns([1.0, 1.0])
                 start_date_ = grid[0].date_input(
@@ -234,6 +217,15 @@ with st.sidebar:
                 submit_gh = st.form_submit_button(
                     "Fetch Forecast", on_click=set_location_form_submit
                 )
+                (
+                    city,
+                    country,
+                    country_code,
+                    tz,
+                    latitude,
+                    longitude,
+                    altitude,
+                ) = get_city_geocoding(city_)
                 try:
                     if st.secrets.load_if_toml_exists():
                         secret = st.secrets["ELECTRICITYMAP_API_KEY"]
