@@ -13,7 +13,11 @@ from streamlit_theme import st_theme
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
 from core.greenhouse_model import GreenHouse, x_init_dict
 from core.lettuce_model import DRY_TO_WET_RATIO, RATIO_SDW_NSDW
-from core.openmeteo_query import OpenMeteo, get_city_geocoding
+from core.openmeteo_query import (
+    OpenMeteo,
+    get_city_geocoding,
+    get_co2_intensity,
+)
 from core.plot import plotly_greenhouse, plotly_response
 
 # CONSTANTS
@@ -185,13 +189,21 @@ with st.sidebar:
         with st.form(key="location_form", border=False):
             st.header("Location")
             city_ = st.text_input("City", "Bratislava")
-            city, country, latitude, longitude, altitude = get_city_geocoding(
-                city_
+            city, country, country_code, latitude, longitude, altitude = (
+                get_city_geocoding(city_)
             )
 
             submit_gh = st.form_submit_button(
                 "Validate", on_click=set_location_form_submit
             )
+            if st.secrets.load_if_toml_exists():
+                co2_intensity = get_co2_intensity(
+                    country_code, st.secrets["ELECTRICITYMAP_API_KEY"]
+                )
+            else:
+                co2_intensity = get_co2_intensity(country_code, None)
+
+            st.write(f"Current carbon intensity: **{co2_intensity} gCO₂/kWh**")
 
     if st.session_state.location_form_submitted:
         gh_model = GreenHouse(
@@ -202,6 +214,7 @@ with st.sidebar:
             latitude=latitude,
             longitude=longitude,
             dt=dt_default,
+            **{"co2_intensity": co2_intensity},
         )
 
         st.header(

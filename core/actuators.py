@@ -13,7 +13,7 @@ class Actuator(ABC):
         max_unit: Maximum reachable actuation [unit]
         power_per_unit: Power per Actuation Unit [W/unit]
         energy_cost: Cost of Energy [EUR/kWh]
-        co2_per_energy: Carbon Intensity [gCO₂eq/kWh]  https://app.electricitymaps.com/zone/SK
+        co2_intensity: Carbon Intensity [gCO₂eq/kWh]  https://app.electricitymaps.com/
         co2_cost: Social cost of CO2 [EUR/gCO₂eq]  https://www.theguardian.com/environment/article/2024/may/17/economic-damage-climate-change-report
         dt: Duration [s]
     """
@@ -23,7 +23,7 @@ class Actuator(ABC):
         max_unit: float,
         power_per_unit: float = 1.0,
         energy_cost: float = 0.0612,
-        co2_per_energy: float = 200.0,
+        co2_intensity: float = 200.0,
         co2_cost: float = 0.001,
         efficiency: float = 0.8,
         dt: float = 1.0,
@@ -31,7 +31,7 @@ class Actuator(ABC):
         self.max_unit = max_unit  # Maximum value of actuation
         self.power_per_unit = power_per_unit
         self.energy_cost = energy_cost
-        self.co2_per_energy = co2_per_energy
+        self.co2_intensity = co2_intensity
         self.co2_cost = co2_cost
         self.efficiency = efficiency
         self.dt = dt
@@ -72,7 +72,7 @@ class Actuator(ABC):
         self, signal: float | ca.GenericExpressionCommon
     ) -> float | ca.GenericExpressionCommon:
         return (
-            self.co2_per_energy
+            self.co2_intensity
             * self.signal_to_power(signal)
             / 1000
             * self.dt
@@ -97,11 +97,8 @@ class SimpleHeater(Actuator):
     500.0
     """
 
-    def __init__(self, max_unit, power_per_unit=1):
-        super().__init__(
-            max_unit,
-            power_per_unit,
-        )
+    def __init__(self, max_unit, *args, **kwargs):
+        super().__init__(max_unit, *args, **kwargs)
 
 
 class SimpleFan(Actuator):
@@ -116,11 +113,8 @@ class SimpleFan(Actuator):
     500.0
     """
 
-    def __init__(self, max_unit, power_per_unit=5):
-        super().__init__(
-            max_unit,
-            power_per_unit,
-        )
+    def __init__(self, max_unit, power_per_unit=5, *args, **kwargs):
+        super().__init__(max_unit, power_per_unit, *args, **kwargs)
 
 
 class SimpleEvaporativeHumidifier(Actuator):
@@ -135,10 +129,12 @@ class SimpleEvaporativeHumidifier(Actuator):
     2.0
     """
 
-    def __init__(self, max_unit, power_per_unit=20):
+    def __init__(self, max_unit, power_per_unit=20, *args, **kwargs):
         super().__init__(
             max_unit,
             power_per_unit,
+            *args,
+            **kwargs,
         )
 
 
@@ -156,8 +152,5 @@ class SimpleCO2Generator(Actuator):
     2.0
     """
 
-    def __init__(self, max_unit, power_per_unit=4.4):
-        super().__init__(
-            max_unit,
-            power_per_unit,
-        )
+    def __init__(self, max_unit, power_per_unit=4.4, *args, **kwargs):
+        super().__init__(max_unit, power_per_unit, *args, **kwargs)

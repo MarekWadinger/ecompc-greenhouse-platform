@@ -1,3 +1,4 @@
+import os
 import warnings
 from datetime import datetime, timezone
 from typing import Literal
@@ -6,7 +7,32 @@ import pandas as pd
 import pvlib
 import requests
 import requests_cache
+from dotenv import load_dotenv
 from retry_requests import retry
+
+load_dotenv()
+
+
+def get_co2_intensity(country_code: str, api_key: str | None = None):
+    """This endpoint retrieves the last 24 hours of carbon intensity (in gCO2eq/kWh) of an area. It can either be queried by zone identifier or by geolocation. The resolution is 60 minutes."""
+
+    if api_key is None:
+        api_key = os.getenv("ELECTRICITYMAP_API_KEY")
+        if api_key is None:
+            raise ValueError(
+                "API key must be provided or set in the .env file"
+            )
+
+    url = f"https://api.electricitymap.org/v3/carbon-intensity/latest?zone={country_code}"
+    headers = {"auth-token": api_key}
+    response = requests.get(url, headers=headers)
+    if response.ok:
+        data = response.json()
+        return data["carbonIntensity"]
+    else:
+        raise ValueError(
+            f"Failed to fetch CO2 intensity data: {response.text}"
+        )
 
 
 def get_city_geocoding(city: str):
@@ -17,6 +43,7 @@ def get_city_geocoding(city: str):
         return (
             data["name"],
             data["country"],
+            data["country_code"],
             data["latitude"],
             data["longitude"],
             data["elevation"],

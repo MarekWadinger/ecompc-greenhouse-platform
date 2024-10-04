@@ -317,6 +317,7 @@ class GreenHouse:
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
         dt=60,  # sampling time in seconds
+        **act_kwargs,
     ) -> None:
         self.length = length
         self.width = width
@@ -351,7 +352,7 @@ class GreenHouse:
 
         if max_vent is not None:
             R_a_max = max_vent
-        self.fan = SimpleFan(R_a_max)
+        self.fan = SimpleFan(R_a_max, **act_kwargs)
 
         # Heater
         # Q_heater_max is computed as the mass of air we want to heat per second
@@ -362,7 +363,7 @@ class GreenHouse:
             Q_heater_max = max_heat
         else:
             Q_heater_max = rho_i * (T_sp_vent - T_k) * R_a_max * c_i
-        self.heater = SimpleHeater(Q_heater_max)
+        self.heater = SimpleHeater(Q_heater_max, **act_kwargs)
 
         # Humidifier
         if max_humid is not None:
@@ -376,14 +377,14 @@ class GreenHouse:
             V_dot_max = (
                 self.volume * max_AH_increase * 1 / rho_w
             )  # [g/h] ~ [l/h]
-        self.humidifier = SimpleEvaporativeHumidifier(V_dot_max)
+        self.humidifier = SimpleEvaporativeHumidifier(V_dot_max, **act_kwargs)
 
         if max_co2 is not None:
             co2_gen_max = max_co2
         else:
             # https://www.hotboxworld.com/product/co2-generator
             co2_gen_max = 0.01 * self.volume  # Maximum CO2 generation in kg/h
-        self.co2generator = SimpleCO2Generator(co2_gen_max)
+        self.co2generator = SimpleCO2Generator(co2_gen_max, **act_kwargs)
 
         # Tray/mat
         self.A_c = p_v * self.A_f  # Area of cultivated floor [m^2]
