@@ -136,7 +136,7 @@ with st.sidebar:
     else:
         st.image("app/qr-black_transparent.png")
 
-    st.title("Greenhouse Design")
+    st.title("Greenhouse Designer")
     st.markdown("Design new greenhouse or create digital twin of your own.")
 
     st.header("Shape")
@@ -319,62 +319,64 @@ with st.sidebar:
             expanded=not st.session_state.params_form_submitted,
         ):
             with st.form(key="params_form", border=False):
-                Ts = st.number_input(
-                    "Sampling time (s)",
-                    min_value=1,
-                    max_value=300,
-                    value=Ts_default,
-                    step=1,
-                )
-                sim_steps = st.slider(
-                    "Simulation steps (samples)",
-                    min_value=0,
-                    max_value=sim_steps_max,
-                    value=60,
-                    step=1,
-                )
                 lettuce_price = st.number_input(
                     "Lettuce price (EUR/kg)",
                     min_value=0.0,
                     value=5.4,
                     step=0.01,
                     format="%.2f",
+                    help="Changes in price affect profit margins, influencing production decisions and the feasibility of growing lettuce.",
                 )
-                N = st.number_input(
+                x_lettuce_wet_init = st.number_input(
+                    "Planted seeds weight (g/m²)",
+                    min_value=5,
+                    max_value=500,
+                    value=500,
+                    step=1,
+                    help=(
+                        "This parameter impacts the potential yield; more seeds can lead to higher biomass but also requires more resources.\n"
+                        "1 seedling ~ 5g.\n"
+                        "For mature lettuce and seedling, we assume that 10 % is dry weight.\n"
+                        "Ratio of structural to non-structural dry weight is "
+                        "assumed to be 3:7."
+                    ),
+                )
+                Ts = st.slider(
+                    "Sampling time (s)",
+                    min_value=0,
+                    max_value=300,
+                    value=Ts_default,
+                    step=10,
+                    help="A shorter sampling time allows for more responsive control but increases computational load. A longer sampling time may lead to slower responses to changes.",
+                )
+                Ts = max(1, Ts)
+                sim_steps = st.slider(
+                    "Simulation steps (samples)",
+                    min_value=0,
+                    max_value=sim_steps_max,
+                    value=290,
+                    step=10,
+                    help="More simulation steps provide a more detailed understanding of the future growth but require more computational resources.",
+                )
+                N = st.slider(
                     "Prediction horizon (samples)",
                     min_value=1,
                     max_value=N_max,
                     value=3,
                     step=1,
-                )
-                x_lettuce_wet_init = st.number_input(
-                    "Initial crop wet weight (g/m²)",
-                    help=(
-                        "1 seedling ~ 5g."
-                        "For mature lettuce and seedling, we assume that 10 % is dry weight.\n"
-                        "Ratio of structural to non-structural dry weight is "
-                        "assumed to be 3:7."
-                    ),
-                    min_value=5,
-                    max_value=500,
-                    value=500,
-                    step=1,
+                    help="A longer prediction horizon enables better long-term planning but significantly increase complexity and uncertainty in predictions.",
                 )
                 x_lettuce_dry_init = (
                     x_lettuce_wet_init * DRY_TO_WET_RATIO / 1000
                 )  # kg/m²
 
                 x_sn_init = x_lettuce_dry_init * RATIO_SDW_NSDW
-                u_min = st.number_input(
-                    "Minimum control input (%)",
-                    help="(comma-separated values)",
-                    value=0.0,
+                us = st.slider(
+                    "Control input range (%)",
+                    value=[0.0, 100.0],
+                    help="Adjusting this range impacts how much control you have over the climate control.",
                 )
-                u_max = st.number_input(
-                    "Maximum control input (%)",
-                    help="(comma-separated values)",
-                    value=100.0,
-                )
+                u_min, u_max = us
 
                 submit_params = st.form_submit_button(
                     "Start Growing!", on_click=set_params_form_submit
