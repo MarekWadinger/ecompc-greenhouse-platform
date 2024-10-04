@@ -114,6 +114,7 @@ if "shape_form_submitted" not in st.session_state:
 
 def set_location_form_submit():
     st.session_state["location_form_submitted"] = True
+    st.session_state["params_form_submitted"] = False
 
 
 if "location_form_submitted" not in st.session_state:
@@ -189,7 +190,7 @@ with st.sidebar:
         )
 
         submit_gh_shape = st.form_submit_button(
-            "Validate", on_click=set_shape_form_submit
+            "Build Greenhouse", on_click=set_shape_form_submit
         )
 
     if st.session_state.shape_form_submitted:
@@ -200,12 +201,23 @@ with st.sidebar:
             )
             st.markdown("Fetch weather forecast for your location.")
             city_ = st.text_input("City", "Bratislava")
-            city, country, country_code, latitude, longitude, altitude = (
+            city, country, country_code, tz, latitude, longitude, altitude = (
                 get_city_geocoding(city_)
             )
 
+            st.header("Control Period")
+            grid = st.columns([1.0, 1.0])
+            start_date_ = grid[0].date_input(
+                "Start date",
+                min_value=pd.Timestamp(year=1940, month=1, day=1),
+                max_value=pd.Timestamp.now() + pd.Timedelta(days=7),
+            )
+            start_time = grid[1].time_input(
+                "Start time",
+            )
+
             submit_gh = st.form_submit_button(
-                "Validate", on_click=set_location_form_submit
+                "Fetch Forecast", on_click=set_location_form_submit
             )
             try:
                 if st.secrets.load_if_toml_exists():
@@ -237,7 +249,7 @@ with st.sidebar:
         )
 
         st.header(
-            "Controls",
+            "Climate Controls",
             help="Optimally scaled actuators for your greenhouse. But you're in control.",
         )
         max_vent = st.slider(
@@ -340,7 +352,7 @@ with st.sidebar:
             )
 
             submit_params = st.form_submit_button(
-                "Run", on_click=set_params_form_submit
+                "Start Growing!", on_click=set_params_form_submit
             )
 
 # === Main ===
@@ -374,7 +386,10 @@ if (
         azimuth=azimuth,  # Azimuth angle of the surface in degrees (South facing)
         frequency="minutely_15",  # Frequency of the data
     )
-    start_date = pd.Timestamp.now()
+    start_date = pd.Timestamp.combine(
+        start_date_,  # type: ignore
+        start_time,
+    )
     climate = (
         openmeteo.get_weather_data(
             start_date=start_date,

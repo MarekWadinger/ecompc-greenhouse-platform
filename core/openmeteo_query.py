@@ -35,7 +35,9 @@ def get_co2_intensity(country_code: str, api_key: str | None = None):
         )
 
 
-def get_city_geocoding(city: str):
+def get_city_geocoding(
+    city: str,
+) -> tuple[str, str, str, str, float, float, int]:
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
     response = requests.get(url)
     if response.ok:
@@ -44,6 +46,7 @@ def get_city_geocoding(city: str):
             data["name"],
             data["country"],
             data["country_code"],
+            data["timezone"],
             data["latitude"],
             data["longitude"],
             data["elevation"],
@@ -115,6 +118,18 @@ class OpenMeteo:
                     "Either forecast or start_date and end_date must be provided"
                 )
 
+        # Determine the appropriate API URL based on the end_date
+        now = datetime.now()
+        if end_date is not None and pd.to_datetime(end_date) < now:
+            if pd.to_datetime(end_date) < datetime(2022, 1, 1):
+                self.frequency = "hourly"
+                url = "https://archive-api.open-meteo.com/v1/archive"
+            else:
+                self.frequency = "minutely_15"
+                url = "https://historical-forecast-api.open-meteo.com/v1/forecast"
+        else:
+            self.frequency = "minutely_15"
+            url = "https://api.open-meteo.com/v1/forecast"
         # Setup the Open-Meteo API client with cache and retry on error
         cache_session = requests_cache.CachedSession(
             ".cache", expire_after=3600
@@ -123,7 +138,6 @@ class OpenMeteo:
 
         # Make sure all required weather variables are listed here
         # The order of variables in hourly or daily is important to assign them correctly below
-        url = "https://api.open-meteo.com/v1/forecast"
         params = {
             "latitude": self.latitude,
             "longitude": self.longitude,
@@ -154,6 +168,7 @@ class OpenMeteo:
             else:
                 idx = [data.pop("time")]
             df = pd.DataFrame(data, index=idx)
+            df.index = pd.to_datetime(df.index)
 
             # Add units to column names
             suffix_dict = r[f"{self.frequency}_units"]
@@ -331,9 +346,7 @@ class OpenMeteo:
             end_date,
         )
 
-        df = pd.concat(
-            [df.reset_index(drop=True), df_rad.reset_index()], axis=1
-        ).set_index("index")
+        df = pd.concat([df, df_rad], axis=1)
 
         df = df.dropna()
         df = self.sort_diffuse_last(df)
