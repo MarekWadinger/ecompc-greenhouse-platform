@@ -139,102 +139,117 @@ with st.sidebar:
     st.title("Greenhouse Design")
     st.markdown("Design new greenhouse or create digital twin of your own.")
 
-    with st.form(key="shape_form", border=False):
-        st.header("Shape")
-        # Input for length and width
-        length = st.number_input(
-            "Length (meters)",
-            min_value=0.0,
-            value=25.0,
-            step=0.1,
-            format="%.1f",
-        )
+    st.header("Shape")
+    with st.expander(
+        "Customize",
+        icon="🏠",
+        expanded=not st.session_state.shape_form_submitted,
+    ):
+        with st.form(key="shape_form", border=False):
+            # Input for length and width
+            length = st.number_input(
+                "Length (meters)",
+                min_value=0.0,
+                value=25.0,
+                step=0.1,
+                format="%.1f",
+            )
 
-        width = st.number_input(
-            "Width (meters)",
-            min_value=0.0,
-            value=10.0,
-            step=0.1,
-            format="%.1f",
-        )
+            width = st.number_input(
+                "Width (meters)",
+                min_value=0.0,
+                value=10.0,
+                step=0.1,
+                format="%.1f",
+            )
 
-        height = st.number_input(
-            "Wall Height (meters)",
-            min_value=1.0,
-            value=4.0,
-            step=0.1,
-            format="%.1f",
-        )
-        # Tilt for roof (0° to 90°)
-        roof_tilt = st.slider(
-            "Roof Tilt (degrees)",
-            min_value=0,
-            max_value=45,
-            value=30,
-            step=1,
-            format="%d°",
-            help="Tilt angle of the roof: 0° = flat, 90° = vertical",
-        )
-        wall_tilt = 90
+            height = st.number_input(
+                "Wall Height (meters)",
+                min_value=1.0,
+                value=4.0,
+                step=0.1,
+                format="%.1f",
+            )
+            # Tilt for roof (0° to 90°)
+            roof_tilt = st.slider(
+                "Roof Tilt (degrees)",
+                min_value=0,
+                max_value=45,
+                value=30,
+                step=1,
+                format="%d°",
+                help="Tilt angle of the roof: 0° = flat, 90° = vertical",
+            )
+            wall_tilt = 90
 
-        st.header("Orientation")
+            st.header("Orientation")
 
-        # Compass azimuth selection (slider from 0° to 360°)
-        azimuth_face = st.slider(
-            "Azimuth (degrees - greenhouse width faces)",
-            min_value=0,
-            max_value=360,
-            value=90,  # Default to South
-            format="%d°",
-            help="Direction your greenhouse faces: North = 0°, South = 180°",
-        )
+            # Compass azimuth selection (slider from 0° to 360°)
+            azimuth_face = st.slider(
+                "Azimuth (degrees - greenhouse width faces)",
+                min_value=0,
+                max_value=360,
+                value=90,  # Default to South
+                format="%d°",
+                help="Direction your greenhouse faces: North = 0°, South = 180°",
+            )
 
-        submit_gh_shape = st.form_submit_button(
-            "Build Greenhouse", on_click=set_shape_form_submit
-        )
+            submit_gh_shape = st.form_submit_button(
+                "Build Greenhouse", on_click=set_shape_form_submit
+            )
 
     if st.session_state.shape_form_submitted:
-        with st.form(key="location_form", border=False):
-            st.header(
-                "Location",
-                help="Weather forecast and geolocation data provided by [Open-Meteo](https://open-meteo.com).",
-            )
-            st.markdown("Fetch weather forecast for your location.")
-            city_ = st.text_input("City", "Bratislava")
-            city, country, country_code, tz, latitude, longitude, altitude = (
-                get_city_geocoding(city_)
-            )
-
-            st.header("Control Period")
-            grid = st.columns([1.0, 1.0])
-            start_date_ = grid[0].date_input(
-                "Start date",
-                min_value=pd.Timestamp(year=1940, month=1, day=1),
-                max_value=pd.Timestamp.now() + pd.Timedelta(days=7),
-            )
-            start_time = grid[1].time_input(
-                "Start time",
-            )
-
-            submit_gh = st.form_submit_button(
-                "Fetch Forecast", on_click=set_location_form_submit
-            )
-            try:
-                if st.secrets.load_if_toml_exists():
-                    secret = st.secrets["ELECTRICITYMAP_API_KEY"]
-                else:
-                    secret = None
-                co2_intensity = get_co2_intensity(
+        st.header(
+            "Location",
+            help="Weather forecast and geolocation data provided by [Open-Meteo](https://open-meteo.com).",
+        )
+        st.markdown("Fetch weather forecast for your location.")
+        with st.expander(
+            "Customize",
+            icon="📍",
+            expanded=not st.session_state.location_form_submitted,
+        ):
+            with st.form(key="location_form", border=False):
+                city_ = st.text_input("City", "Bratislava")
+                (
+                    city,
+                    country,
                     country_code,
+                    tz,
+                    latitude,
+                    longitude,
+                    altitude,
+                ) = get_city_geocoding(city_)
+
+                grid = st.columns([1.0, 1.0])
+                start_date_ = grid[0].date_input(
+                    "Date",
+                    min_value=pd.Timestamp(year=1940, month=1, day=1),
+                    max_value=pd.Timestamp.now() + pd.Timedelta(days=7),
                 )
-                co2_source = "Current"
-            except ValueError:
-                co2_intensity = 100.0
-                co2_source = "Default"
-            st.markdown(
-                f"{co2_source} carbon intensity: **{co2_intensity} gCO₂/kWh**",
-                help="Carbon intensity data provided by [ELECTRICITY MAPS](https://electricitymap.org)",
-            )
+                start_time = grid[1].time_input(
+                    "Time",
+                )
+
+                submit_gh = st.form_submit_button(
+                    "Fetch Forecast", on_click=set_location_form_submit
+                )
+                try:
+                    if st.secrets.load_if_toml_exists():
+                        secret = st.secrets["ELECTRICITYMAP_API_KEY"]
+                    else:
+                        secret = None
+                    co2_intensity = get_co2_intensity(
+                        country_code,
+                    )
+                    co2_source = "Current"
+                except ValueError:
+                    co2_intensity = 100.0
+                    co2_source = "Default"
+        st.markdown(
+            f"{co2_source} carbon intensity: **{co2_intensity} gCO₂/kWh**",
+            help="Carbon intensity data provided by [ELECTRICITY MAPS](https://electricitymap.org)",
+        )
 
     if st.session_state.location_form_submitted:
         gh_model = GreenHouse(
@@ -252,38 +267,43 @@ with st.sidebar:
             "Climate Controls",
             help="Optimally scaled actuators for your greenhouse. But you're in control.",
         )
-        max_vent = st.slider(
-            "Max. ventilation power (m³/s)",
-            min_value=0.0,
-            max_value=gh_model.fan.max_unit * 2,
-            value=gh_model.fan.max_unit,
-            step=1.0,
-            format="%.0f",
-        )
-        max_heat = st.slider(
-            "Max. heating power (W)",
-            min_value=0.0,
-            max_value=gh_model.heater.max_unit * 2,
-            value=gh_model.heater.max_unit,
-            step=1.0,
-            format="%.0f",
-        )
-        max_hum = st.slider(
-            "Max. humidifier power (l/h)",
-            min_value=0.0,
-            max_value=gh_model.humidifier.max_unit * 2,
-            value=gh_model.humidifier.max_unit,
-            step=1.0,
-            format="%.0f",
-        )
-        max_co2 = st.slider(
-            "Max. CO₂ generation (kg/h)",
-            min_value=0.0,
-            max_value=gh_model.co2generator.max_unit * 2,
-            value=gh_model.co2generator.max_unit,
-            step=1.0,
-            format="%.0f",
-        )
+        with st.expander(
+            "Customize",
+            icon="🌡️",
+            expanded=False,
+        ):
+            max_vent = st.slider(
+                "Max. ventilation power (m³/s)",
+                min_value=0.0,
+                max_value=gh_model.fan.max_unit * 2,
+                value=gh_model.fan.max_unit,
+                step=1.0,
+                format="%.0f",
+            )
+            max_heat = st.slider(
+                "Max. heating power (W)",
+                min_value=0.0,
+                max_value=gh_model.heater.max_unit * 2,
+                value=gh_model.heater.max_unit,
+                step=1.0,
+                format="%.0f",
+            )
+            max_hum = st.slider(
+                "Max. humidifier power (l/h)",
+                min_value=0.0,
+                max_value=gh_model.humidifier.max_unit * 2,
+                value=gh_model.humidifier.max_unit,
+                step=1.0,
+                format="%.0f",
+            )
+            max_co2 = st.slider(
+                "Max. CO₂ generation (kg/h)",
+                min_value=0.0,
+                max_value=gh_model.co2generator.max_unit * 2,
+                value=gh_model.co2generator.max_unit,
+                step=1.0,
+                format="%.0f",
+            )
 
         st.title(
             "eMPC Design",
@@ -293,67 +313,72 @@ with st.sidebar:
             "Change parameters of optimal controller and watch your crop growing."
         )
 
-        with st.form(key="params_form", border=False):
-            Ts = st.number_input(
-                "Sampling time (s)",
-                min_value=1,
-                max_value=300,
-                value=Ts_default,
-                step=1,
-            )
-            sim_steps = st.slider(
-                "Simulation steps (samples)",
-                min_value=0,
-                max_value=sim_steps_max,
-                value=60,
-                step=1,
-            )
-            lettuce_price = st.number_input(
-                "Lettuce price (EUR/kg)",
-                min_value=0.0,
-                value=5.4,
-                step=0.01,
-                format="%.2f",
-            )
-            N = st.number_input(
-                "Prediction horizon (samples)",
-                min_value=1,
-                max_value=N_max,
-                value=3,
-                step=1,
-            )
-            x_lettuce_wet_init = st.number_input(
-                "Initial crop wet weight (g/m²)",
-                help=(
-                    "1 seedling ~ 5g."
-                    "For mature lettuce and seedling, we assume that 10 % is dry weight.\n"
-                    "Ratio of structural to non-structural dry weight is "
-                    "assumed to be 3:7."
-                ),
-                min_value=5,
-                max_value=500,
-                value=500,
-                step=1,
-            )
-            x_lettuce_dry_init = (
-                x_lettuce_wet_init * DRY_TO_WET_RATIO / 1000
-            )  # kg/m²
+        with st.expander(
+            "Customize",
+            icon="🌱",
+            expanded=not st.session_state.params_form_submitted,
+        ):
+            with st.form(key="params_form", border=False):
+                Ts = st.number_input(
+                    "Sampling time (s)",
+                    min_value=1,
+                    max_value=300,
+                    value=Ts_default,
+                    step=1,
+                )
+                sim_steps = st.slider(
+                    "Simulation steps (samples)",
+                    min_value=0,
+                    max_value=sim_steps_max,
+                    value=60,
+                    step=1,
+                )
+                lettuce_price = st.number_input(
+                    "Lettuce price (EUR/kg)",
+                    min_value=0.0,
+                    value=5.4,
+                    step=0.01,
+                    format="%.2f",
+                )
+                N = st.number_input(
+                    "Prediction horizon (samples)",
+                    min_value=1,
+                    max_value=N_max,
+                    value=3,
+                    step=1,
+                )
+                x_lettuce_wet_init = st.number_input(
+                    "Initial crop wet weight (g/m²)",
+                    help=(
+                        "1 seedling ~ 5g."
+                        "For mature lettuce and seedling, we assume that 10 % is dry weight.\n"
+                        "Ratio of structural to non-structural dry weight is "
+                        "assumed to be 3:7."
+                    ),
+                    min_value=5,
+                    max_value=500,
+                    value=500,
+                    step=1,
+                )
+                x_lettuce_dry_init = (
+                    x_lettuce_wet_init * DRY_TO_WET_RATIO / 1000
+                )  # kg/m²
 
-            x_sn_init = x_lettuce_dry_init * RATIO_SDW_NSDW
-            u_min = st.number_input(
-                "Minimum control input (%)",
-                help="(comma-separated values)",
-                value=0.0,
-            )
-            u_max = st.number_input(
-                "Maximum control input (%)",
-                help="(comma-separated values)",
-                value=100.0,
-            )
+                x_sn_init = x_lettuce_dry_init * RATIO_SDW_NSDW
+                u_min = st.number_input(
+                    "Minimum control input (%)",
+                    help="(comma-separated values)",
+                    value=0.0,
+                )
+                u_max = st.number_input(
+                    "Maximum control input (%)",
+                    help="(comma-separated values)",
+                    value=100.0,
+                )
 
-            submit_params = st.form_submit_button(
-                "Start Growing!", on_click=set_params_form_submit
-            )
+                submit_params = st.form_submit_button(
+                    "Start Growing!", on_click=set_params_form_submit
+                )
 
 # === Main ===
 st.title("Economic MPC for Greenhouse Climate Control")
