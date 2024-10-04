@@ -122,7 +122,7 @@ class EconomicMPC(MPC):
         for act in [
             act for act, active in model.gh.active_actuators.items() if active
         ]:
-            actuator = getattr(model.gh, act)
+            actuator = getattr(model.gh, act.lower().replace(" ", ""))
             lterm += actuator.signal_to_eur(model.u[act])
             lterm += actuator.signal_to_co2_eur(model.u[act])
             self.set_rterm(**{act: (1 / (model.dt * 1000))})  # type: ignore

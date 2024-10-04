@@ -389,9 +389,9 @@ def plotly_3d_greenhouse(
                 z=0.5,  # You can adjust the z to control elevation
             )
         ),
-        xaxis=dict(range=[0, length]),
-        yaxis=dict(range=[0, width]),
-        zaxis=dict(range=[0, peak_height]),
+        xaxis=dict(title="Length", range=[0, length]),
+        yaxis=dict(title="Width", range=[0, width]),
+        zaxis=dict(title="Wall Height", range=[0, peak_height]),
         aspectratio=dict(
             x=0.75, y=width / length * 0.75, z=peak_height / length * 0.75
         ),
@@ -428,18 +428,6 @@ def plotly_compass_with_greenhouse(
         col=col,
     )
 
-    # Add an arrow to indicate the azimuth
-    fig.add_trace(
-        go.Scatterpolar(
-            r=[0, max(length, width)],  # From center to outer edge
-            theta=[0, azimuth_angle],  # Pointing in the direction of azimuth
-            mode="lines",
-            line=dict(color="red", width=3),
-            showlegend=False,
-        ),
-        row=row,
-        col=col,
-    )
     # Compute the four corners of the greenhouse rectangle in Cartesian coordinates
     corners = np.array(
         [
@@ -505,6 +493,7 @@ def plotly_compass_with_greenhouse(
             angularaxis=dict(
                 tickvals=angles,  # Set angular tick values
                 ticktext=directions,  # N, E, S, W labels
+                direction="clockwise",  # Set azimuth to increment clockwise
             ),
         ),
         plot_bgcolor="rgba(0,0,0,0)",  # Transparent plot background

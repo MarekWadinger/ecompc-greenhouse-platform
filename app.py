@@ -23,7 +23,7 @@ from core.plot import plotly_greenhouse, plotly_response
 # CONSTANTS
 sim_steps_max = 60 * 24
 N_max = 60
-dt_default = 300
+Ts_default = 300
 
 
 @contextmanager
@@ -66,6 +66,13 @@ def plotly_greenhouse_(length, width, height, roof_tilt, azimuth):
 @st.cache_data
 def plotly_weather_(climate):
     fig = climate.resample("1H").median().plot(backend="plotly")
+    # Hide all traces after the first 4
+    for i in range(4, len(fig.data)):
+        fig.data[
+            i
+        ].visible = (
+            "legendonly"  # Keeps the plot in the legend but hides the trace
+        )
     fig.update_layout(
         legend=dict(
             orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
@@ -187,7 +194,11 @@ with st.sidebar:
 
     if st.session_state.shape_form_submitted:
         with st.form(key="location_form", border=False):
-            st.header("Location")
+            st.header(
+                "Location",
+                help="Weather forecast and geolocation data provided by [Open-Meteo](https://open-meteo.com).",
+            )
+            st.markdown("Fetch weather forecast for your location.")
             city_ = st.text_input("City", "Bratislava")
             city, country, country_code, latitude, longitude, altitude = (
                 get_city_geocoding(city_)
@@ -196,14 +207,22 @@ with st.sidebar:
             submit_gh = st.form_submit_button(
                 "Validate", on_click=set_location_form_submit
             )
-            if st.secrets.load_if_toml_exists():
+            try:
+                if st.secrets.load_if_toml_exists():
+                    secret = st.secrets["ELECTRICITYMAP_API_KEY"]
+                else:
+                    secret = None
                 co2_intensity = get_co2_intensity(
-                    country_code, st.secrets["ELECTRICITYMAP_API_KEY"]
+                    country_code,
                 )
-            else:
-                co2_intensity = get_co2_intensity(country_code, None)
-
-            st.write(f"Current carbon intensity: **{co2_intensity} gCO₂/kWh**")
+                co2_source = "Current"
+            except ValueError:
+                co2_intensity = 100.0
+                co2_source = "Default"
+            st.markdown(
+                f"{co2_source} carbon intensity: **{co2_intensity} gCO₂/kWh**",
+                help="Carbon intensity data provided by [ELECTRICITY MAPS](https://electricitymap.org)",
+            )
 
     if st.session_state.location_form_submitted:
         gh_model = GreenHouse(
@@ -213,7 +232,7 @@ with st.sidebar:
             roof_tilt,
             latitude=latitude,
             longitude=longitude,
-            dt=dt_default,
+            dt=Ts_default,
             **{"co2_intensity": co2_intensity},
         )
 
@@ -263,8 +282,15 @@ with st.sidebar:
         )
 
         with st.form(key="params_form", border=False):
+            Ts = st.number_input(
+                "Sampling time (s)",
+                min_value=1,
+                max_value=300,
+                value=Ts_default,
+                step=1,
+            )
             sim_steps = st.slider(
-                "Simulation steps (1/dt)",
+                "Simulation steps (samples)",
                 min_value=0,
                 max_value=sim_steps_max,
                 value=60,
@@ -278,17 +304,10 @@ with st.sidebar:
                 format="%.2f",
             )
             N = st.number_input(
-                "Prediction horizon",
+                "Prediction horizon (samples)",
                 min_value=1,
                 max_value=N_max,
                 value=3,
-                step=1,
-            )
-            dt = st.number_input(
-                "Sampling time (s)",
-                min_value=1,
-                max_value=300,
-                value=dt_default,
                 step=1,
             )
             x_lettuce_wet_init = st.number_input(
@@ -362,11 +381,11 @@ if (
             end_date=(
                 start_date
                 + pd.Timedelta(
-                    days=min(15, (sim_steps_max + N_max) * dt // (3600 * 24))
+                    days=min(15, (sim_steps_max + N_max) * Ts // (3600 * 24))
                 )
             ),
         )
-        .asfreq(f"{dt}s")
+        .asfreq(f"{Ts}s")
         .interpolate(method="time")
     )
     start_date = pd.Timestamp(climate.index[0])
@@ -374,7 +393,9 @@ if (
 
     weather_plot = st.empty()
     weather_plot.plotly_chart(plotly_weather_(climate))
-    runtime_info.success("Skadoosh ...")
+    runtime_info.success(
+        "Forecast fetched from [Open-Meteo](https://open-meteo.com) ..."
+    )
 
 if (
     st.session_state.shape_form_submitted
@@ -389,7 +410,7 @@ if (
     gh_model.heater.max_unit = max_heat
     gh_model.humidifier.max_unit = max_hum
     gh_model.co2generator.max_unit = max_co2
-    gh_model.dt = dt
+    gh_model.dt = Ts
     greenhouse_model = partial(gh_model.model, climate=climate.values)
 
     model = GreenHouseModel(gh_model, climate_vars=climate.columns)
@@ -414,10 +435,10 @@ if (
     u0 = np.array([50.0] * len(gh_model.active_actuators))
     for k in range(N):
         k1 = greenhouse_model(k, x0, u0)
-        k2 = greenhouse_model(k, x0 + dt / 2 * k1, u0)
-        k3 = greenhouse_model(k, x0 + dt / 2 * k2, u0)
-        k4 = greenhouse_model(k, x0 + dt * k3, u0)
-        x_next = x0 + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        k2 = greenhouse_model(k, x0 + Ts / 2 * k1, u0)
+        k3 = greenhouse_model(k, x0 + Ts / 2 * k2, u0)
+        k4 = greenhouse_model(k, x0 + Ts * k3, u0)
+        x_next = x0 + Ts / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
         x0 = x_next
 
     mpc.x0 = x0
@@ -437,10 +458,10 @@ if (
     )
     x0s = pd.DataFrame(columns=[*x_init_dict.keys()], index=range(sim_steps))
     for step in stqdm(range(sim_steps)):
-        if step * dt + N + 1 > len(climate):
+        if step * Ts + N + 1 > len(climate):
             if step + N == len(climate):
                 runtime_info.info("Fetching new forecast")
-                start_date = start_date + pd.Timedelta(seconds=step * dt)
+                start_date = start_date + pd.Timedelta(seconds=step * Ts)
                 climate = (
                     openmeteo.get_weather_data(
                         start_date=start_date,
@@ -448,7 +469,7 @@ if (
                             "%Y-%m-%d"
                         ),
                     )
-                    .asfreq(f"{dt}s")
+                    .asfreq(f"{Ts}s")
                     .interpolate(method="time")
                 )
 
@@ -470,7 +491,7 @@ if (
 
     runtime_info.info("Plotting results ...")
     timestamps = pd.date_range(
-        start=start_date, periods=sim_steps, freq=pd.Timedelta(seconds=dt)
+        start=start_date, periods=sim_steps, freq=pd.Timedelta(seconds=Ts)
     )
     forecast_plot = st.empty()
     forecast_plot.plotly_chart(
@@ -492,7 +513,7 @@ if (
     for act in [
         act for act, active in model.gh.active_actuators.items() if active
     ]:
-        actuator = getattr(model.gh, act)
+        actuator = getattr(model.gh, act.lower().replace(" ", ""))
         costs[f"Energy ({act})"] = -actuator.signal_to_eur(u0s[act]).sum()
         costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(u0s[act]).sum()
     profit_costs = pd.concat([profit, costs]).rename("EUR")

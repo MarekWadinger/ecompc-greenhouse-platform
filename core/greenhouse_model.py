@@ -404,10 +404,10 @@ class GreenHouse:
     def active_actuators(self) -> dict[str, bool]:
         """Return the list of active actuators."""
         return {
-            "fan": self.fan.max_unit > 0,
-            "heater": self.heater.max_unit > 0,
-            "humidifier": self.humidifier.max_unit > 0,
-            "co2generator": self.co2generator.max_unit > 0,
+            "Fan": self.fan.max_unit > 0,
+            "Heater": self.heater.max_unit > 0,
+            "Humidifier": self.humidifier.max_unit > 0,
+            "CO2 Generator": self.co2generator.max_unit > 0,
         }
 
     def model(
