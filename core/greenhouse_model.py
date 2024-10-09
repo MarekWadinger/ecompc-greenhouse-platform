@@ -38,7 +38,7 @@ rho_w = 1000.0  # density of water [kg/m^3]
 a_obs = 0.05  # fraction of solar radiation hitting obstructions [-]
 
 # Air characteristics
-ias = 0.5  # internal air speed [m/s]
+IAS = 0.5  # internal air speed [m/s]
 
 # Cover
 # Glass
@@ -464,6 +464,8 @@ class GreenHouse:
         V_dot_humid = self.humidifier.signal_to_actuation(perc_humid)
         # mass of CO2 pumped in per hour [kg/h]
         added_CO2 = self.co2generator.signal_to_actuation(perc_co2)
+
+        ias = IAS + R_a / (self.width * self.height)
 
         # External weather and dependent internal parameter values
         if isinstance(climate, np.ndarray):
