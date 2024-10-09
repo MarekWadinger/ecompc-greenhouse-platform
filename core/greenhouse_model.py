@@ -12,7 +12,11 @@ from core.actuators import (
     SimpleFan,
     SimpleHeater,
 )
-from core.lettuce_model import get_f_resp, lettuce_growth_model
+from core.lettuce_model import (
+    C_LAR,
+    get_f_resp,
+    lettuce_growth_model,
+)
 
 # CONSTANTS
 Nz = 1.0
@@ -95,77 +99,22 @@ msd_v = 1.326  # surface density [kg/m^2]
 # Tray/mat
 d_p = 1.0  # characteristic dimension of tray (width)
 d_m = 0.1  # characteristic dimension of mat (width)
-lam_m = 0.5  # thermal conductivity of mat [W/mK]
 lam_p = 0.2  # thermal conductivity of plastic tray [W/mK]
 c_m = 45050.0  # specific heat of mat assumed 25% saturated [J/m^2K]
 c_p = 10020.0  # specific heat of tray [J/m^2K]
 l_m = 0.03  # thickness of mat [m]
 l_p = 0.005  # thickness of tray [m]
-rhod_m = 720.0  # density of mat [kg/m^3]
-rhod_p = 1200.0  # density of tray [kg/m^3]
 rho_m = 0.05  # far-IR reflectivity of mat [-]
 rho_p = 0.05  # far-IR reflectivity of tray
 eps_m = 0.95  # far-IR emissivity of mat [-]
 eps_p = 0.95  # far-IR emissivity of tray
 
 # Photosynthesis model - Vanthoor
-c_Gamma = 1.7e-6  # effect of canopy temperature on CO2 compensation point [mol{CO2}/mol{air}/K]
-J_max_25 = (
-    210e-6  # maximum rate of electron transport at 25 C [mol{e}/m^2{leaf}/s]
-)
-alph = 0.385  # conversion factor from photons to electrons [mol{e}/mol{phot}]
-C_buf_max = 0.02  # maximum buffer capacity per unit area of cultivated floor [kg{CH2O}/m^2/s]
-theta = 0.7  # degree of curvature of the electron transport rate [-]
-S = 710.0  # entropy term for J_pot calculation [J/mol/K]
-HH = 22.0e4  #  deactivation energy for J_pot calculation [J/mol]
-E_j = 37.0e3  # activation energy for J_pot calculation [J/mol]
 heat_phot = 3.6368e-19  # conversion rate from incident energy to number of photons [num{photons}/J]
-eta = 0.67  # conversion factor from CO2 in the air to CO2 in the stomata [-]
-s_airbuf_buf = 5.0e2  # differential switch function slope for maximum buffer capacity [m^2/kg]
-s_buforg_buf = (
-    -5.0e3
-)  # differential switch function slope for minimum buffer capacity [m^2/kg]
-s_min_T = -0.8690  # differential switch function slope for minimum photosynthesis instantaneous temperature [1/degC]
-s_max_T = 0.5793  # differential switch function slope for maximum photosynthesis instantaneous temperature [1/degC]
-s_min_T24 = -1.1587  # differential switch function slope for minimum photosynthesis mean 24 hour temperature [1/degC]
-s_max_T24 = 1.3904  # differential switch function slope for maximum photosynthesis mean 24 hour temperature [1/degC]
-s_prune = -50.0  # differential switch function slope for leaf pruning [m^2/kg]
 
 # Crop Growth Model
-SLA = 26.6  # specific leaf area index [m^2{leaf}/kg{CH2O}]
+SLA = C_LAR * 1000  # specific leaf area index [m^2{leaf}/kg{CH2O}]
 LAI_max = 5.0  # the maximum allowed leaf area index [m^2{leaf}/m^2{floor}]
-Q_10 = 2.0  # see parameters for de Zwart model above [-]
-rg_fruit = 0.328e-6  # potential fruit growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
-rg_leaf = 0.095e-6  # potential leaf growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
-rg_stem = 0.074e-6  # potential stem growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
-weight_fruit = 0.5
-weight_leaf = 0.3
-weight_stem = 0.2
-c_fruit_g = 0.27  # fruit growth respiration coefficient [-]
-c_fruit_m = 1.16e-7  # fruit maintenance respiration coefficient [1/s]
-c_leaf_g = 0.28  # leaf growth respiration coefficient [-]
-c_leaf_m = 3.47e-7  # leaf maintenance respiration coefficient [1/s]
-c_stem_g = 0.30  # stem growth respiration coefficient [-]
-c_stem_m = 1.47e-7  # stem maintenance respiration coefficient [1/s]
-weight_fruit = 0.5
-weight_leaf = 0.3
-weight_stem = 0.2
-weight_fruit_g = 0.5
-weight_leaf_g = 0.3
-weight_stem_g = 0.2
-# TODO: Find out where does this come from
-# TODO: we need to change this
-# https://onlinelibrary.wiley.com/doi/full/10.1046/j.0016-8025.2003.01067.x
-c_RGR = (
-    2.85e6  # regression coefficient in maintenance respiration function [s]
-)
-T_min_v24 = 12.0  #  between base temperature and first optimal temperature for 24 hour mean [oC]
-T_max_v24 = 27.0  # between second optimal temperature and maximum temperature for 24 hour mean [oC]
-T_min_v = 6.0  # between base temperature and first optimal temperature [oC]
-T_max_v = (
-    40.0  # between second optimal temperature and maximum temperature [oC]
-)
-T_sum_end = 1035.0  # the temperature sum at which point the fruit growth rate is maximal [oC]
 
 
 # Infiltration
@@ -426,7 +375,7 @@ class GreenHouse:
             z: System states
             u: System inputs
             c: System parameters
-            climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length.
+            climate: climate information. Must be sampled at dt and have appropriate length.
 
         Returns:
             np.ndarray: System state derivatives
@@ -488,8 +437,6 @@ class GreenHouse:
             C_c * R * T_i / (M_c * atm) * 1.0e6
         )  # External carbon dioxide concentration [ppm]
         h = 6.626e-34  # Planck's constant in Joule*Hz^{-1}
-
-        hour = np.floor(t / 3600) + 1
 
         ## Lights
         # _ = 0  # No additional lighting included
@@ -955,7 +902,7 @@ class GreenHouse:
 
         # Carbon Dioxide
         dC_c_dt = (
-            MC_cc_i
+            MC_cc_i  # [kg/m^3/s]
             - MC_i_e  # [kg/m^3/s]
             + (M_c / M_carb)  # [-]
             * (self.A_p / self.volume)  # [m^2 / m^3]
