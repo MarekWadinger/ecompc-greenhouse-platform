@@ -114,10 +114,6 @@ eps_p = 0.95  # far-IR emissivity of tray
 # Photosynthesis model - Vanthoor
 heat_phot = 3.6368e-19  # conversion rate from incident energy to number of photons [num{photons}/J]
 
-# Crop Growth Model
-SLA = C_LAR * 1000  # specific leaf area index [m^2{leaf}/kg{CH2O}]
-LAI_max = 5.0  # the maximum allowed leaf area index [m^2{leaf}/m^2{floor}]
-
 
 # Infiltration
 c = 0.35  # terrain factor, see Awbi, Chapter 3, Table 3.2
@@ -135,12 +131,15 @@ F_f_p = p_v  # Floor to tray
 F_v_c = 0.5  # Vegetation to cover
 F_v_m = 0.5  # Vegetation to mat
 F_v_p = 0.0  # Vegetation to tray
-# F_m_c = max((1-LAI),0.0) # Mat to cover
-# F_m_v = 1-F_m_c # Mat to vegetation
 F_m_p = 0.0  # Mat to tray
 F_p_v = 0.0  # Tray to vegetation
 F_p_m = 0.0  # Tray to mat
 F_p_f = 1.0  # Tray to floor
+
+
+# Crop Growth Model
+SLA = C_LAR  # specific leaf area index [m^2{leaf}/g{CH2O}]
+LAI_max = 5.0  # the maximum allowed leaf area index [m^2{leaf}/m^2{floor}]
 
 ## Initial conditions
 # Temperatures
@@ -156,9 +155,9 @@ C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
 C_c_0 = 7.5869e-4  # CO_2 density
 
 # The proportion should be somewhere between 40:60 - 30:70 for lettuce
-x_lettuce_dry_init = 0.5 * DRY_TO_WET_RATIO  # kg/m²
+x_lettuce_dry_init = 500 * DRY_TO_WET_RATIO  # g/m^2
 
-# Structural and non-structural dry weight of the plant [kg/m^2]
+# Structural and non-structural dry weight of the plant [g/m^2]
 x_sdw, x_nsdw = x_lettuce_dry_init * RATIO_SDW_NSDW
 
 x_init = np.array(
@@ -227,7 +226,6 @@ def convection(
 
     QV_1_2 = A * Nu * lam * (T1 - T2) / d
     QP_1_2 = A * H_fg / (rho * c) * Sh / Le * lam / d * (C - sat_conc(T2))
-    # QP_1_2 = 0
 
     return (QV_1_2, QP_1_2, Nu)
 
@@ -265,7 +263,7 @@ class GreenHouse:
         roof_tilt: float = 30.0,
         max_vent: float | None = None,
         max_heat: float | None = None,
-        max_humid: float | None = None,
+        max_humid: float | None = None,  # Maximum humidification in l/h
         max_co2: float | None = None,
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
@@ -320,16 +318,14 @@ class GreenHouse:
 
         # Humidifier
         if max_humid is not None:
-            V_dot_max = max_humid
+            V_dot_max = max_humid * rho_w  # [g/h]
         else:
             # https://www.tis-gdv.de/tis_e/misc/klima-htm/
             # RH_range = 40 % - 80 % [- / h]
             AH_40 = 12.1  # [g/m^3]
             AH_80 = 24.3  # [g/m^3]
             max_AH_increase = AH_80 - AH_40  # [g/m^3/h]
-            V_dot_max = (
-                self.volume * max_AH_increase * 1 / rho_w
-            )  # [g/h] ~ [l/h]
+            V_dot_max = self.volume * max_AH_increase  # [g/h]
         self.humidifier = SimpleEvaporativeHumidifier(V_dot_max, **act_kwargs)
 
         if max_co2 is not None:
@@ -350,8 +346,6 @@ class GreenHouse:
 
         # View Factors
         self.F_c_f = self.A_f / self.area_roof * F_f_c  # Cover to floor
-        # F_c_v = min((1-F_c_f)*LAI,(1-F_c_f)) # Cover to vegetation
-        # F_c_m = max((1-F_c_f)*(1-LAI),0) # Cover to mat
 
     @property
     def active_actuators(self) -> dict[str, bool]:
@@ -414,7 +408,7 @@ class GreenHouse:
 
         R_a = self.fan.signal_to_actuation(perc_vent)
         Q_heater = self.heater.signal_to_actuation(perc_heater)
-        V_dot_humid = self.humidifier.signal_to_actuation(perc_humid)
+        V_dot = self.humidifier.signal_to_actuation(perc_humid)  # [g/h]
         # mass of CO2 pumped in per hour [kg/h]
         added_CO2 = self.co2generator.signal_to_actuation(perc_co2)
 
@@ -798,7 +792,7 @@ class GreenHouse:
         QT_v_i = ca.fmax(QT_St, 0)
 
         ## Dehumidification
-        MW_cc_i = V_dot_humid / 1000 / 3600 / self.volume  # [kg/m^3/s]
+        MW_cc_i = V_dot / 1000 / 3600 / self.volume  # [kg/m^3/s]
 
         # CO2 exchange with outside
         MC_i_e = R_a * (C_c - C_ce)  # [kg/m^3/s]
