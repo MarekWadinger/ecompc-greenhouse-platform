@@ -14,6 +14,8 @@ from core.actuators import (
 )
 from core.lettuce_model import (
     C_LAR,
+    DRY_TO_WET_RATIO,
+    RATIO_SDW_NSDW,
     get_f_resp,
     lettuce_growth_model,
 )
@@ -154,8 +156,10 @@ C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
 C_c_0 = 7.5869e-4  # CO_2 density
 
 # The proportion should be somewhere between 40:60 - 30:70 for lettuce
-x_sdw = 0.72  # Structural dry weight of the plant [kg/m^2]
-x_nsdw = 2.7  # Non-structural dry weight of the plant [kg/m^2]
+x_lettuce_dry_init = 0.5 * DRY_TO_WET_RATIO  # kg/m²
+
+# Structural and non-structural dry weight of the plant [kg/m^2]
+x_sdw, x_nsdw = x_lettuce_dry_init * RATIO_SDW_NSDW
 
 x_init = np.array(
     [
