@@ -119,16 +119,24 @@ class EconomicMPC(MPC):
             / DRY_TO_WET_RATIO
             * self.cultivated_area
         )
-        for act in [
-            act for act, active in model.gh.active_actuators.items() if active
-        ]:
+        for i, act in enumerate(
+            [
+                act
+                for act, active in model.gh.active_actuators.items()
+                if active
+            ]
+        ):
             actuator = getattr(model.gh, act.lower().replace(" ", ""))
             lterm += actuator.signal_to_eur(model.u[act])
             lterm += actuator.signal_to_co2_eur(model.u[act])
             self.set_rterm(**{act: (1 / (model.dt * 1000))})  # type: ignore
             # Define path constraints
-            self.bounds["lower", "_u", act] = u_min
-            self.bounds["upper", "_u", act] = u_max
+            self.bounds["lower", "_u", act] = (
+                u_min[i] if isinstance(u_min, list) else u_min
+            )
+            self.bounds["upper", "_u", act] = (
+                u_max[i] if isinstance(u_max, list) else u_max
+            )
 
         # Define objective
         self.set_objective(mterm=SX(0.0), lterm=lterm)
