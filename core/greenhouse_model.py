@@ -834,13 +834,9 @@ class GreenHouse:
         # CO2 exchange with outside
         MC_i_e = R_a * (C_c - C_ce)  # [kg/m^3/s]
 
-        day_hour_c = (hour / 24 - np.floor(hour / 24)) * 24
-        track = ca.logic_and(day_hour_c > 6, day_hour_c < 20)
-        Value = (
-            added_CO2 / Nz / 3600.0 / self.volume
+        MC_cc_i = (
+            added_CO2 / 3600.0 / Nz / self.volume
         )  # [kg/h / - / 3600 / m^3] -> [kg m^{-3} s^{-1}]
-
-        MC_cc_i = Value * track  # [kg m^{-3} s^{-1}]
 
         ## Photosynthesis model - Vanthoor
 
