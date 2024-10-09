@@ -645,48 +645,17 @@ class GreenHouse:
         ##      Solar radiation
         # We first define the solar elevation angle that determines that absorption of solar radiation. Notation: r is direct radiation, f is diffuse radiation, whilst VIS and NIR stand for visible and near infra-red respectively.
 
-        def deg2rad(x):
-            return x * np.pi / 180
-
-        def rad2deg(radians):
-            return radians * (180.0 / ca.pi)
-
-        def casadi_mod(a, b):
-            return a - b * ca.floor(a / b)
-
-        gamma = deg2rad(
-            360.0 * (ca.ceil(t / 86400) - 80.0) / 365.0
-        )  # Year angle [rad] --- day counts from January 1st
-        eqn_time = (
-            -7.13 * np.cos(gamma)
-            - 1.84 * np.sin(gamma)
-            - 0.69 * np.cos(2.0 * gamma)
-            + 9.92 * np.sin(2.0 * gamma)
-        )  # Equation of time [min]
-        az = deg2rad(
-            360.0
-            * (casadi_mod(t / (3600.0), 24.0) + eqn_time / 60.0 - 12.0)
-            / 24.0
-        )  # Azimuth [rad]
-        delta = deg2rad(
-            0.38 - 0.77 * np.cos(gamma) + 23.27 * np.cos(gamma)
-        )  # Declination angle [rad]
-        lat = deg2rad(self.latitude)  # Latitude [rad]
-        angler = np.arcsin(
-            np.sin(lat) * np.sin(delta)
-            + np.cos(lat) * np.cos(delta) * np.cos(az)
-        )  # Angle of elevation [rad]
-        angle = rad2deg(angler)
+        angle = climate[4]
 
         # Radiation from artificial lighting
         QS_al_NIR = 0.0  # no artificial lighting
         QS_al_VIS = 0.0
 
         # Solar radiation incident on the cover
-        QS_tot_rNIR = 0.5 * self.surface_area @ climate[4:12]  # Direct
-        QS_tot_rVIS = 0.5 * self.surface_area @ climate[4:12]
-        QS_tot_fNIR = 0.5 * self.surface_area @ climate[12:20]  # Diffuse
-        QS_tot_fVIS = 0.5 * self.surface_area @ climate[12:20]
+        QS_tot_rNIR = 0.5 * self.surface_area @ climate[5:13]  # Direct
+        QS_tot_rVIS = 0.5 * self.surface_area @ climate[5:13]
+        QS_tot_fNIR = 0.5 * self.surface_area @ climate[13:21]  # Diffuse
+        QS_tot_fVIS = 0.5 * self.surface_area @ climate[13:21]
 
         # Transmitted solar radiation
         QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
