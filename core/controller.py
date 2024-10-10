@@ -1,5 +1,5 @@
 import numpy as np
-from casadi import SX, vertcat, vertsplit
+from casadi import SX, vertcat
 from do_mpc.controller import MPC
 from do_mpc.model import Model
 from do_mpc.simulator import Simulator
@@ -13,9 +13,11 @@ class GreenHouseModel(Model):  # Create a model instance
         self,
         gh_model: GreenHouse,
         climate_vars,
+        lettuce_price=0.0054,  # EUR/g
     ):
         self.gh = gh_model
         self.dt = self.gh.dt
+        self.lettuce_price = lettuce_price
 
         super().__init__("discrete")
 
@@ -39,19 +41,7 @@ class GreenHouseModel(Model):  # Create a model instance
             for name in climate_vars
         }
 
-        # Define the model equations
-        def gh_model_(t, x, u, tvp):
-            return vertcat(
-                *gh_model.model(
-                    t, vertsplit(x), vertsplit(u), climate=tuple(tvp.values())
-                )
-            )
-
-        k1 = gh_model_(t, x, self.u_, tvp)
-        k2 = gh_model_(t, x + self.dt / 2 * k1, self.u_, tvp)
-        k3 = gh_model_(t, x + self.dt / 2 * k2, self.u_, tvp)
-        k4 = gh_model_(t, x + self.dt * k3, self.u_, tvp)
-        x_next = x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        x_next = self.runge_kutta_step(t, x, self.u_, tuple(tvp.values()))
         # x_next = backward_euler_step(f, t, x, self.u_, tvp, dt)
         # x_next = bdf2_step(f, t + dt, x, x_next, self.u_, tvp, dt)
 
@@ -59,17 +49,62 @@ class GreenHouseModel(Model):  # Create a model instance
 
         self.setup()
 
+    def analyze_profit_and_costs(self, x0, u0s):
+        import pandas as pd
+
+        profit = pd.Series(
+            self.lettuce_price
+            * (x0[-2:].sum() - x_init[-2:].sum())
+            / DRY_TO_WET_RATIO
+            * self.gh.A_c,
+            index=["Lettuce profit "],
+        )
+
+        costs = pd.Series(
+            index=[f"Energy ({i})" for i in u0s.columns]
+            + [f"CO2 ({i})" for i in u0s.columns]
+        )
+        for act in [
+            act for act, active in self.gh.active_actuators.items() if active
+        ]:
+            actuator = getattr(self.gh, act.lower().replace(" ", ""))
+            costs[f"Energy ({act})"] = -actuator.signal_to_eur(u0s[act]).sum()
+            costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(u0s[act]).sum()
+
+        profit_costs = pd.concat([profit, costs])
+        profit_costs["Total"] = profit_costs.sum()
+        return profit_costs
+
+    def runge_kutta_step(self, t, x, u, tvp):
+        k1 = self.gh.model(t, x, u, tvp)
+        k2 = self.gh.model(t, x + self.dt / 2 * k1, u, tvp)
+        k3 = self.gh.model(t, x + self.dt / 2 * k2, u, tvp)
+        k4 = self.gh.model(t, x + self.dt * k3, u, tvp)
+        return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    def backward_euler_step(self, t, x, u, tvp):
+        return x + self.dt * self.gh.model(t + self.dt, x, u, tvp)
+
+    def bdf2_step(self, t, x, x_next, u, tvp):
+        return 4 / 3 * x_next - 1 / 3 * self.backward_euler_step(t, x, u, tvp)
+
+    def init_states(self, x, u, tvp, steps=300):
+        x_next = x
+        for t in range(steps):
+            x_next = self.runge_kutta_step(t, x_next, u, tvp)
+        return x_next
+
 
 class EconomicMPC(MPC):
     def __init__(
         self,
         model: GreenHouseModel,
         climate,
-        lettuce_price=0.0054,  # EUR/g
         N=60,  # number of control intervals
         x_weight_init=x_init[-2:],
         u_min: float | list[float] = 0.0,
         u_max: float | list[float] = 100.0,
+        co2_we_care: bool = True,
     ):
         # Define optimization variables
         self.x = model.x["x"]
@@ -77,7 +112,7 @@ class EconomicMPC(MPC):
 
         self.climate = climate
 
-        self.lettuce_price = lettuce_price
+        self.lettuce_price = model.lettuce_price
         self.cultivated_area = model.gh.A_c
 
         if isinstance(u_min, list):
@@ -99,7 +134,7 @@ class EconomicMPC(MPC):
             "state_discretization": "discrete",
             "nlpsol_opts": {
                 "ipopt": {  # https://coin-or.github.io/Ipopt/OPTIONS.html
-                    # "max_iter": 3,
+                    "max_iter": 10,
                     # "linear_solver": "MA57",  # https://licences.stfc.ac.uk/product/coin-hsl
                     "warm_start_init_point": "yes",
                     "mu_allow_fast_monotone_decrease": "yes",
@@ -119,16 +154,25 @@ class EconomicMPC(MPC):
             / DRY_TO_WET_RATIO
             * self.cultivated_area
         )
-        for act in [
-            act for act, active in model.gh.active_actuators.items() if active
-        ]:
+        for i, act in enumerate(
+            [
+                act
+                for act, active in model.gh.active_actuators.items()
+                if active
+            ]
+        ):
             actuator = getattr(model.gh, act.lower().replace(" ", ""))
             lterm += actuator.signal_to_eur(model.u[act])
-            lterm += actuator.signal_to_co2_eur(model.u[act])
+            if co2_we_care:
+                lterm += actuator.signal_to_co2_eur(model.u[act])
             self.set_rterm(**{act: (1 / (model.dt * 1000))})  # type: ignore
             # Define path constraints
-            self.bounds["lower", "_u", act] = u_min
-            self.bounds["upper", "_u", act] = u_max
+            self.bounds["lower", "_u", act] = (
+                u_min[i] if isinstance(u_min, list) else u_min
+            )
+            self.bounds["upper", "_u", act] = (
+                u_max[i] if isinstance(u_max, list) else u_max
+            )
 
         # Define objective
         self.set_objective(mterm=SX(0.0), lterm=lterm)

@@ -25,8 +25,8 @@ C_Q10_RESP = 2.0
 C_TAU = 0.15
 # [-] (0.9 and 0.3 for planophile and erectophile) Goudriaan & Monteith, 1990
 C_K = 0.9  # plant grow influencing
-# [g^{-1} m^{-2}] Lorenz & Wiebe (1980)
-C_LAR = 75e-3  # plant grow influencing
+# [g^{-1} m^{2}] Lorenz & Wiebe (1980)
+C_LAR = 75e-3  # structural leaf area ratio
 # [g m^{-3}] temperature 15 C and pressure 101.3 kPa
 C_OMEGA = 1.83e-3
 # [ppm] CO_2 compensation point at 20 C (Goudriaan et al. 1985)
@@ -291,7 +291,7 @@ def get_f_phot(
     Args:
         x_sdw: structural dry weight [g m^{-2}]
         c_K: extinction coefficient [-]
-        c_lar: structural leaf area ratio [g^{-1} m^{-2}]
+        c_lar: structural leaf area ratio [m^{2} g^{-1}]
         c_tau: root dry mass ratio [-]
         f_phot_max: gross CO_2 assimilation rate [g m^{-2} s^{-1}]
 

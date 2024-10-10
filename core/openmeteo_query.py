@@ -288,6 +288,7 @@ class OpenMeteo:
         else:
             azimuth = self.azimuth
         df_rad = pd.DataFrame()
+        df_rad["elevation"] = solar_position["elevation"]
         for t, a in zip(tilt, azimuth):
             if not isinstance(a, (int, float)):
                 a = self.azimuth_to_deg(a)
