@@ -144,6 +144,7 @@ class SimpleCO2Generator(Actuator):
     Simple CO2Generator model that takes a signal percentage and returns the co2 generation.
 
     https://www.hotboxworld.com/product/co2-generator
+    https://www.eugardencenter.com/en/hotbox-co2-generator.html
 
     Examples:
     >>> max_unit = 10  # Maximum co2 generation in kg/h
@@ -152,5 +153,5 @@ class SimpleCO2Generator(Actuator):
     2.0
     """
 
-    def __init__(self, max_unit, power_per_unit=4.4, *args, **kwargs):
+    def __init__(self, max_unit, power_per_unit=4400, *args, **kwargs):
         super().__init__(max_unit, power_per_unit, *args, **kwargs)

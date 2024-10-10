@@ -1,5 +1,5 @@
 \documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
+\IEEEoverridecommandlockouts{}
 
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
@@ -18,7 +18,7 @@
 \begin{document}
 
 \title{Integrating Weather Forecasts and Energy Management in Lettuce Growth: A Model Predictive Control Framework for Precision Agriculture
-    \thanks{This research is funded by the Slovak Research and Development Agency under the project APVV-21-0019, by the Scientific Grant Agency of the Slovak Republic under the grant 1/0691/21, and by the European Commission under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
+    \thanks{This research is funded by the Slovak Research and Development Agency under the project APVV--21--0019, by the Scientific Grant Agency of the Slovak Republic under the grant 1/0691/21, and by the European Commission under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 }
 % \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23 and grant VEGA `1/0691/21'. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 
@@ -26,7 +26,7 @@
     \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23 and grant VEGA `1/0691/21'. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 }
 
-\author{\IEEEauthorblockN{Marek Wadinger, Rastislav F\'{a}ber, Radoslav Paulen}
+\author{\IEEEauthorblockN{Marek Wadinger, Rastislav F\'{a}ber, Erika Pavlovičov\'{a}, Radoslav Paulen}
 \IEEEauthorblockA{\textit{Institute of Information Engineering, Automation, and Mathematics} \\
     \textit{Slovak University of Technology in Bratislava}\\
     Bratislava, Slovakia \\
@@ -49,16 +49,15 @@
 
 \section{Introduction}
 % - General introduction (why is it important that we do what we do)
-Most current farming practices are labor-intensive, seasonal, constrained by irrigation, and dependent on subsidized inputs, leading to significant issues like eutrophication, deforestation, and soil degradation. It also consumes nearly 70\,\% of global water resources~\cite{Debroy2024}. Greenhouses are pivotal in enhancing agricultural productivity by providing controlled environments that surpass the productivity of open-air cultivation. Despite their benefits, greenhouses face significant challenges due to fluctuating internal temperatures that can lead to crop fading and death. To counteract these issues, it is crucial to improve greenhouse environments through effective climate management, incorporating ventilation or heating to regulate internal conditions and enhance crop yields~\cite{Wu2019}.
+Most current farming practices are labor-intensive, seasonal, constrained by irrigation, and dependent on subsidized inputs, leading to significant issues like eutrophication, deforestation, and soil degradation. It also consumes nearly 70\% of global water resources~\cite{Debroy2024}. Greenhouses are pivotal in enhancing agricultural productivity by providing controlled environments that surpass the productivity of open-air cultivation. Despite their benefits, greenhouses face significant challenges due to fluctuating internal temperatures that can lead to crop fading and death. To counteract these issues, it is crucial to improve greenhouse environments through effective climate management, incorporating ventilation or heating to regulate internal conditions and enhance crop yields~\cite{Wu2019}.
 
 % - Concrete introduction (what is the state of the art in the domain)
-Solar radiation is fundamental to both plant growth and energy generation in a greenhouse. Key metrics include Global Horizontal Irradiance ($GHI$) and Photosynthetically Active Radiation ($PAR$), with $PAR$ being directly responsible for photosynthesis. Recent research has focused on accurately estimating diffuse $PAR$ and its impact on plant growth, leading to the development of sophisticated models that predict $PAR$ with varying degrees of accuracy~\cite{Iddio2020, MaLu2022}. In parallel, methods such as adaptive control, nonlinear feedback control, fuzzy control, robust control, and optimum control have been explored for optimizing greenhouse environments, aiming to boost efficiency, resource use, and crop yield. In general, we identify two main types of greenhouse control algorithms: conventional control and optimal control. Conventional control aims to reduce the difference between setpoints and actual measurements. On the other hand, optimal control incorporates factors such as greenhouse dynamics, actuator capabilities, energy consumption, and crop responses into the control strategy
+Solar radiation is fundamental to both plant growth and energy generation in a greenhouse. Key metrics include Global Horizontal Irradiance (\(GHI\)) and Photosynthetically Active Radiation (\(PAR\)), with \(PAR\) being directly responsible for photosynthesis. Recent research has focused on accurately estimating diffuse \(PAR\) and its impact on plant growth, leading to the development of sophisticated models that predict \(PAR\) with varying degrees of accuracy~\cite{Iddio2020, MaLu2022}. In parallel, methods such as adaptive control, nonlinear feedback control, fuzzy control, robust control, and optimum control have been explored for optimizing greenhouse environments, aiming to boost efficiency, resource use, and crop yield. In general, we identify two main types of greenhouse control algorithms: conventional control and optimal control. Conventional control aims to reduce the difference between setpoints and actual measurements. On the other hand, optimal control incorporates factors such as greenhouse dynamics, actuator capabilities, energy consumption, and crop responses into the control strategy
 
-\begin{figure}
+\begin{figure}\label{fig:flowchart}
     \centering
     \includegraphics[width=.5\textwidth]{images/flowchart.pdf}
     \caption{A simplified diagram representing greenhouse control algorithms. Image adapted from~\cite{Trepanier2024}.}
-    \label{fig:flowchart}
 \end{figure}
 
 Adaptive control adjusts parameters based on real-time feedback~\cite{Tian2022}, while nonlinear feedback control tackles system complexities with advanced algorithms~\cite{Bood2023}. Fuzzy control addresses imprecise data and uncertainties~\cite{smartcities7030055}, and robust control maintains stability despite disturbances~\cite{Zhang2021}. Optimum control aims to fine-tune actions for best outcomes~\cite{Debroy2024, SVENSEN2024108578}. However, these techniques often demand substantial computational power and intricate implementation, additionally, frequent adjustments raise energy consumption and actuator wear.
@@ -72,7 +71,7 @@ Consequently, PID controllers remained popular due to their simplicity and effec
 Effective greenhouse climate control involves various technologies, including cooling and heating systems such as fans and heaters. These and similar technologies are essential for maintaining optimal temperatures and improving energy efficiency.
 
 % - Presentation of our contribution
-This study presents a dynamic model designed to optimize greenhouse climate control by accurately simulating the interactions between temperature, humidity, and $CO_2$ levels. The model uses principles of thermodynamics, fluid dynamics, and mass transfer, incorporating Model Predictive Control (MPC) to adjust ventilation, heating, and $CO_2$ enrichment in real time. The model parameters were configured to represent a commercial greenhouse, with sensors capturing relevant environmental variables. Extensive numerical simulations across various seasons illustrate how the model optimizes climate control strategies, enhancing both crop yields and energy efficiency.
+This study presents a dynamic model designed to optimize greenhouse climate control by accurately simulating the interactions between temperature, humidity, and \(CO_2\) levels. The model uses principles of thermodynamics, fluid dynamics, and mass transfer, incorporating Model Predictive Control (MPC) to adjust ventilation, heating, and \(CO_2\) enrichment in real time. The model parameters were configured to represent a commercial greenhouse, with sensors capturing relevant environmental variables. Extensive numerical simulations across various seasons illustrate how the model optimizes climate control strategies, enhancing both crop yields and energy efficiency.
 
 % - Organization of the paper (optional; remove it if there is no space at the end)
 
@@ -80,7 +79,7 @@ This study presents a dynamic model designed to optimize greenhouse climate cont
 
 \section{Greenhouse Climate Model}
 
-In this section we provides a mathematical model of the greenhouse environment, focusing on temperature, humidity, and $CO_2$ concentration dynamics, that simplifies the GES software~\cite{rmward61_2019}, based on the Gembloux Dynamic Greenhouse Climate Model (GDGCM)~\cite{GDGCM} and on the thesis by Vanthoor~\cite{Vanthoor2011}.
+In this section we provides a mathematical model of the greenhouse environment, focusing on temperature, humidity, and \(CO_2\) concentration dynamics, that simplifies the GES software~\cite{rmward61_2019}, based on the Gembloux Dynamic Greenhouse Climate Model (GDGCM)~\cite{GDGCM} and on the thesis by Vanthoor~\cite{Vanthoor2011}.
 
 \subsection{Temperature Dynamics}
 
@@ -90,30 +89,30 @@ The convective heat transfer between two surfaces is given by
 \begin{equation}
     \text{Nu} = \max \left( \text{Nu}_G, \text{Nu}_R \right),
 \end{equation}
-where $\text{Nu}_G$ and $\text{Nu}_R$ are the Nusselt numbers for free and forced convection, respectively
+where \(\text{Nu}_G\) and \(\text{Nu}_R\) are the Nusselt numbers for free and forced convection, respectively
 \begin{align}
     \text{Nu}_G & = 0.5 \cdot \left(\frac{\text{Gr}}{10^5}\right)^{0.25} + 0.13 \cdot \left(\frac{\text{Gr}}{10^5}\right)^{0.33}   \\
     \text{Nu}_R & = 0.6 \cdot \left(\frac{\text{Re}}{20000}\right)^{0.5} + 0.032 \cdot \left(\frac{\text{Re}}{20000}\right)^{0.8},
 \end{align}
-where $Re$ represents the Reynolds number, and $Gr$ represents the Grashof number.
+where \(Re\) represents the Reynolds number, and \(Gr\) represents the Grashof number.
 
 The heat flux due to convection is then calculated as
 \begin{equation}
     Q_{\text{conv}} = A \cdot \text{Nu} \cdot \lambda \cdot \frac{T_1 - T_2}{d},
 \end{equation}
-where $A$ represents the area of a compartment, and $d$ represents the characteristic length of a compartment.
+where \(A\) represents the area of a compartment, and \(d\) represents the characteristic length of a compartment.
 
 The radiative heat transfer between two surfaces is described by
 \begin{equation}
     Q_{\text{rad}} = \frac{\varepsilon_1 \cdot \varepsilon_2}{1 - \rho_1 \cdot \rho_2 \cdot F_{12} \cdot F_{21}} \cdot \sigma \cdot A_1 \cdot F_{12} \cdot \left( T_1^4 - T_2^4 \right),
 \end{equation}
-where $\sigma$ is the Stefan-Boltzmann constant, $F_{12}$ is the view factor from surface 1 to surface 2, $T_1$ and $T_2$ representing the temperatures of the surfaces, and $\varepsilon$ and $\rho$ are the emissivity and reflectivity of the surfaces, respectively.
+where \(\sigma \) is the Stefan-Boltzmann constant, \(F_{12}\) is the view factor from surface 1 to surface 2, \(T_1\) and \(T_2\) representing the temperatures of the surfaces, and \(\varepsilon \) and \(\rho \) are the emissivity and reflectivity of the surfaces, respectively.
 
 The conductive heat transfer through a medium is given by
 \begin{equation}
     Q_{\text{cond}} = \frac{A \cdot \lambda}{d} \cdot (T_1 - T_2),
 \end{equation}
-where $\lambda$ is the thermal conductivity of a compartment, and $d$ is the thickness of the conducting layer.
+where \(\lambda \) is the thermal conductivity of a compartment, and \(d\) is the thickness of the conducting layer.
 
 \subsection{Humidity Dynamics}
 
@@ -125,38 +124,44 @@ The moisture content in the air is given by:
 \begin{equation}
     C_w = \text{SH} \times \rho_{\text{air}},
 \end{equation}
-where $\rho_{\text{air}}$ is the density of air.
+where \(\rho_{\text{air}}\) is the density of air.
 
 The mass transfer of water vapor due to convection is:
 \begin{equation}
     Q_{v} = \frac{A \cdot H_{\text{fg}}}{\rho \cdot c} \cdot \frac{\text{Sh}}{\text{Le}} \cdot \frac{\lambda}{d} \cdot \left( C - C_{\text{sat,}T} \right),
 \end{equation}
-where $H_{\text{fg}}$ is the latent heat of vaporization, $\text{Sh}$ is the Sherwood number, and $\text{Le}$ is the Lewis number, $\lambda$ is the thermal conductivity, $d$ is the characteristic length, $A$ is the heat exchange surface area, $\rho$ is the density of the vapor, $c$ is the specific heat capacity, $C$ is the actual vapor concentration, and $C_{\text{sat,}T}$ is the vapor concentration at temperature $T$.
+where \(H_{\text{fg}}\) is the latent heat of vaporization, \(\text{Sh}\) is the Sherwood number, and \(\text{Le}\) is the Lewis number, \(\lambda \) is the thermal conductivity, \(d\) is the characteristic length, \(A\) is the heat exchange surface area, \(\rho \) is the density of the vapor, \(c\) is the specific heat capacity, \(C\) is the actual vapor concentration, and \(C_{\text{sat,}T}\) is the vapor concentration at temperature \(T$.
 
-\subsection{$CO_2$ Concentration Dynamics}
+\subsection{Carbon Dioxide Concentration Dynamics}
 
-The $CO_2$ concentration within the greenhouse is affected by photosynthesis and external conditions. The external $CO_2$ concentration is computed as:
+The \(CO_2\) concentration within the greenhouse is affected by photosynthesis and external conditions. The external \(CO_2\) concentration is computed as:
 \begin{equation}
     C_{\text{ext}} = \frac{4 \times 10^{-4} \cdot M_c \cdot P_{\text{atm}}}{R \cdot T_{\text{ext}}},
 \end{equation}
-where $M_c$ is the molar mass of $CO_2$, $P_{\text{atm}}$ is the atmospheric pressure, $R$ is the gas constant, and $T_{\text{ext}}$ is the external air temperature in Kelvin.
+where \(M_c\) is the molar mass of \(CO_2$, \(P_{\text{atm}}\) is the atmospheric pressure, \(R\) is the gas constant, and \(T_{\text{ext}}\) is the external air temperature in Kelvin.
 
-The internal $CO_2$ concentration in parts per million (ppm) is given by:
+The internal \(CO_2\) concentration in parts per million (ppm) is given by:
 \begin{equation}
     C_{\text{int, ppm}} = \frac{C_c \cdot R \cdot T_i}{M_c \cdot P_{\text{atm}}} \times 10^6,
 \end{equation}
-where $C_c$ is the $CO_2$ density, and $T_{\text{in}}$ is the internal air temperature in Kelvin.
+where \(C_c\) is the \(CO_2\) density, and \(T_{\text{in}}\) is the internal air temperature in Kelvin.
 
-The greenhouse climate model integrates the physical mo-dels of temperature, humidity, and $CO_2$ concentration into a dynamic system represented by a state vector $\mathbf{z}$ (11 $\times$ 1) = [$T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}$], and input vector $\mathbf{u}$ (2 $\times$ 1) = [\text{Ventilation}, \text{Heating}]. The $T_c$ represents the cover temperature, $T_i$ the internal air temperature, $T_v$ the planted salad temperature, $T_m$ the growing medium temperature, $T_p$ the tray temperature, $T_f$ the floor temperature, and $T_s$ the temperature of the soil layer. Additionally, $C_w$ denotes the density of water vapor, $C_c$ the $CO_2$ density, $x_{\text{sdw}}$ the structural dry weight of the plant, and $x_{\text{nsdw}}$ the non-structural dry weight of the plant.
+The greenhouse climate model integrates the physical mo-dels of temperature, humidity, and \(CO_2\) concentration into a dynamic system represented by a state vector \(\mathbf{z}\) (11 \(\times \) 1) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}$], and input vector \(\mathbf{u}\) (2 \(\times \) 1) = [\text{Ventilation}, \text{Heating}]. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \(CO_2\) density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
 
-\begin{figure}
+\begin{figure}\label{fig:diagram}
     \centering
     \includegraphics[width=.5\textwidth]{images/diagram.pdf}
-    \caption{A simplified diagram of the heat, mass and $CO_2$ exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}
-    \label{fig:diagram}
+    \caption{A simplified diagram of the heat, mass and \(CO_2\) exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}
 \end{figure}
 
 \section{Results}
+% Comparison of controlled greenhouse vs greenhouse without actuation
+In the first set of simulations, we analyzed the non-linear behavior of greenhouse temperature and CO2 levels under varying weather conditions. Results demonstrate that the proposed economic MPC algorithm reduced CO2 consumption by 15\%, while maintaining an average yield increase of 10% compared to baseline linear MPC methods.
+
+% Educational trials
+Educational trials on the interactive and user-friendly web interface for greenhouse design and ENMPC control pipeline revealed significant potential in increasing the understanding of non-linear control systems. 
+
+Via four layers of user customization of the greenhouse, participants grasped the main benefits of optimal control a d challenges related to non-linearity. The first layer is the greenhouse structure, where the user can select the shape of greenohouse affecting the energy exchange with the environment and suggested scaling of the actuation units. Second layer is the orientation and location of the greenhouse which affects the solar radiation and the weather conditions. Here we establish connection to weather and carbon intensity forecast APIs to provide real-time data along with forecasts and history replays. The third layer is the actuation units, where the user can overwrite the suggested scaling and select the actuators for the heating, ventilation, humidification, and \(CO_2\) enrichment. Meanwhile the fourth layer is the control strategy, where the user can influence the control parameters, including the objective function and constrains of the economic MPC controller. While the user is customizing the greenhouse, the web interface provides real-time feedback. The user can also simulate the greenhouse operation over a selected period of time and analyze the results in terms of energy consumption, crop yield, and economic output.
 
 \section{Conclusion}
 
