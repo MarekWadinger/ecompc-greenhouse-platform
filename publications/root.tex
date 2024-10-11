@@ -23,7 +23,7 @@
 % \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23 and grant VEGA `1/0691/21'. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 
 \title{Conference Paper Title
-    \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23 and grant VEGA `1/0691/21'. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
+    \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23, 1/0297/22 and `1/0691/21' . This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 }
 
 \author{\IEEEauthorblockN{Marek Wadinger, Rastislav F\'{a}ber, Radoslav Paulen}
@@ -72,17 +72,20 @@ Consequently, PID controllers remained popular due to their simplicity and effec
 Effective greenhouse climate control involves various technologies, including cooling and heating systems such as fans and heaters. These and similar technologies are essential for maintaining optimal temperatures and improving energy efficiency.
 
 % - Presentation of our contribution
-This study presents a dynamic model designed to optimize greenhouse climate control by accurately simulating the interactions between temperature, humidity, and $CO_2$ levels. The model uses principles of thermodynamics, fluid dynamics, and mass transfer, incorporating Model Predictive Control (MPC) to adjust ventilation, heating, and $CO_2$ enrichment in real time. The model parameters were configured to represent a commercial greenhouse, with sensors capturing relevant environmental variables. Extensive numerical simulations across various seasons illustrate how the model optimizes climate control strategies, enhancing both crop yields and energy efficiency.
+This study presents a dynamic model designed to optimize greenhouse climate control by accurately simulating the interactions between temperature, humidity, and CO$_2$ levels. The model uses principles of thermodynamics, fluid dynamics, and mass transfer, incorporating Model Predictive Control (MPC) to adjust ventilation, heating, and CO$_2$ enrichment in real time. The model parameters were configured to represent a commercial greenhouse, with sensors capturing relevant environmental variables. Extensive numerical simulations across various seasons illustrate how the model optimizes climate control strategies, enhancing both crop yields and energy efficiency.
 
 % - Organization of the paper (optional; remove it if there is no space at the end)
 
 \section{Methodology}
+\label{sec:methodology}
 
 \section{Greenhouse Climate Model}
+\label{sec:greenhouse}
 
-In this section we provides a mathematical model of the greenhouse environment, focusing on temperature, humidity, and $CO_2$ concentration dynamics, that simplifies the GES software~\cite{rmward61_2019}, based on the Gembloux Dynamic Greenhouse Climate Model (GDGCM)~\cite{GDGCM} and on the thesis by Vanthoor~\cite{Vanthoor2011}.
+In this section we provides a mathematical model of the greenhouse environment, focusing on temperature, humidity, and CO$_2$ concentration dynamics, that simplifies the GES software~\cite{rmward61_2019}, based on the Gembloux Dynamic Greenhouse Climate Model (GDGCM)~\cite{GDGCM} and on the thesis by Vanthoor~\cite{Vanthoor2011}.
 
 \subsection{Temperature Dynamics}
+\label{subsec:temperature}
 
 The temperature dynamics inside the greenhouse are modeled by considering the energy exchange due to convection, radiation, and conduction --- Fig.~\ref{fig:diagram}. The temperatures of different components (e.g., cover, internal air, vegetation, tray, etc.) are described using the following equations.
 
@@ -116,6 +119,7 @@ The conductive heat transfer through a medium is given by
 where $\lambda$ is the thermal conductivity of a compartment, and $d$ is the thickness of the conducting layer.
 
 \subsection{Humidity Dynamics}
+\label{subsec:humidity}
 
 The humidity within the greenhouse is modeled by considering the mass transfer of water vapor. The specific humidity is calculated as:
 \begin{equation}
@@ -133,28 +137,83 @@ The mass transfer of water vapor due to convection is:
 \end{equation}
 where $H_{\text{fg}}$ is the latent heat of vaporization, $\text{Sh}$ is the Sherwood number, and $\text{Le}$ is the Lewis number, $\lambda$ is the thermal conductivity, $d$ is the characteristic length, $A$ is the heat exchange surface area, $\rho$ is the density of the vapor, $c$ is the specific heat capacity, $C$ is the actual vapor concentration, and $C_{\text{sat,}T}$ is the vapor concentration at temperature $T$.
 
-\subsection{$CO_2$ Concentration Dynamics}
+\subsection{CO$_2$ Concentration Dynamics}
+\label{subsec:concentration}
 
-The $CO_2$ concentration within the greenhouse is affected by photosynthesis and external conditions. The external $CO_2$ concentration is computed as:
+The CO$_2$ concentration within the greenhouse is affected by photosynthesis and external conditions. The external CO$_2$ concentration is computed as:
 \begin{equation}
     C_{\text{ext}} = \frac{4 \times 10^{-4} \cdot M_c \cdot P_{\text{atm}}}{R \cdot T_{\text{ext}}},
 \end{equation}
-where $M_c$ is the molar mass of $CO_2$, $P_{\text{atm}}$ is the atmospheric pressure, $R$ is the gas constant, and $T_{\text{ext}}$ is the external air temperature in Kelvin.
+where $M_c$ is the molar mass of CO$_2$, $P_{\text{atm}}$ is the atmospheric pressure, $R$ is the gas constant, and $T_{\text{ext}}$ is the external air temperature in Kelvin.
 
-The internal $CO_2$ concentration in parts per million (ppm) is given by:
+The internal CO$_2$ concentration in parts per million (ppm) is given by:
 \begin{equation}
     C_{\text{int, ppm}} = \frac{C_c \cdot R \cdot T_i}{M_c \cdot P_{\text{atm}}} \times 10^6,
 \end{equation}
-where $C_c$ is the $CO_2$ density, and $T_{\text{in}}$ is the internal air temperature in Kelvin.
+where $C_c$ is the CO$_2$ density, and $T_{\text{in}}$ is the internal air temperature in Kelvin.
 
-The greenhouse climate model integrates the physical mo-dels of temperature, humidity, and $CO_2$ concentration into a dynamic system represented by a state vector $\mathbf{z}$ (11 $\times$ 1) = [$T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}$], and input vector $\mathbf{u}$ (2 $\times$ 1) = [\text{Ventilation}, \text{Heating}]. The $T_c$ represents the cover temperature, $T_i$ the internal air temperature, $T_v$ the planted salad temperature, $T_m$ the growing medium temperature, $T_p$ the tray temperature, $T_f$ the floor temperature, and $T_s$ the temperature of the soil layer. Additionally, $C_w$ denotes the density of water vapor, $C_c$ the $CO_2$ density, $x_{\text{sdw}}$ the structural dry weight of the plant, and $x_{\text{nsdw}}$ the non-structural dry weight of the plant.
+The greenhouse climate model integrates the physical mo-dels of temperature, humidity, and CO$_2$ concentration into a dynamic system represented by a state vector $\mathbf{z}$ (11 $\times$ 1) = [$T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}$], and input vector $\mathbf{u}$ (2 $\times$ 1) = [\text{Ventilation}, \text{Heating}]. The $T_c$ represents the cover temperature, $T_i$ the internal air temperature, $T_v$ the planted salad temperature, $T_m$ the growing medium temperature, $T_p$ the tray temperature, $T_f$ the floor temperature, and $T_s$ the temperature of the soil layer. Additionally, $C_w$ denotes the density of water vapor, $C_c$ the CO$_2$ density, $x_{\text{sdw}}$ the structural dry weight of the plant, and $x_{\text{nsdw}}$ the non-structural dry weight of the plant.
 
 \begin{figure}
     \centering
     \includegraphics[width=.5\textwidth]{images/diagram.pdf}
-    \caption{A simplified diagram of the heat, mass and $CO_2$ exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}
+    \caption{A simplified diagram of the heat, mass and CO$_2$ exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}
     \label{fig:diagram}
 \end{figure}
+
+\section{Nonlinear economic model predictive control}
+\label{sec:mpc}
+A nonlinear economic model predictive control~(NEMPC) is adopted to maximize the profit from growing lettuce in a greenhouse. The objective of the proposed economic MPC for greenhouse control is to optimize the economic performance of the greenhouse system by controlling its actuators, such as heating, ventilation, and CO$_2$ injection. This is achieved by maximizing lettuce yield while minimizing operating costs over a finite prediction horizon. The nonlinear model predictive control framework incorporates the dynamics of the greenhouse and time-varying external conditions such as climate.
+
+\subsection{System Dynamics}
+\label{subsec:mpc_dynamics}
+
+The greenhouse system is modeled by a set of nonlinear state equations (see section~\ref{sec:greenhouse}) that describe the evolution of the greenhouse states, such as temperature, humidity, and biomass. The discrete-time nonlinear system is given by:
+\begin{equation}
+	x(t+1) = f\left( x(t), u(t), \text{TVP}(t) \right),
+\end{equation}
+where $x(t) \in \mathbb{R}^{n_x}$ represents the state vector at time step $t$, $u(t) \in \mathbb{R}^{n_u}$ represents the control input vector (actuators), and $\text{TVP}(t)$ are time-varying parameters that include external climate conditions such as temperature, radiation, and humidity.
+
+\subsection{Economic Objective Function}
+\label{subsec:mpc_objective}
+
+The goal of the economic MPC is to maximize the revenue from lettuce production while minimizing the costs associated with actuator use. The objective function is composed of two terms: the profit from biomass, i.e. the dry-weight of the lettuce, accumulation and the costs of actuators.
+
+The revenue from lettuce production is proportional to the change in biomass between the initial state and the current state, expressed as:
+\begin{equation}
+	R(t) = P_L \cdot \frac{(x_{\mathrm{sdw}}(t) + x_{\mathrm{nsdw}}(t)) - (x_{0, \mathrm{sdw}} + x_{0, \mathrm{nsdw} })}{\rho_{dw}} \cdot A_c,
+\end{equation}
+where $P_L$ is the price of lettuce per gram, $A_c$ is the cultivated area, and $x_{\mathrm{sdw}}$ and $x_{\mathrm{nsdw}}$ are the biomass-related states.
+
+In addition, the cost of operating the actuators at each time step is given by:
+\begin{equation}
+	C_u(t) = \sum_{i} \left( C_{\text{signal}}(u_i(t)) + C_{\text{CO2}}(u_i(t)) \right),
+\end{equation}
+where $C_{\text{signal}}(u_i(t))$ is the cost associated with the actuator signal $u_i(t)$ and $C_{\text{CO2}}(u_i(t))$ represents the cost related to CO$_2$ emissions from the actuator.
+
+Thus, the total cost at each time step is:
+\begin{equation}
+	l_t = -R(t) + C_u(t).
+\end{equation}
+
+\subsection{Optimization Problem Formulation}
+
+The objective of the nonlinear economic MPC is to minimize the sum of the stage costs $l_t$ over a finite prediction horizon $N$, subject to system dynamics and constraints. The optimization problem is formulated as:
+\begin{equation}
+	\min_{\{u(t)\}_{t=0}^{N-1}} \sum_{t=0}^{N-1} l_t(x(t), u(t)),
+\end{equation}
+subject to:
+\begin{align}
+	x(t+1) &= f(x(t), u(t), \text{TVP}(t)), \\
+	u_{\min} &\leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
+	x_{\min} &\leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N, \\
+	x(0) &= x_{\text{initial}}.
+\end{align}
+Here, $x_{\min}$ and $x_{\max}$ represent the bounds on the state variables, and $u_{\min}$ and $u_{\max}$ define the bounds on the control inputs, i.e., actuator signals.
+
+\subsection{Time-Varying Parameters (TVP)}
+
+The external climate conditions are modeled as time-varying parameters (TVP), which influence the system dynamics. These parameters include variables such as outdoor temperature, solar radiation, and humidity, and are provided by real-time climate data. These parameters are incorporated into the state equations, influencing the evolution of the greenhouse states.
 
 \section{Results}
 
