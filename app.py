@@ -359,8 +359,8 @@ with st.sidebar:
                     help="A longer prediction horizon enables better long-term planning but significantly increase complexity and uncertainty in predictions.",
                 )
                 x_lettuce_dry_init = (
-                    x_lettuce_wet_init * DRY_TO_WET_RATIO / 1000
-                )  # kg/m²
+                    x_lettuce_wet_init * DRY_TO_WET_RATIO
+                )  # g/m²
 
                 x_sn_init = x_lettuce_dry_init * RATIO_SDW_NSDW
                 us = st.slider(
@@ -447,12 +447,15 @@ if (
     gh_model.dt = Ts
     greenhouse_model = partial(gh_model.model, climate=climate.values)
 
-    model = GreenHouseModel(gh_model, climate_vars=climate.columns)
+    model = GreenHouseModel(
+        gh_model,
+        climate_vars=climate.columns,
+        lettuce_price=lettuce_price / 1000,
+    )
 
     mpc = EconomicMPC(
         model,
         climate,
-        lettuce_price / 1000,
         N,
         x_sn_init,
         u_min,

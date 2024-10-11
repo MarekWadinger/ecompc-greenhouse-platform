@@ -32,7 +32,7 @@ plotly_colors = [
 def set_size(
     width: float
     | int
-    | Literal["article", "ieee", "thesis", "beamer"] = 307.28987,
+    | Literal["article", "ieee", "ieee_full", "thesis", "beamer"] = 307.28987,
     fraction=1.0,
     subplots=(1, 1),
 ):
@@ -55,6 +55,8 @@ def set_size(
         width_pt = 390.0
     elif width == "ieee":
         width_pt = 252.0
+    elif width == "ieee_full":
+        width_pt = 252.0 * 2
     elif width == "thesis":
         width_pt = 426.79135
     elif width == "beamer":
@@ -109,26 +111,34 @@ def plot_response(
     u_min: Union[list[float], None] = None,
     u_max: Union[list[float], None] = None,
     axs_: Union[np.ndarray, None] = None,
-    y_label: Union[list[str], None] = None,
-    u_label: Union[list[str], None] = None,
+    y_legend: Union[list[str], None] = None,
+    u_legend: Union[list[str], None] = None,
+    y_label: Union[str, None] = None,
+    u_label: Union[str, None] = None,
+    t_label: Union[str, None] = None,
 ) -> np.ndarray:
     if axs_ is None:
-        _, axs = plt.subplots(nrows=2, ncols=1, sharex=True)
+        fig, axs = plt.subplots(
+            nrows=2,
+            ncols=1,
+            sharex=True,
+            figsize=set_size(width="ieee", subplots=(2, 1)),
+        )
     else:
         axs = axs_
-    axs[0].plot(t_out, y_out, label=y_label)
+        fig = axs[0].get_figure()
+    axs[0].plot(t_out, y_out, label=y_legend)
     if y_ref is not None:
         axs[0]._get_lines.set_prop_cycle(None)
-        axs[0].plot(t_out, y_ref, label=r"$y_{\mathrm{ref}}$", linestyle=":")
+        axs[0].plot(t_out, y_ref, label=f"{y_label} (ref)", linestyle=":")
     if axs_ is None:
-        axs[0].set_ylabel("$y$")
-        axs[0].set_title("a) Response of a System")
+        axs[0].set_ylabel(y_label)
         axs[0].legend()
 
     axs[1].plot(
         t_out,
         u_out,
-        label=u_label,
+        label=u_legend,
     )
     if u_min is not None and u_max is not None:
         axs[1]._get_lines.set_prop_cycle(None)
@@ -139,10 +149,13 @@ def plot_response(
         axs[1]._get_lines.set_prop_cycle(None)
 
     if axs_ is None:
-        axs[1].set_xlabel("$t$")
-        axs[1].set_ylabel("$u$")
-        axs[1].set_title("b) Control Action")
+        axs[1].set_xlabel(t_label)
+        axs[1].set_ylabel(u_label)
         axs[1].legend()
+        axs[1].tick_params(axis="x", rotation=15)
+
+    fig.align_ylabels()
+    fig.tight_layout()
 
     return axs
 

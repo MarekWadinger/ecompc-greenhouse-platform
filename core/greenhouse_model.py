@@ -12,7 +12,13 @@ from core.actuators import (
     SimpleFan,
     SimpleHeater,
 )
-from core.lettuce_model import get_f_resp, lettuce_growth_model
+from core.lettuce_model import (
+    C_LAR,
+    DRY_TO_WET_RATIO,
+    RATIO_SDW_NSDW,
+    get_f_resp,
+    lettuce_growth_model,
+)
 
 # CONSTANTS
 Nz = 1.0
@@ -38,7 +44,7 @@ rho_w = 1000.0  # density of water [kg/m^3]
 a_obs = 0.05  # fraction of solar radiation hitting obstructions [-]
 
 # Air characteristics
-ias = 0.5  # internal air speed [m/s]
+IAS = 0.5  # internal air speed [m/s]
 
 # Cover
 # Glass
@@ -95,77 +101,18 @@ msd_v = 1.326  # surface density [kg/m^2]
 # Tray/mat
 d_p = 1.0  # characteristic dimension of tray (width)
 d_m = 0.1  # characteristic dimension of mat (width)
-lam_m = 0.5  # thermal conductivity of mat [W/mK]
 lam_p = 0.2  # thermal conductivity of plastic tray [W/mK]
 c_m = 45050.0  # specific heat of mat assumed 25% saturated [J/m^2K]
 c_p = 10020.0  # specific heat of tray [J/m^2K]
 l_m = 0.03  # thickness of mat [m]
 l_p = 0.005  # thickness of tray [m]
-rhod_m = 720.0  # density of mat [kg/m^3]
-rhod_p = 1200.0  # density of tray [kg/m^3]
 rho_m = 0.05  # far-IR reflectivity of mat [-]
 rho_p = 0.05  # far-IR reflectivity of tray
 eps_m = 0.95  # far-IR emissivity of mat [-]
 eps_p = 0.95  # far-IR emissivity of tray
 
 # Photosynthesis model - Vanthoor
-c_Gamma = 1.7e-6  # effect of canopy temperature on CO2 compensation point [mol{CO2}/mol{air}/K]
-J_max_25 = (
-    210e-6  # maximum rate of electron transport at 25 C [mol{e}/m^2{leaf}/s]
-)
-alph = 0.385  # conversion factor from photons to electrons [mol{e}/mol{phot}]
-C_buf_max = 0.02  # maximum buffer capacity per unit area of cultivated floor [kg{CH2O}/m^2/s]
-theta = 0.7  # degree of curvature of the electron transport rate [-]
-S = 710.0  # entropy term for J_pot calculation [J/mol/K]
-HH = 22.0e4  #  deactivation energy for J_pot calculation [J/mol]
-E_j = 37.0e3  # activation energy for J_pot calculation [J/mol]
 heat_phot = 3.6368e-19  # conversion rate from incident energy to number of photons [num{photons}/J]
-eta = 0.67  # conversion factor from CO2 in the air to CO2 in the stomata [-]
-s_airbuf_buf = 5.0e2  # differential switch function slope for maximum buffer capacity [m^2/kg]
-s_buforg_buf = (
-    -5.0e3
-)  # differential switch function slope for minimum buffer capacity [m^2/kg]
-s_min_T = -0.8690  # differential switch function slope for minimum photosynthesis instantaneous temperature [1/degC]
-s_max_T = 0.5793  # differential switch function slope for maximum photosynthesis instantaneous temperature [1/degC]
-s_min_T24 = -1.1587  # differential switch function slope for minimum photosynthesis mean 24 hour temperature [1/degC]
-s_max_T24 = 1.3904  # differential switch function slope for maximum photosynthesis mean 24 hour temperature [1/degC]
-s_prune = -50.0  # differential switch function slope for leaf pruning [m^2/kg]
-
-# Crop Growth Model
-SLA = 26.6  # specific leaf area index [m^2{leaf}/kg{CH2O}]
-LAI_max = 5.0  # the maximum allowed leaf area index [m^2{leaf}/m^2{floor}]
-Q_10 = 2.0  # see parameters for de Zwart model above [-]
-rg_fruit = 0.328e-6  # potential fruit growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
-rg_leaf = 0.095e-6  # potential leaf growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
-rg_stem = 0.074e-6  # potential stem growth rate coefficient at 20 deg C [kg{CH2O}/m^2/s]
-weight_fruit = 0.5
-weight_leaf = 0.3
-weight_stem = 0.2
-c_fruit_g = 0.27  # fruit growth respiration coefficient [-]
-c_fruit_m = 1.16e-7  # fruit maintenance respiration coefficient [1/s]
-c_leaf_g = 0.28  # leaf growth respiration coefficient [-]
-c_leaf_m = 3.47e-7  # leaf maintenance respiration coefficient [1/s]
-c_stem_g = 0.30  # stem growth respiration coefficient [-]
-c_stem_m = 1.47e-7  # stem maintenance respiration coefficient [1/s]
-weight_fruit = 0.5
-weight_leaf = 0.3
-weight_stem = 0.2
-weight_fruit_g = 0.5
-weight_leaf_g = 0.3
-weight_stem_g = 0.2
-# TODO: Find out where does this come from
-# TODO: we need to change this
-# https://onlinelibrary.wiley.com/doi/full/10.1046/j.0016-8025.2003.01067.x
-c_RGR = (
-    2.85e6  # regression coefficient in maintenance respiration function [s]
-)
-T_min_v24 = 12.0  #  between base temperature and first optimal temperature for 24 hour mean [oC]
-T_max_v24 = 27.0  # between second optimal temperature and maximum temperature for 24 hour mean [oC]
-T_min_v = 6.0  # between base temperature and first optimal temperature [oC]
-T_max_v = (
-    40.0  # between second optimal temperature and maximum temperature [oC]
-)
-T_sum_end = 1035.0  # the temperature sum at which point the fruit growth rate is maximal [oC]
 
 
 # Infiltration
@@ -184,12 +131,15 @@ F_f_p = p_v  # Floor to tray
 F_v_c = 0.5  # Vegetation to cover
 F_v_m = 0.5  # Vegetation to mat
 F_v_p = 0.0  # Vegetation to tray
-# F_m_c = max((1-LAI),0.0) # Mat to cover
-# F_m_v = 1-F_m_c # Mat to vegetation
 F_m_p = 0.0  # Mat to tray
 F_p_v = 0.0  # Tray to vegetation
 F_p_m = 0.0  # Tray to mat
 F_p_f = 1.0  # Tray to floor
+
+
+# Crop Growth Model
+SLA = C_LAR  # specific leaf area index [m^2{leaf}/g{CH2O}]
+LAI_max = 5.0  # the maximum allowed leaf area index [m^2{leaf}/m^2{floor}]
 
 ## Initial conditions
 # Temperatures
@@ -205,8 +155,10 @@ C_w_0 = 0.0085  # Density of water vapour [kg/m^3]
 C_c_0 = 7.5869e-4  # CO_2 density
 
 # The proportion should be somewhere between 40:60 - 30:70 for lettuce
-x_sdw = 0.72  # Structural dry weight of the plant [kg/m^2]
-x_nsdw = 2.7  # Non-structural dry weight of the plant [kg/m^2]
+x_lettuce_dry_init = 500 * DRY_TO_WET_RATIO  # g/m^2
+
+# Structural and non-structural dry weight of the plant [g/m^2]
+x_sdw, x_nsdw = x_lettuce_dry_init * RATIO_SDW_NSDW
 
 x_init = np.array(
     [
@@ -274,7 +226,6 @@ def convection(
 
     QV_1_2 = A * Nu * lam * (T1 - T2) / d
     QP_1_2 = A * H_fg / (rho * c) * Sh / Le * lam / d * (C - sat_conc(T2))
-    # QP_1_2 = 0
 
     return (QV_1_2, QP_1_2, Nu)
 
@@ -312,7 +263,7 @@ class GreenHouse:
         roof_tilt: float = 30.0,
         max_vent: float | None = None,
         max_heat: float | None = None,
-        max_humid: float | None = None,
+        max_humid: float | None = None,  # Maximum humidification in l/h
         max_co2: float | None = None,
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
@@ -352,7 +303,7 @@ class GreenHouse:
 
         if max_vent is not None:
             R_a_max = max_vent
-        self.fan = SimpleFan(R_a_max, **act_kwargs)
+        self.fan = SimpleFan(R_a_max, dt=self.dt, **act_kwargs)
 
         # Heater
         # Q_heater_max is computed as the mass of air we want to heat per second
@@ -363,28 +314,30 @@ class GreenHouse:
             Q_heater_max = max_heat
         else:
             Q_heater_max = rho_i * (T_sp_vent - T_k) * R_a_max * c_i
-        self.heater = SimpleHeater(Q_heater_max, **act_kwargs)
+        self.heater = SimpleHeater(Q_heater_max, dt=self.dt, **act_kwargs)
 
         # Humidifier
         if max_humid is not None:
-            V_dot_max = max_humid
+            V_dot_max = max_humid  # [l/h]
         else:
             # https://www.tis-gdv.de/tis_e/misc/klima-htm/
-            # RH_range = 40 % - 80 % [- / h]
-            AH_40 = 12.1  # [g/m^3]
-            AH_80 = 24.3  # [g/m^3]
+            # RH_range = 40 % - 80 % at 20C [- / h]
+            AH_40 = 6.9  # [g/m^3]
+            AH_80 = 13.8  # [g/m^3]
             max_AH_increase = AH_80 - AH_40  # [g/m^3/h]
-            V_dot_max = (
-                self.volume * max_AH_increase * 1 / rho_w
-            )  # [g/h] ~ [l/h]
-        self.humidifier = SimpleEvaporativeHumidifier(V_dot_max, **act_kwargs)
+            V_dot_max = self.volume * max_AH_increase / rho_w  # [l/h]
+        self.humidifier = SimpleEvaporativeHumidifier(
+            V_dot_max, dt=self.dt, **act_kwargs
+        )
 
         if max_co2 is not None:
             co2_gen_max = max_co2
         else:
             # https://www.hotboxworld.com/product/co2-generator
             co2_gen_max = 0.01 * self.volume  # Maximum CO2 generation in kg/h
-        self.co2generator = SimpleCO2Generator(co2_gen_max, **act_kwargs)
+        self.co2generator = SimpleCO2Generator(
+            co2_gen_max, dt=self.dt, **act_kwargs
+        )
 
         # Tray/mat
         self.A_c = p_v * self.A_f  # Area of cultivated floor [m^2]
@@ -397,8 +350,6 @@ class GreenHouse:
 
         # View Factors
         self.F_c_f = self.A_f / self.area_roof * F_f_c  # Cover to floor
-        # F_c_v = min((1-F_c_f)*LAI,(1-F_c_f)) # Cover to vegetation
-        # F_c_m = max((1-F_c_f)*(1-LAI),0) # Cover to mat
 
     @property
     def active_actuators(self) -> dict[str, bool]:
@@ -426,7 +377,7 @@ class GreenHouse:
             z: System states
             u: System inputs
             c: System parameters
-            climate: climate information. Must be sampled at the same rate as the model (fixed 60 seconds interval) and have appropriate length.
+            climate: climate information. Must be sampled at dt and have appropriate length.
 
         Returns:
             np.ndarray: System state derivatives
@@ -461,9 +412,13 @@ class GreenHouse:
 
         R_a = self.fan.signal_to_actuation(perc_vent)
         Q_heater = self.heater.signal_to_actuation(perc_heater)
-        V_dot_humid = self.humidifier.signal_to_actuation(perc_humid)
+        V_dot = (
+            self.humidifier.signal_to_actuation(perc_humid) * rho_w
+        )  # [g/h]
         # mass of CO2 pumped in per hour [kg/h]
         added_CO2 = self.co2generator.signal_to_actuation(perc_co2)
+
+        ias = IAS + R_a / (self.width * self.height)
 
         # External weather and dependent internal parameter values
         if isinstance(climate, np.ndarray):
@@ -486,8 +441,6 @@ class GreenHouse:
             C_c * R * T_i / (M_c * atm) * 1.0e6
         )  # External carbon dioxide concentration [ppm]
         h = 6.626e-34  # Planck's constant in Joule*Hz^{-1}
-
-        hour = np.floor(t / 3600) + 1
 
         ## Lights
         # _ = 0  # No additional lighting included
@@ -692,48 +645,17 @@ class GreenHouse:
         ##      Solar radiation
         # We first define the solar elevation angle that determines that absorption of solar radiation. Notation: r is direct radiation, f is diffuse radiation, whilst VIS and NIR stand for visible and near infra-red respectively.
 
-        def deg2rad(x):
-            return x * np.pi / 180
-
-        def rad2deg(radians):
-            return radians * (180.0 / ca.pi)
-
-        def casadi_mod(a, b):
-            return a - b * ca.floor(a / b)
-
-        gamma = deg2rad(
-            360.0 * (ca.ceil(t / 86400) - 80.0) / 365.0
-        )  # Year angle [rad] --- day counts from January 1st
-        eqn_time = (
-            -7.13 * np.cos(gamma)
-            - 1.84 * np.sin(gamma)
-            - 0.69 * np.cos(2.0 * gamma)
-            + 9.92 * np.sin(2.0 * gamma)
-        )  # Equation of time [min]
-        az = deg2rad(
-            360.0
-            * (casadi_mod(t / (3600.0), 24.0) + eqn_time / 60.0 - 12.0)
-            / 24.0
-        )  # Azimuth [rad]
-        delta = deg2rad(
-            0.38 - 0.77 * np.cos(gamma) + 23.27 * np.cos(gamma)
-        )  # Declination angle [rad]
-        lat = deg2rad(self.latitude)  # Latitude [rad]
-        angler = np.arcsin(
-            np.sin(lat) * np.sin(delta)
-            + np.cos(lat) * np.cos(delta) * np.cos(az)
-        )  # Angle of elevation [rad]
-        angle = rad2deg(angler)
+        angle = climate[4]
 
         # Radiation from artificial lighting
         QS_al_NIR = 0.0  # no artificial lighting
         QS_al_VIS = 0.0
 
         # Solar radiation incident on the cover
-        QS_tot_rNIR = 0.5 * self.surface_area @ climate[4:12]  # Direct
-        QS_tot_rVIS = 0.5 * self.surface_area @ climate[4:12]
-        QS_tot_fNIR = 0.5 * self.surface_area @ climate[12:20]  # Diffuse
-        QS_tot_fVIS = 0.5 * self.surface_area @ climate[12:20]
+        QS_tot_rNIR = 0.5 * self.surface_area @ climate[5:13]  # Direct
+        QS_tot_rVIS = 0.5 * self.surface_area @ climate[5:13]
+        QS_tot_fNIR = 0.5 * self.surface_area @ climate[13:21]  # Diffuse
+        QS_tot_fVIS = 0.5 * self.surface_area @ climate[13:21]
 
         # Transmitted solar radiation
         QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
@@ -876,18 +798,14 @@ class GreenHouse:
         QT_v_i = ca.fmax(QT_St, 0)
 
         ## Dehumidification
-        MW_cc_i = V_dot_humid / 1000 / 3600 / self.volume  # [kg/m^3/s]
+        MW_cc_i = V_dot / 1000 / 3600 / self.volume  # [kg/m^3/s]
 
         # CO2 exchange with outside
         MC_i_e = R_a * (C_c - C_ce)  # [kg/m^3/s]
 
-        day_hour_c = (hour / 24 - np.floor(hour / 24)) * 24
-        track = ca.logic_and(day_hour_c > 6, day_hour_c < 20)
-        Value = (
-            added_CO2 / Nz / 3600.0 / self.volume
+        MC_cc_i = (
+            added_CO2 / 3600.0 / Nz / self.volume
         )  # [kg/h / - / 3600 / m^3] -> [kg m^{-3} s^{-1}]
-
-        MC_cc_i = Value * track  # [kg m^{-3} s^{-1}]
 
         ## Photosynthesis model - Vanthoor
 
@@ -953,7 +871,7 @@ class GreenHouse:
 
         # Carbon Dioxide
         dC_c_dt = (
-            MC_cc_i
+            MC_cc_i  # [kg/m^3/s]
             - MC_i_e  # [kg/m^3/s]
             + (M_c / M_carb)  # [-]
             * (self.A_p / self.volume)  # [m^2 / m^3]

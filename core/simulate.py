@@ -56,7 +56,7 @@ def simulate(
     if callable(u):
         validate_gen(u, **locals())
 
-    for t in tqdm(range(0, sim_time * t_s - t_s, t_s)):
+    for t in tqdm(range(0, sim_time * t_s - t_s + 1, t_s)):
         tspan = [t, t + t_s]
 
         if ref_gen is not None:
