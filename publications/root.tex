@@ -22,7 +22,7 @@
 }
 % \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23 and grant VEGA `1/0691/21'. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 
-\title{Conference Paper Title
+\title{Carbon Neutral Greenhouse: A Economic Model Predictive Control Framework for Education
     \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23 and grant VEGA `1/0691/21'. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 }
 
@@ -54,10 +54,10 @@ Most current farming practices are labor-intensive, seasonal, constrained by irr
 % - Concrete introduction (what is the state of the art in the domain)
 Solar radiation is fundamental to both plant growth and energy generation in a greenhouse. Key metrics include Global Horizontal Irradiance (\(GHI\)) and Photosynthetically Active Radiation (\(PAR\)), with \(PAR\) being directly responsible for photosynthesis. Recent research has focused on accurately estimating diffuse \(PAR\) and its impact on plant growth, leading to the development of sophisticated models that predict \(PAR\) with varying degrees of accuracy~\cite{Iddio2020, MaLu2022}. In parallel, methods such as adaptive control, nonlinear feedback control, fuzzy control, robust control, and optimum control have been explored for optimizing greenhouse environments, aiming to boost efficiency, resource use, and crop yield. In general, we identify two main types of greenhouse control algorithms: conventional control and optimal control. Conventional control aims to reduce the difference between setpoints and actual measurements. On the other hand, optimal control incorporates factors such as greenhouse dynamics, actuator capabilities, energy consumption, and crop responses into the control strategy
 
-\begin{figure}\label{fig:flowchart}
+\begin{figure}
     \centering
     \includegraphics[width=.5\textwidth]{images/flowchart.pdf}
-    \caption{A simplified diagram representing greenhouse control algorithms. Image adapted from~\cite{Trepanier2024}.}
+    \caption{A simplified diagram representing greenhouse control algorithms. Image adapted from~\cite{Trepanier2024}.}\label{fig:flowchart}
 \end{figure}
 
 Adaptive control adjusts parameters based on real-time feedback~\cite{Tian2022}, while nonlinear feedback control tackles system complexities with advanced algorithms~\cite{Bood2023}. Fuzzy control addresses imprecise data and uncertainties~\cite{smartcities7030055}, and robust control maintains stability despite disturbances~\cite{Zhang2021}. Optimum control aims to fine-tune actions for best outcomes~\cite{Debroy2024, SVENSEN2024108578}. However, these techniques often demand substantial computational power and intricate implementation, additionally, frequent adjustments raise energy consumption and actuator wear.
@@ -130,7 +130,7 @@ The mass transfer of water vapor due to convection is:
 \begin{equation}
     Q_{v} = \frac{A \cdot H_{\text{fg}}}{\rho \cdot c} \cdot \frac{\text{Sh}}{\text{Le}} \cdot \frac{\lambda}{d} \cdot \left( C - C_{\text{sat,}T} \right),
 \end{equation}
-where \(H_{\text{fg}}\) is the latent heat of vaporization, \(\text{Sh}\) is the Sherwood number, and \(\text{Le}\) is the Lewis number, \(\lambda \) is the thermal conductivity, \(d\) is the characteristic length, \(A\) is the heat exchange surface area, \(\rho \) is the density of the vapor, \(c\) is the specific heat capacity, \(C\) is the actual vapor concentration, and \(C_{\text{sat,}T}\) is the vapor concentration at temperature \(T$.
+where \(H_{\text{fg}}\) is the latent heat of vaporization, \(\text{Sh}\) is the Sherwood number, and \(\text{Le}\) is the Lewis number, \(\lambda \) is the thermal conductivity, \(d\) is the characteristic length, \(A\) is the heat exchange surface area, \(\rho \) is the density of the vapor, \(c\) is the specific heat capacity, \(C\) is the actual vapor concentration, and \(C_{\text{sat,}T}\) is the vapor concentration at temperature \(T\).
 
 \subsection{Carbon Dioxide Concentration Dynamics}
 
@@ -138,7 +138,7 @@ The \(CO_2\) concentration within the greenhouse is affected by photosynthesis a
 \begin{equation}
     C_{\text{ext}} = \frac{4 \times 10^{-4} \cdot M_c \cdot P_{\text{atm}}}{R \cdot T_{\text{ext}}},
 \end{equation}
-where \(M_c\) is the molar mass of \(CO_2$, \(P_{\text{atm}}\) is the atmospheric pressure, \(R\) is the gas constant, and \(T_{\text{ext}}\) is the external air temperature in Kelvin.
+where \(M_c\) is the molar mass of \(CO_2\), \(P_{\text{atm}}\) is the atmospheric pressure, \(R\) is the gas constant, and \(T_{\text{ext}}\) is the external air temperature in Kelvin.
 
 The internal \(CO_2\) concentration in parts per million (ppm) is given by:
 \begin{equation}
@@ -146,17 +146,69 @@ The internal \(CO_2\) concentration in parts per million (ppm) is given by:
 \end{equation}
 where \(C_c\) is the \(CO_2\) density, and \(T_{\text{in}}\) is the internal air temperature in Kelvin.
 
-The greenhouse climate model integrates the physical mo-dels of temperature, humidity, and \(CO_2\) concentration into a dynamic system represented by a state vector \(\mathbf{z}\) (11 \(\times \) 1) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}$], and input vector \(\mathbf{u}\) (2 \(\times \) 1) = [\text{Ventilation}, \text{Heating}]. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \(CO_2\) density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
+The greenhouse climate model integrates the physical mo-dels of temperature, humidity, and \(CO_2\) concentration into a dynamic system represented by a state vector \(\mathbf{z}\) (11 \(\times \) 1) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)], and input vector \(\mathbf{u}\) (2 \(\times \) 1) = [\text{Ventilation}, \text{Heating}]. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \(CO_2\) density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
 
-\begin{figure}\label{fig:diagram}
+\begin{figure}
     \centering
     \includegraphics[width=.5\textwidth]{images/diagram.pdf}
-    \caption{A simplified diagram of the heat, mass and \(CO_2\) exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}
+    \caption{A simplified diagram of the heat, mass and \(CO_2\) exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}\label{fig:diagram}
 \end{figure}
 
 \section{Results}
 % Comparison of controlled greenhouse vs greenhouse without actuation
-In the first set of simulations, we analyzed the non-linear behavior of greenhouse temperature and CO2 levels under varying weather conditions. Results demonstrate that the proposed economic MPC algorithm reduced CO2 consumption by 15\%, while maintaining an average yield increase of 10% compared to baseline linear MPC methods.
+In the first set of simulations, we analyzed the non-linear behavior of the greenhouse under varying weather conditions and steps in actuation. We see how different actuations influence growth of structural and non-structural dry weight of the plant. The results in Figure~\ref{fig:steps} show that under given climate conditions, the influence of ventilation and humidification is insignificant on growth. Nevertheless, it has positive effect on convection and overall transfer of energy. Meanwhile, intense heating positive effects conversion of non-structural dry weight into structural but does not influence the overall non-structural dry weight buildup. CO\textsubscript{2} enrichment has a significant impact on non-structural plant growth.
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{figures/step_response-outputs-2024-10-10_2024-10-25-120s.pdf}
+    \caption{Responses of structural andd non-structural dry weight on step changes from off to maximum in following actuations from the left to the right: ventilation, heating, humidification, and CO\textsubscript{2} enrichment.}\label{fig:steps}
+\end{figure*}
+
+
+Second set of simulations compares the performance of the proposed NEMPC algorithm with a no control scenario. The parameters of NEMPC are as follows in Table~\ref{tab:parameters}. Results in Table~\ref{tab:comparison} demonstrate that the proposed economic MPC algorithm increased crop yield by 9\% and increase profit by more than 4\% in just 15 days of growth. The economic MPC algorithm also included social cost of carbon intensity of used energy sources, which reduced CO\textsubscript{2} consumption by 98\% while decreased the growth 4 times. We observe that there is a significant trade-off between the economic output and the carbon intensity of the energy sources. While our primal objective might be to maximize the economic output, we should also consider the environmental impact of our actions.
+
+\begin{table}
+    \centering
+    \caption{Parameters of the NEMPC algorithm.}\label{tab:parameters}
+    \begin{tabular}{lS[table-format=5.]l}
+        \toprule
+        Parameter & {Value} & Unit \\
+        \midrule
+        Prediction horizon & 10 & min \\
+        Control horizon & 10 & min \\
+        Number of steps & 10801 & --- \\
+        Sampling time & 120 & s \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}\label{fig:control}
+    \centering
+    \includegraphics[width=.5\textwidth]{figures/greenhouse_control-mpc-N_5-steps_10801.pdf}
+    \caption{A simplified diagram of the heat, mass and CO\textsubscript{2} exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}
+\end{figure}
+
+\begin{table}
+    \centering
+    \caption{Comparison of the NEMPC algorithm with a no control scenario.}\label{tab:comparison}
+    \begin{tabular}{lS[table-format=4.2]S[table-format=4.2]S[table-format=4.2]}
+        \toprule
+        Parameter & {No control} & {NEMPC (CO\textsubscript{2})} & {NEMPC (\$)} \\
+        \midrule
+        Lettuce profit & 858.32 & 940.19 & 4120.63 \\
+        Energy (Fan) & 0.00 & -0.03 & -0.16 \\
+        Energy (Heater) & 0.00 & -0.45 & -21.68 \\
+        Energy (Humidifier) & 0.00 & -0.05 & -0.00 \\
+        Energy (CO2 Generator) & 0.00 & -9.95 & -697.59 \\
+        CO2 (Fan) & 0.00 & -0.08 & -0.51 \\
+        CO2 (Heater) & 0.00 & -1.48 & -70.84 \\
+        CO2 (Humidifier) & 0.00 & -0.17 & -0.01 \\
+        CO2 (CO2 Generator) & 0.00 & -32.52 & -2279.72 \\
+        \midrule
+        Total & 858.32 & 895.45 & 1050.12 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 % Educational trials
 Educational trials on the interactive and user-friendly web interface for greenhouse design and ENMPC control pipeline revealed significant potential in increasing the understanding of non-linear control systems. 
