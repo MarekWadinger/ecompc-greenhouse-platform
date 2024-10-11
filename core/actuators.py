@@ -122,6 +122,11 @@ class SimpleEvaporativeHumidifier(Actuator):
 
     Simple EvaporativeHumidifier model that takes a signal percentage and returns the humidification output.
 
+    # TODO: influences air speed as well
+    https://growershouse.com/ideal-air-pro-series-ultra-sonic-humidifier-600-pint
+    # TODO: Max. air volume flow [m³/h]	900
+    https://uk.trotec.com/products-services/machinery-homecomfort/humidification/evaporation-humidifiers/b-400/
+
     Examples:
     >>> max_unit = 10  # Maximum humidification output in l/h
     >>> humidifier = SimpleEvaporativeHumidifier(max_unit)
@@ -129,7 +134,7 @@ class SimpleEvaporativeHumidifier(Actuator):
     2.0
     """
 
-    def __init__(self, max_unit, power_per_unit=20, *args, **kwargs):
+    def __init__(self, max_unit, power_per_unit=50, *args, **kwargs):
         super().__init__(
             max_unit,
             power_per_unit,

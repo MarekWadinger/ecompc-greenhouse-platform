@@ -318,14 +318,14 @@ class GreenHouse:
 
         # Humidifier
         if max_humid is not None:
-            V_dot_max = max_humid * rho_w  # [g/h]
+            V_dot_max = max_humid  # [l/h]
         else:
             # https://www.tis-gdv.de/tis_e/misc/klima-htm/
-            # RH_range = 40 % - 80 % [- / h]
-            AH_40 = 12.1  # [g/m^3]
-            AH_80 = 24.3  # [g/m^3]
+            # RH_range = 40 % - 80 % at 20C [- / h]
+            AH_40 = 6.9  # [g/m^3]
+            AH_80 = 13.8  # [g/m^3]
             max_AH_increase = AH_80 - AH_40  # [g/m^3/h]
-            V_dot_max = self.volume * max_AH_increase  # [g/h]
+            V_dot_max = self.volume * max_AH_increase / rho_w  # [l/h]
         self.humidifier = SimpleEvaporativeHumidifier(
             V_dot_max, dt=self.dt, **act_kwargs
         )
@@ -412,7 +412,9 @@ class GreenHouse:
 
         R_a = self.fan.signal_to_actuation(perc_vent)
         Q_heater = self.heater.signal_to_actuation(perc_heater)
-        V_dot = self.humidifier.signal_to_actuation(perc_humid)  # [g/h]
+        V_dot = (
+            self.humidifier.signal_to_actuation(perc_humid) * rho_w
+        )  # [g/h]
         # mass of CO2 pumped in per hour [kg/h]
         added_CO2 = self.co2generator.signal_to_actuation(perc_co2)
 
