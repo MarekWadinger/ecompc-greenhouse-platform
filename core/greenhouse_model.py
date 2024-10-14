@@ -333,8 +333,11 @@ class GreenHouse:
         if max_co2 is not None:
             co2_gen_max = max_co2
         else:
-            # https://www.hotboxworld.com/product/co2-generator
-            co2_gen_max = 0.01 * self.volume  # Maximum CO2 generation in kg/h
+            # https://www.hotboxworld.com/product/co2-
+            Cco2_per_hour = 0.009  # [kg/m^3/h]
+            co2_gen_max = (
+                Cco2_per_hour * self.volume
+            )  # Maximum CO2 generation in kg/h
         self.co2generator = SimpleCO2Generator(
             co2_gen_max, dt=self.dt, **act_kwargs
         )
