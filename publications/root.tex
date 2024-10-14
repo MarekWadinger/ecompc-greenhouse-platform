@@ -14,11 +14,11 @@
 %% The SI units alignment
 \usepackage{siunitx}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
 \title{Carbon Neutral Greenhouse: Economic Model Predictive Control Framework for Education
-    \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grant 1/0490/23, 1/0297/22 and `1/0691/21'. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
+    \thanks{The authors gratefully acknowledge the contribution of the Program to support young researchers under the project Adaptive and Robust Change Detection for Enhanced Reliability in Intelligent Systems. The authors gratefully acknowledge the contribution of the Scientific Grant Agency of the Slovak Republic under the grants 1/0490/23, 1/0297/22, and 1/0691/21. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries).}
 }
 
 \author{\IEEEauthorblockN{Marek Wadinger, Rastislav F\'{a}ber, Erika Pavlovičov\'{a}, Radoslav Paulen}
@@ -31,10 +31,10 @@
 \maketitle
 
 \begin{abstract}
-	This paper presents a comprehensive framework designed to enhance education in modeling, optimal control, and nonlinear Model Predictive Control (MPC) through a practical greenhouse climate control model. The framework includes a detailed mathematical model of lettuce growth, integrating key variables such as temperature, light, and humidity, which are influenced by real-time external weather conditions obtained via an API. Using this data, the MPC-based approach dynamically adjusts greenhouse conditions, optimizing both plant growth and energy consumption. Simulations demonstrate the effectiveness of this approach in balancing energy use with crop yield, contributing to economic efficiency and sustainability.
-	
-	The primary contribution of this study is its educational value, providing students with a hands-on platform to understand the complexities of MPC and the trade-offs between profitability and sustainability in agricultural systems. By leveraging real-world data and dynamic simulations, this model allows students to explore and apply control theories in a practical context, fostering deeper learning and problem-solving skills. This makes the framework a valuable tool not only for optimizing lettuce production but also for enriching control systems education.
-	\newline
+    This paper presents a comprehensive framework designed to enhance education in modeling, optimal control, and nonlinear Model Predictive Control (MPC) through a practical greenhouse climate control model. The framework includes a detailed mathematical model of lettuce growth, integrating key variables such as temperature, light, and humidity, which are influenced by real-time external weather conditions obtained via an application programming interface (API).\@ Using this data, the MPC-based approach dynamically adjusts greenhouse conditions, optimizing both plant growth and energy consumption. Simulations demonstrate the effectiveness of this approach in balancing energy use with crop yield, contributing to economic efficiency and sustainability.
+
+    The primary contribution of this study is its educational value, providing students with a hands-on platform to understand the complexities of MPC and the trade-offs between profitability and sustainability in agricultural systems. By leveraging real-world data and dynamic simulations, this model allows students to explore and apply control theories in a practical context, fostering deeper learning and problem-solving skills. This makes the framework a valuable tool not only for optimizing lettuce production but also for enriching control systems education.
+    \newline
 \end{abstract}
 
 
@@ -45,7 +45,7 @@
 
 \section{Introduction}
 % - General introduction (why is it important that we do what we do)
-\textcolor{red}{Technical university education requires not only a solid foundation in theoretical knowledge but also the development of practical skills. These skills are often gained through participation in projects, solving real-world problems, and conducting experiments. Importantly, practical learning does not always rely on physical experiments with real equipment in labs; simulations and interactive tasks can serve as effective alternatives. In the field of control education, the availability of such interactive tools has increased, offering new learning opportunities. The benefits of using interactive tools in control theory instruction have been highlighted in previous works, such as those by~\cite{Emami1991} and~\cite{Guzman2013}.}
+Technical university education requires not only a solid foundation in theoretical knowledge but also the development of practical skills. These skills are often gained through participation in projects, solving real-world problems, and conducting experiments. Importantly, practical learning does not always rely on physical experiments with real equipment in labs; simulations and interactive tasks can serve as effective alternatives. In the field of control education, the availability of such interactive tools has increased, offering new learning opportunities. The benefits of using interactive tools in control theory instruction have been highlighted in previous works, such as those by~\cite{Emami1991} and~\cite{Guzman2013}.
 
 Most current farming practices are labor-intensive, seasonal, constrained by irrigation, and rely on subsidized inputs, resulting in issues like eutrophication, deforestation, and soil degradation. These practices consume nearly 70\% of global water resources~\cite{Debroy2024}. Greenhouses play a crucial role in boosting agricultural productivity by providing controlled environments that outperform open-field cultivation. However, they face challenges such as fluctuating internal temperatures, which can harm crops. Effective climate management, through controlled ventilation and heating, is essential for maintaining optimal conditions and improving yields~\cite{Wu2019}.
 
@@ -53,9 +53,9 @@ Most current farming practices are labor-intensive, seasonal, constrained by irr
 Solar radiation is vital for plant growth and energy generation in greenhouses. Key metrics include Global Horizontal Irradiance (\(GHI\)) and Photosynthetically Active Radiation (\(PAR\)), with \(PAR\) directly influencing photosynthesis. Recent research has focused on estimating diffuse \(PAR\) and its impact on plant growth, resulting in advanced models for accurate \(PAR\) prediction~\cite{Iddio2020, MaLu2022}. Alongside, methods such as adaptive control, nonlinear feedback control, fuzzy control, robust control, and optimal control have been explored to enhance greenhouse environments, focusing on efficiency, resource use, and yield improvement. Generally, greenhouse control methods are classified into conventional control and optimal control, with the latter considering greenhouse dynamics, actuator capacities, energy use, and crop responses.
 
 \begin{figure}
-	\centering
-	\includegraphics[width=.5\textwidth]{images/flowchart.pdf}
-	\caption{A simplified diagram representing greenhouse control algorithms. Image adapted from~\cite{Trepanier2024}.}\label{fig:flowchart}
+    \centering
+    \includegraphics[width=.5\textwidth]{images/flowchart.pdf}
+    \caption{A simplified diagram representing greenhouse control algorithms. Image adapted from~\cite{Trepanier2024}.}\label{fig:flowchart}
 \end{figure}
 
 Adaptive control adjusts parameters based on real-time feedback~\cite{Tian2022}, while nonlinear feedback control addresses system complexities with advanced algorithms~\cite{Bood2023}. Fuzzy control manages imprecise data and uncertainties~\cite{smartcities7030055}, and robust control ensures stability despite disturbances~\cite{Zhang2021}. Optimum control fine-tunes actions for better outcomes~\cite{Debroy2024, SVENSEN2024108578}. Despite their strengths, these approaches often require high computational power and complex implementation, with frequent adjustments leading to higher energy consumption and wear on actuators.
@@ -63,10 +63,10 @@ Adaptive control adjusts parameters based on real-time feedback~\cite{Tian2022},
 As a result, PID controllers remain popular for their simplicity and effectiveness. However, IoT and machine learning are also being integrated into greenhouse control, as demonstrated by Wang et al.~\cite{Wang2024}, who combined these technologies with PID for real-time monitoring. Nonetheless, managing greenhouse systems using PID can be challenging due to the need for multiple controllers and extensive tuning. This process is time-consuming and optimization-dependent, often lacking guaranteed optimal results. Consequently, MPC has emerged as a preferred approach for greenhouse climate control~\cite{Hu2022}, enabling continuous adjustment of setpoints through sample-by-sample online optimization. This approach, however, increases computational demands and system complexity.
 
 % - Educational context and relevance
-\textcolor{red}{Integrating advanced control techniques into education has become increasingly important, as shown in recent studies like~\cite{WangEducation2024}, which introduced a web-based simulation platform to improve control education or~\cite{Zakova2024}, which presented web-based application for PID control education. Such tools effectively bridge the gap between theory and practice, enhancing students' problem-solving skills. Inspired by this approach, our framework aims to provide a similar educational experience within greenhouse climate control, focusing on modeling, optimal control, and nonlinear model predictive control (NMPC).}
+Integrating advanced control techniques into education has become increasingly important, as shown in recent studies like~\cite{WangEducation2024}, which introduced a web-based simulation platform to improve control education or~\cite{Zakova2024}, which presented a web-based application for PID control education. Such tools effectively bridge the gap between theory and practice, enhancing students' problem-solving skills. Inspired by this approach, our framework aims to provide a similar educational experience within greenhouse climate control, focusing on modeling, optimal control, and nonlinear model predictive control (NMPC).
 
 % - Presentation of our contribution
-\textcolor{red}{This study presents a dynamic model for optimizing greenhouse climate control, simulating interactions between temperature, humidity, and CO\textsubscript{2} levels. Utilizing principles of thermodynamics, fluid dynamics, and mass transfer, the model employs Model Predictive Control~(MPC) to adjust ventilation, heating, and CO\textsubscript{2} enrichment in real time. Configured for a commercial greenhouse, the model uses environmental data from sensors, with simulations across various seasons showing enhanced crop yields and energy efficiency. Beyond technical contributions, the framework is designed as an educational tool, allowing students to understand complex control theories through real-world data. The inclusion of economic objectives enables exploration of profitability and sustainability, making it a versatile platform for teaching both theoretical concepts and practical skills in automatic control.}
+This study presents a dynamic model for optimizing greenhouse climate control, simulating interactions between temperature, humidity, and CO\textsubscript{2} levels. Utilizing principles of thermodynamics, fluid dynamics, and mass transfer, the model employs Model Predictive Control~(MPC) to adjust ventilation, heating, and CO\textsubscript{2} enrichment in real-time. Configured for a commercial greenhouse, the model uses environmental data from sensors, with simulations across various seasons showing enhanced crop yields and energy efficiency. Beyond technical contributions, the framework is designed as an educational tool, allowing students to understand complex control theories through real-world data. The inclusion of economic objectives enables the exploration of profitability and sustainability, making it a versatile platform for teaching both theoretical concepts and practical skills in automatic control.
 
 % - Organization of the paper (optional; remove it if there is no space at the end)
 
@@ -74,7 +74,7 @@ As a result, PID controllers remain popular for their simplicity and effectivene
 
 \section{Greenhouse Climate Model}\label{sec:greenhouse}
 
-In this section we provides a mathematical model of the greenhouse environment, focusing on temperature, humidity, and CO\textsubscript{2} concentration dynamics, that simplifies the GES software~\cite{rmward61_2019}, based on the Gembloux Dynamic Greenhouse Climate Model (GDGCM)~\cite{GDGCM} and on the thesis by Vanthoor~\cite{Vanthoor2011}.
+In this section we provide a mathematical model of the greenhouse environment, focusing on temperature, humidity, and CO\textsubscript{2} concentration dynamics, that simplifies the GES software~\cite{rmward61_2019}, based on the Gembloux Dynamic Greenhouse Climate Model (GDGCM)~\cite{GDGCM} and on the thesis by Vanthoor~\cite{Vanthoor2011}.
 
 \begin{figure}
     \centering
@@ -92,8 +92,8 @@ The convective heat transfer between two surfaces is given by
 \end{equation}
 where \(\text{Nu}_G\) and \(\text{Nu}_R\) are the Nusselt numbers for free and forced convection, respectively
 \begin{align}
-    \text{Nu}_G & = 0.5 \cdot \left(\frac{\text{Gr}}{10^5}\right)^{0.25} + 0.13 \cdot \left(\frac{\text{Gr}}{10^5}\right)^{0.33}   \\
-    \text{Nu}_R & = 0.6 \cdot \left(\frac{\text{Re}}{20000}\right)^{0.5} + 0.032 \cdot \left(\frac{\text{Re}}{20000}\right)^{0.8},
+    \text{Nu}_G & = 0.5 \cdot {\left( \frac{\text{Gr}}{10^5} \right)}^{0.25} + 0.13 \cdot {\left(\frac{\text{Gr}}{10^5}\right)}^{0.33} \\
+    \text{Nu}_R & = 0.6 \cdot {\left(\frac{\text{Re}}{20000}\right)}^{0.5} + 0.032 \cdot {\left(\frac{\text{Re}}{20000}\right)}^{0.8},
 \end{align}
 where \(Re\) represents the Reynolds number, and \(Gr\) represents the Grashof number.
 
@@ -147,29 +147,29 @@ The internal CO\textsubscript{2} concentration in parts per million (ppm) is giv
 \end{equation}
 where \(C_c\) is the CO\textsubscript{2} density, and \(T_{\text{in}}\) is the internal air temperature in Kelvin.
 
-The greenhouse climate model integrates the physical mo-dels of temperature, humidity, and CO\textsubscript{2} concentration into a dynamic system represented by a state vector \(\mathbf{z}\) (11 \(\times \) 1) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)], and input vector \(\mathbf{u}\) (2 \(\times \) 1) = [\text{Ventilation}, \text{Heating}]. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the CO\textsubscript{2} density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
+The greenhouse climate model integrates the physical models of temperature, humidity, and CO\textsubscript{2} concentration into a dynamic system represented by a state vector \(\mathbf{z}\) (11 \(\times \) 1) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)], and input vector \(\mathbf{u}\) (2 \(\times \) 1) = [\text{Ventilation}, \text{Heating}]. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the CO\textsubscript{2} density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
 
 \subsection{Actuation Control Systems}
 
-An actuator is a critical component within a system responsible for generating force, torque, or displacement in a controlled manner~\cite{Escudier2019}. In our implementation, actuators operate by converting an input control signal from the system into the appropriate mechanical energy required to regulate environmental variables~\cite{Butterfield2018}. These actuators serve to maintain optimal conditions for crop growth by adjusting temperature, humidity, ventilation, and CO\textsubscript{2} concentration. Each actuator's functionality is modeled to simulate its contribution to the overall energy balance, operating costs, and CO\textsubscript{2} emissions of the greenhouse. Below, we describe the main equations used to model these actuators; summarized in Table~\ref{tab:actuators}.
+An actuator is a critical component within a system responsible for generating force, torque, or displacement in a controlled manner~\cite{Escudier2019}. In our implementation, actuators operate by converting an input control signal from the system into the appropriate mechanical energy required to regulate environmental variables~\cite{Butterfield2018}. These actuators serve to maintain optimal conditions for crop growth by adjusting temperature, humidity, ventilation, and CO\textsubscript{2} concentration. Each actuator's functionality is modeled to simulate its contribution to the overall energy balance, operating costs, and CO\textsubscript{2} emissions of the greenhouse. Below, we describe the main equations used to model these actuators, summarized in Table~\ref{tab:actuators}.
 
 \begin{table}
-\centering
-\caption{Summary of Actuator Models and Parameters}\label{tab:actuators}
-\begin{tabular}{ c c c }
-\toprule
-Actuator & Label & Unit \\
-\midrule
-Heater & \( Q_{\text{heater}} \) & W \\
-Fan & \( R_{\text{fan}} \) & m\textsuperscript{3}/s \\
-Humidifier & \( V_{\text{humid}} \) & l/h \\
-CO\textsubscript{2} Generator & \( G_{\text{CO2}} \) & kg/h \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Summary of Actuator Models and Parameters}\label{tab:actuators}
+    \begin{tabular}{lcc}
+        \toprule
+        Actuator                      & Label                   & Unit                   \\
+        \midrule
+        Heater                        & \( Q_{\text{heater}} \) & W                      \\
+        Fan                           & \( R_{\text{fan}} \)    & m\textsuperscript{3}/s \\
+        Humidifier                    & \( V_{\text{humid}} \)  & l/h                    \\
+        CO\textsubscript{2} Generator & \( G_{\text{CO2}} \)    & kg/h                   \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 
-We model the actuators by adjusting the control signal, \( u(t) \), which ranges from 0 to 100\,\%, where 0\,\% represents no activation, and 100\,\% corresponds to the maximum actuation level. The actuation level, \( a(u) \), is then calculated as:
+We model the actuators by adjusting the control signal, \( u(t) \), which ranges from 0 to 100\%, where 0\% represents no activation, and 100\% corresponds to the maximum actuation level. The actuation level, \( a(u) \), is then calculated as:
 \begin{equation}
     a(u) = \frac{u}{100} \cdot a_{\text{max}}
 \end{equation}
@@ -208,11 +208,11 @@ The \textbf{fan actuator} controls the air exchange rate. The ventilation rate, 
     R_{\text{fan}} = V \cdot \frac{\text{\( Q_{\text{air}} \)}}{3600}
 \end{equation}
 
-The \textbf{humidifier actuator} controls the humidity level within the greenhouse. The humidification rate, \( V_{\text{humid}} \), is calculated based on the air volume and the difference in absolute humidity at 40\,\% and 80\,\% relative humidity:
+The \textbf{humidifier actuator} controls the humidity level within the greenhouse. The humidification rate, \( V_{\text{humid}} \), is calculated based on the air volume and the difference in absolute humidity at 40\% and 80\% relative humidity:
 \begin{equation}
     V_{\text{humid}} = V \cdot \frac{(\phi_{a, 80} - \phi_{a, 40})}{\rho_{\text{water}}}
 \end{equation}
-where \( \phi_{a, 80} \) and \( \phi_{a, 40} \) are the absolute humidity levels at 80\,\% and 40\,\% relative humidity, and \( \rho_{\text{water}} \) is the density of water.
+where \( \phi_{a, 80} \) and \( \phi_{a, 40} \) are the absolute humidity levels at 80\% and 40\% relative humidity, and \( \rho_{\text{water}} \) is the density of water.
 
 The \textbf{CO\textsubscript{2} actuator} increases the CO\textsubscript{2} concentration within the greenhouse. The CO\textsubscript{2} generation rate, \( G_{\text{CO2}} \), is based on the desired change of the CO\textsubscript{2} density per hour, \( \dot{c}_{co2} \) and air volume:
 \begin{equation}
@@ -228,43 +228,43 @@ A nonlinear economic model predictive control~(NEMPC) is adopted to maximize the
 
 The greenhouse system is modeled by a set of nonlinear state equations (see Section~\ref{sec:greenhouse}) that describe the evolution of the greenhouse states, such as temperature, humidity, and biomass. The discrete-time nonlinear system is given by:
 \begin{equation}
-	x(t+1) = f\left( x(t), u(t), \text{TVP}(t) \right),
+    x(t+1) = f\left( x(t), u(t), \text{TVP}(t) \right),
 \end{equation}
 where \(x(t) \in \mathbb{R}^{n_x}\) represents the state vector at time step \(t\), \(u(t) \in \mathbb{R}^{n_u}\) represents the control input vector (actuators), and \(\text{TVP}(t)\) are time-varying parameters that include external climate conditions such as temperature, radiation, and humidity.
 
 \subsection{Economic Objective Function}\label{subsec:mpc_objective}
 
-The goal of the economic MPC is to maximize the revenue from lettuce production while minimizing the costs associated with actuator use. The objective function is composed of two terms: the profit from biomass, i.e.~the dry-weight of the lettuce, accumulation and the costs of actuators.
+The goal of the economic MPC is to maximize the revenue from lettuce production while minimizing the costs associated with actuator use. The objective function is composed of two terms: the profit from biomass accumulation and the costs of actuators.
 
 The revenue from lettuce production is proportional to the change in biomass between the initial state and the current state, expressed as:
 \begin{equation}
-	R(t) = P_L \cdot \frac{(x_{\mathrm{sdw}}(t) + x_{\mathrm{nsdw}}(t)) - (x_{0, \mathrm{sdw}} + x_{0, \mathrm{nsdw} })}{\rho_{dw}} \cdot A_c,
+    R(t) = P_L \cdot \frac{(x_{\mathrm{sdw}}(t) + x_{\mathrm{nsdw}}(t)) - (x_{0, \mathrm{sdw}} + x_{0, \mathrm{nsdw} })}{\rho_{dw}} \cdot A_c,
 \end{equation}
 where \(P_L\) is the price of lettuce per gram, \(A_c\) is the cultivated area, and \(x_{\mathrm{sdw}}\) and \(x_{\mathrm{nsdw}}\) are the biomass-related states.
 
 In addition, the cost of operating the actuators at each time step is given by:
 \begin{equation}
-	C_u(t) = \sum_{i} \left( C_{\text{energy}}(u_i(t)) + C_{\text{CO2}}(u_i(t)) \right),
+    C_u(t) = \sum_{i} \left( C_{\text{energy}}(u_i(t)) + C_{\text{CO2}}(u_i(t)) \right),
 \end{equation}
 where \(C_{\text{energy}}(u_i(t))\) is the cost associated with the actuator signal \(u_i(t)\) and \(C_{\text{CO2}}(u_i(t))\) represents the cost related to CO\textsubscript{2} emissions from the actuator.
 
 Thus, the total cost at each time step is:
 \begin{equation}
-	l_t = -R(t) + C_u(t).
+    l_t = -R(t) + C_u(t).
 \end{equation}
 
 \subsection{Optimization Problem Formulation}
 
-The objective of the nonlinear economic MPC is to minimize the sum of the stage costs \(l_t\) over a finite prediction horizon \(N\), subject to system dynamics and constraints. The optimization problem is formulated as:
+The objective of the nonlinear economic MPC is to minimize the sum of the stage costs \(l_t\) over a finite prediction horizon \(N\), subject to system dynamics and constraints. The optimization problem is formulated as follows:
 \begin{equation}
-	\min_{\{u(t)\}_{t=0}^{N-1}} \sum_{t=0}^{N-1} l_t(x(t), u(t)),
+    \min_{{\{u(t)\}}_{t=0}^{N-1}} \sum_{t=0}^{N-1} l_t(x(t), u(t)),
 \end{equation}
 subject to:
 \begin{align}
-	x(t+1) &= f(x(t), u(t), \text{TVP}(t)), \\
-	u_{\min} &\leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
-	x_{\min} &\leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N, \\
-	x(0) &= x_{\text{initial}}.
+    x(t+1)   & = f(x(t), u(t), \text{TVP}(t)),                           \\
+    u_{\min} & \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
+    x_{\min} & \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
+    x(0)     & = x_{\text{initial}}.
 \end{align}
 Here, \(x_{\min}\) and \(x_{\max}\) represent the bounds on the state variables, and \(u_{\min}\) and \(u_{\max}\) define the bounds on the control inputs, i.e., actuator signals.
 
@@ -273,32 +273,32 @@ Here, \(x_{\min}\) and \(x_{\max}\) represent the bounds on the state variables,
 The external climate conditions are modeled as time-varying parameters (TVP), which influence the system dynamics. These parameters include variables such as outdoor temperature, solar radiation, and humidity, and are provided by real-time climate data. These parameters are incorporated into the state equations, influencing the evolution of the greenhouse states.
 
 \section{Educational Web Interface}
-Via four layers of user customization of the greenhouse, participants grasped the main benefits of optimal control a d challenges related to non-linearity. The first layer is the greenhouse structure, where the user can select the shape of greenhouse affecting the energy exchange with the environment and suggested scaling of the actuation units. Second layer is the orientation and location of the greenhouse which affects the solar radiation and the weather conditions. Here we establish connection to weather and carbon intensity forecast APIs to provide real-time data along with forecasts and history replays. The third layer is the actuation units, where the user can overwrite the suggested scaling and select the actuators for the heating, ventilation, humidification, and CO\textsubscript{2} enrichment. Meanwhile the fourth layer is the control strategy, where the user can influence the control parameters, including the objective function and constrains of the economic MPC controller. While the user is customizing the greenhouse, the web interface provides real-time feedback. The user can also simulate the greenhouse operation over a selected period of time and analyze the results in terms of energy consumption, crop yield, and economic output.
+Via four layers of user customization of the greenhouse, participants grasped the main benefits of optimal control a d challenges related to non-linearity. The first layer is the greenhouse structure, where the user can select the shape of the greenhouse, affecting the energy exchange with the environment and suggested scaling of the actuation units. The second layer is the orientation and location of the greenhouse, which affects the solar radiation and the weather conditions. Here, we establish a connection to weather and carbon intensity forecast APIs to provide real-time data along with forecasts and history replays. The third layer is the actuation units, where the user can overwrite the suggested scaling and select the actuators for the heating, ventilation, humidification, and CO\textsubscript{2} enrichment. Meanwhile, the fourth layer is the control strategy, where the user can influence the control parameters, including the objective function and constraints of the economic MPC controller. While the user is customizing the greenhouse, the web interface provides real-time feedback. The user can also simulate the greenhouse operation over a selected period of time and analyze the results in terms of energy consumption, crop yield, and economic output.
 
 \section{Results}
 % Comparison of controlled greenhouse vs greenhouse without actuation
-In the first set of simulations, we analyzed the non-linear behavior of the greenhouse under varying climate conditions and steps in actuation. We observed how different actuations influence growth of structural and non-structural dry weight of the plant. The simulations were run under mild climate of Bratislava (Slovakia), from 11\textsuperscript{th} October for 24 hours window. Figure~\ref{fig:steps} shows that under given climate conditions, the influence of ventilation and humidification is insignificant on growth. Nevertheless, it has positive effect on convection and overall transfer of energy. Meanwhile, intense heating positive effects conversion of non-structural dry weight into structural but does not influence the overall non-structural dry weight buildup. CO\textsubscript{2} enrichment has a significant impact on non-structural plant growth.
+In the first set of simulations, we analyzed the nonlinear behavior of the greenhouse under varying climate conditions and steps in actuation. We observed how different actuations influence the growth of the structural and non-structural dry weight of the plant. The simulations were run under a mild climate of Bratislava (Slovakia), from 11\textsuperscript{th} October for a 24-hour window. Figure~\ref{fig:steps} shows that under given climate conditions, the influence of ventilation and humidification is insignificant on growth. Nevertheless, it has a positive effect on convection and the overall transfer of energy. Meanwhile, intense heating positively affects the conversion of non-structural dry weight into structural but does not influence the overall non-structural dry weight buildup. CO\textsubscript{2} enrichment has a significant impact on non-structural plant growth.
 
 \begin{figure*}[ht]
     \centering
     \includegraphics[width=\textwidth]{figures/step_response-outputs-2024-10-11_2024-10-26-120s.pdf}
-    \caption{Responses of structural andd non-structural dry weight on step changes from off to maximum in following actuations from the left to the right: ventilation, heating, humidification, and CO\textsubscript{2} enrichment.}\label{fig:steps}
+    \caption{Responses of structural and non-structural dry weight on step changes from off to maximum in following actuations from the left to the right: ventilation, heating, humidification, and CO\textsubscript{2} enrichment.}\label{fig:steps}
 \end{figure*}
 
 
-Second set of simulations compares the performance of the proposed NEMPC algorithm with a no control scenario. The parameters of NEMPC are as follows in Table~\ref{tab:parameters}. Results in Table~\ref{tab:comparison} demonstrate that the proposed economic MPC algorithm increased crop yield by 9\% and increase profit by more than 4\% in just 15 days of growth. The cost function of the NEMPC algorithm also included social cost of carbon intensity of used energy sources, which reduced CO\textsubscript{2} consumption by 98\% while decreased the growth 4 times, compared to scenario where social cost of CO\textsubscript{2} was not optimized. This means that there is a significant trade-off between the economic output and the carbon intensity of the energy sources. While primal objective of the farmers might be to maximize the economic output, consideration on the environmental impact of the production should be assessed.
+The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The parameters of NEMPC are as follows in Table~\ref{tab:parameters}. Results in Table~\ref{tab:comparison} demonstrate that the proposed economic MPC algorithm increased crop yield by 9\% and increased profit by more than 4\% in just 15 days of growth. The cost function of the NEMPC algorithm also included the social cost of the carbon intensity of used energy sources, which reduced CO\textsubscript{2} consumption by 98\% while decreasing the growth 4 times, compared to a scenario where the social cost of CO\textsubscript{2} was not minimized. This means that there is a significant trade-off between the economic output and the carbon intensity of the energy sources. While the primary objective of the farmers might be to maximize the economic output, consideration of the environmental impact of the production should be assessed.
 
 \begin{table}
     \centering
     \caption{Parameters of the NEMPC algorithm.}\label{tab:parameters}
-    \begin{tabular}{lS[table-format=5.]l}
+    \begin{tabular}{lS[table-format=5.]c}
         \toprule
-        Parameter & {Value} & Unit \\
+        Parameter          & {Value} & Unit \\
         \midrule
-        Prediction horizon & 10 & min \\
-        Control horizon & 10 & min \\
-        Number of steps & 10801 & --- \\
-        Sampling time & 120 & s \\
+        Prediction horizon & 10      & min  \\
+        Control horizon    & 10      & min  \\
+        Number of steps    & 10801   & ---  \\
+        Sampling time      & 120     & s    \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -314,19 +314,19 @@ Second set of simulations compares the performance of the proposed NEMPC algorit
     \caption{Comparison of the NEMPC algorithm with a no control scenario.}\label{tab:comparison}
     \begin{tabular}{lS[table-format=4.2]S[table-format=4.2]S[table-format=4.2]}
         \toprule
-        Parameter & {No control} & {NEMPC (CO\textsubscript{2})} & {NEMPC (\$)} \\
+        Parameter              & {No control} & {NEMPC (CO\textsubscript{2})} & {NEMPC (\$)} \\
         \midrule
-        Lettuce profit & 858.32 & 940.19 & 4120.63 \\
-        Energy (Fan) & 0.00 & -0.03 & -0.16 \\
-        Energy (Heater) & 0.00 & -0.45 & -21.68 \\
-        Energy (Humidifier) & 0.00 & -0.05 & -0.00 \\
-        Energy (CO2 Generator) & 0.00 & -9.95 & -697.59 \\
-        CO2 (Fan) & 0.00 & -0.08 & -0.51 \\
-        CO2 (Heater) & 0.00 & -1.48 & -70.84 \\
-        CO2 (Humidifier) & 0.00 & -0.17 & -0.01 \\
-        CO2 (CO2 Generator) & 0.00 & -32.52 & -2279.72 \\
+        Lettuce profit         & 858.32       & 940.19                        & 4120.63      \\
+        Energy (Fan)           & 0.00         & -0.03                         & -0.16        \\
+        Energy (Heater)        & 0.00         & -0.45                         & -21.68       \\
+        Energy (Humidifier)    & 0.00         & -0.05                         & -0.00        \\
+        Energy (CO2 Generator) & 0.00         & -9.95                         & -697.59      \\
+        CO2 (Fan)              & 0.00         & -0.08                         & -0.51        \\
+        CO2 (Heater)           & 0.00         & -1.48                         & -70.84       \\
+        CO2 (Humidifier)       & 0.00         & -0.17                         & -0.01        \\
+        CO2 (CO2 Generator)    & 0.00         & -32.52                        & -2279.72     \\
         \midrule
-        Total & 858.32 & 895.45 & 1050.12 \\
+        Total                  & 858.32       & 895.45                        & 1050.12      \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -337,13 +337,13 @@ To assess the educational impact of our proposed paper, we conducted a survey am
 The results show a varied range of initial expertise levels in both modeling and process control, with participants rating their skills from novice (1) to advanced (5). Despite this variation, the application demonstrated a significant educational benefit across all experience levels.
 
 \paragraph{Low-Skilled Users}
-Participants with minimal prior knowledge, such as Karolína and Miska, reported moderate improvements in understanding mathematical modeling, optimal control, and economic control, with a strong positive impact noted for MPC. These results suggest that the framework is accessible to beginners and helps build foundational knowledge.
+Participants with minimal prior knowledge, such as Karolína and Miska, reported moderate improvements in understanding mathematical modeling, optimal control, and economic control, with a strong positive impact noted for MPC.\@ These results suggest that the framework is accessible to beginners and helps build foundational knowledge.
 
 \paragraph{High-Skilled Users}
 More experienced participants, such as Sofiia and Martin, rated the application as highly beneficial in all four categories. They noted substantial improvements in their understanding of complex control techniques, particularly in mathematical modeling and MPC, validating the educational potential of the framework for users with advanced backgrounds.
 
 \paragraph{General Feedback}
- The participants' qualitative feedback further highlights the application's potential. Participants emphasized that with additional information, the tool could be used by a broader audience, including industrial farmers, to design and optimize greenhouse placement in practical settings. This points to the dual benefit of the application: it not only enhances student learning but could also have real-world applicability in sustainable greenhouse design.
+The participants' qualitative feedback further highlights the application's potential. Participants emphasized that with additional information, the tool could be used by a broader audience, including industrial farmers, to design and optimize greenhouse placement in practical settings. This points to the dual benefit of the application: it not only enhances student learning but could also have real-world applicability in sustainable greenhouse design.
 
 These findings suggest that the proposed framework effectively supports educational objectives, promoting understanding across a spectrum of learners. It also has the potential to be adapted for broader use beyond educational contexts, providing valuable insights into the design of sustainable greenhouse systems.
 
