@@ -20,6 +20,15 @@ from core.openmeteo_query import (
 )
 from core.plot import plotly_greenhouse, plotly_response
 
+# --- Page Config ---
+
+st.set_page_config(
+    page_title="Green House Control",
+    page_icon=":seedling:",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 # CONSTANTS
 sim_steps_max = 60 * 24
 N_max = 60
@@ -81,16 +90,6 @@ def plotly_response_(
     u_max,
 ):
     return plotly_response(_timestamps, y_nexts, u0s, u_min, u_max)
-
-
-# --- Page Config ---
-
-st.set_page_config(
-    page_title="Green House Control",
-    page_icon="🌱",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
 
 
 # # --- Initialize session ---
@@ -556,7 +555,7 @@ if (
     profit_costs = pd.concat([profit, costs]).rename("EUR")
     profit_costs["Total"] = profit_costs.sum()
 
-    st.table(profit_costs.to_frame().style.format("{:.3f}"))
+    st.table(profit_costs.to_frame().style.format("{:.2f}"))
 
     if profit_costs["Total"] < 0:
         runtime_info.error(

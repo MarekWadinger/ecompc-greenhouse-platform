@@ -305,7 +305,10 @@ def plotly_greenhouse(length, width, height, roof_tilt, azimuth):
     # Plot the 2D Compass with Greenhouse Orientation
     plotly_compass_with_greenhouse(azimuth, length, width, fig, 1, 2)
 
-    fig.update_layout(height=600, width=1200)
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0, pad=0),
+        autosize=True,  # Make the figure responsive to window size
+    )
     return fig
 
 
@@ -397,19 +400,15 @@ def plotly_3d_greenhouse(
     fig.update_scenes(
         camera=dict(
             eye=dict(
-                x=np.cos(np.radians(azimuth)),  # Controls azimuth angle
-                y=np.sin(np.radians(azimuth)),
-                z=0.5,  # You can adjust the z to control elevation
+                x=np.cos(np.radians(azimuth)) * 3.0,  # Controls azimuth angle
+                y=np.sin(np.radians(azimuth)) * 3.0,
+                z=1.0,  # You can adjust the z to control elevation
             )
         ),
         xaxis=dict(title="Length", range=[0, length]),
         yaxis=dict(title="Width", range=[0, width]),
         zaxis=dict(title="Wall Height", range=[0, peak_height]),
-        aspectratio=dict(
-            x=0.75, y=width / length * 0.75, z=peak_height / length * 0.75
-        ),
-        row=row,
-        col=col,
+        aspectmode="data",  # Ensure the aspect ratio is based on data
     )
 
 
@@ -509,8 +508,6 @@ def plotly_compass_with_greenhouse(
                 direction="clockwise",  # Set azimuth to increment clockwise
             ),
         ),
-        plot_bgcolor="rgba(0,0,0,0)",  # Transparent plot background
-        paper_bgcolor="rgba(0,0,0,0)",  # Transparent entire background
     )
 
     return fig
