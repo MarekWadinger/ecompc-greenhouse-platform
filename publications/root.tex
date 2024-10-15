@@ -257,10 +257,9 @@ A nonlinear economic model predictive control~(NEMPC) is adopted to maximize the
 
 The greenhouse system is modeled by a set of nonlinear state equations (see Section~\ref{sec:greenhouse}) that describe the evolution of the greenhouse states, such as temperature, humidity, and biomass. The discrete-time nonlinear system is given by:
 \begin{equation}
-    x(t+1) = f\left( x(t), u(t), \text{TVP}(t) \right),
-    % RP: Preco TVP(t) a nie len jednoducho p(t)?
+    x(t+1) = f\left( x(t), u(t), p(t) \right),
 \end{equation}
-where \(x(t) \in \mathbb{R}^{n_x}\) represents the state vector at time step \(t\), \(u(t) \in \mathbb{R}^{n_u}\) represents the control input vector (actuators), and \(\text{TVP}(t)\) are time-varying parameters that include external climate conditions such as temperature, radiation, and humidity.
+where \(x(t) \in \mathbb{R}^{n_x}\) represents the state vector at time step \(t\), \(u(t) \in \mathbb{R}^{n_u}\) represents the control input vector (actuators), and \(p(t)\) are time-varying parameters that include external climate conditions such as temperature, radiation, and humidity.
 
 \subsection{Economic Objective Function}\label{subsec:mpc_objective}
 
@@ -270,8 +269,7 @@ The revenue from lettuce production is proportional to the change in biomass bet
 \begin{equation}
     R(t) = P_L  \frac{(x_{\mathrm{sdw}}(t) + x_{\mathrm{nsdw}}(t)) - (x_{0, \mathrm{sdw}} + x_{0, \mathrm{nsdw} })}{\rho_{dw}}  A_c,
 \end{equation}
-% RP: \rho_{dw} nie je definovane
-where \(P_L\) is the price of lettuce per gram, \(A_c\) is the cultivated area, and \(x_{\mathrm{sdw}}\) and \(x_{\mathrm{nsdw}}\) are the biomass-related states.
+where \(P_L\) is the price of lettuce per gram, \(A_c\) is the cultivated area, \(x_{\mathrm{sdw}}\) and \(x_{\mathrm{nsdw}}\) are the biomass-related states, and \(rho_{dw}\) stands for dry-to-wet ratio.
 
 In addition, the cost of operating the actuators at each time step is given by:
 \begin{equation}
@@ -292,7 +290,7 @@ The objective of the nonlinear economic MPC is to minimize the sum of the stage 
 \end{equation}
 subject to:
 \begin{align}
-    x(t+1)   & = f(x(t), u(t), \text{TVP}(t)),                           \\
+    x(t+1)   & = f(x(t), u(t), p(t)),                           \\
     u_{\min} & \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
     x_{\min} & \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
     x(0)     & = x_{\text{initial}}.
@@ -301,7 +299,7 @@ Here, \(x_{\min}\) and \(x_{\max}\) represent the bounds on the state variables,
 
 \subsection{Time-Varying Parameters}
 
-The external climate conditions are modeled as time-varying parameters (TVP), which influence the system dynamics. These parameters include variables such as outdoor temperature, solar radiation, and humidity, and are provided by real-time weather data. The parameters are incorporated into the state equations, influencing the evolution of the greenhouse states.
+The external climate conditions are modeled as time-varying parameters~(TVP), which influence the system dynamics. These parameters include variables such as outdoor temperature, solar radiation, and humidity, and are provided by real-time weather data. The parameters are incorporated into the state equations, influencing the evolution of the greenhouse states.
 
 \section{Educational Web Interface}
 Figure~\ref{fig:web} demonstrates the interactive web-based educational tool. Via four layers of user customization of the greenhouse,
