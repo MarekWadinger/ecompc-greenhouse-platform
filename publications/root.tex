@@ -49,19 +49,10 @@ Current farming practices are labor-intensive, seasonal, constrained by irrigati
 % - Concrete introduction (what is the state of the art in the domain)
 Solar radiation is vital for plant growth and energy generation in greenhouses. Key metrics include Global Horizontal Irradiance~(\(GHI\)) and Photosynthetically Active Radiation~(\(PAR\)), the latter directly influencing photosynthesis. Recent research has advanced models for accurate \(PAR\) prediction~\cite{Iddio2020, MaLu2022}, while various control methods, such as adaptive control, nonlinear feedback control, fuzzy control, robust control, and optimal control, have been explored to enhance greenhouse environments and resource use efficiency.
 
-\begin{figure}
-    \centering
-    \includegraphics[width=.5\textwidth]{images/flowchart.pdf}
-    % RP: Obrazok ma prilis male pismo a aj preklep "pedictive".
-    % RP: Na obrazok sa neodkazuje v texte.
-    \caption{A simplified diagram representing greenhouse control algorithms. Image adapted from~\cite{Trepanier2024}.}\label{fig:flowchart}
-\end{figure}
-
-% RP: Nerozumiem poradiu jednotlivych pristupov. Nevychadza z obrazka ani nijak logicky nenadvazuje.
+% RP: Nerozumiem poradiu jednotlivych pristupov. Nijak logicky nenadvazuje.
 Adaptive control adjusts parameters based on real-time feedback~\cite{Tian2022}, while nonlinear feedback control addresses system complexity with advanced algorithms~\cite{Bood2023}. Fuzzy control manages imprecise data and uncertainties~\cite{smartcities7030055} and robust control ensures stability despite disturbances~\cite{Zhang2021}. Optimal control fine-tunes actions for better outcomes~\cite{Debroy2024, SVENSEN2024108578}. Despite their strengths, these approaches often require complex implementation, with frequent adjustments leading to higher energy consumption and wear on actuators.
 
-% RP: Nerozumiem co chce povedat veta o PID uvadzajuca odstavec.
-PID controllers remain popular for their simplicity and effectiveness. However, IoT and machine learning are also being integrated into greenhouse control, as demonstrated by Wang et al.~\cite{Wang2024}, who combined these technologies with PID for real-time monitoring. Nonetheless, managing greenhouse systems using PID can be challenging due to the need for multiple controllers and extensive tuning. This process is time-consuming and case-dependent, often lacking guaranteed optimal results.
+While PID controllers are valued for their simplicity and effectiveness, IoT and machine learning are also being integrated into greenhouse control, as demonstrated by Wang et al.~\cite{Wang2024}, who combined these technologies with PID for real-time monitoring. Nonetheless, managing greenhouse systems using PID can be challenging due to the need for multiple controllers and extensive tuning. This process is time-consuming and case-dependent, often lacking guaranteed optimal results.
 
 Consequently, MPC has emerged as a preferred approach for greenhouse climate control~\cite{Hu2022}, enabling continuous adjustment of setpoints through sample-by-sample online optimization. This approach, however, increases computational demands.
 
@@ -71,13 +62,8 @@ Integrating advanced control techniques into education has become increasingly i
 % - Presentation of our contribution
 This study presents a web interface for optimizing greenhouse climate control, to achieve enhanced crop yields, energy efficiency and reduction in CO\textsubscript{2} emissions. Utilizing principles of thermodynamics, fluid dynamics, and mass transfer, along with real weather and carbon intensity forecasts we developed a simulation environment employed by NEMPC to adjust ventilation, heating, humidification, and CO\textsubscript{2} enrichment in real-time. Beyond technical contributions, the framework serves as an educational tool, allowing students to engage with real-world data and explore the economic and sustainability trade-offs in agricultural systems. Thus, this versatile platform enhances control education by combining theoretical concepts with practical skills in automatic control.
 
-\section{Methodology}\label{sec:methodology}
-
 \section{Greenhouse Climate Model}\label{sec:greenhouse}
-% RP: Tak co "Methodology" alebo "Greenhouse Climate Model"?
-In this section we provide a mathematical model of the greenhouse environment, focusing on wind, temperature, humidity, and CO\textsubscript{2} concentration dynamics that
-% RP: Nie radsej "implements" ako "simplifies"?
-simplifies the GES software~\cite{rmward61_2019} based on the Gembloux Dynamic Greenhouse Climate Model~\cite{GDGCM} and work by Vanthoor~\cite{Vanthoor2011}.
+In this section we provide a mathematical model of the greenhouse environment, focusing on wind, temperature, humidity, and CO\textsubscript{2} concentration dynamics that implements the GES software~\cite{rmward61_2019} based on the Gembloux Dynamic Greenhouse Climate Model~\cite{GDGCM} and work by Vanthoor~\cite{Vanthoor2011}.
 
 \begin{figure}
     \centering
@@ -89,42 +75,39 @@ simplifies the GES software~\cite{rmward61_2019} based on the Gembloux Dynamic G
 
 The temperature dynamics inside the greenhouse are modeled by considering the energy exchange due to convection, radiation, and conduction --- Fig.~\ref{fig:diagram}. The temperatures of different components (e.g., cover, internal air, vegetation, tray, etc.) are described using the following equations.
 
-The convective heat transfer between two surfaces is given by
+The convective heat transfer between two surfaces is given by:
 \begin{equation}
     \text{Nu} = \max \left( \text{Nu}_G, \text{Nu}_R \right),
 \end{equation}
-where \(\text{Nu}_G\) and \(\text{Nu}_R\) are the Nusselt numbers for free and forced convection, respectively
+where \(\text{Nu}_G\) and \(\text{Nu}_R\) are the Nusselt numbers for free and forced convection, respectively:
 \begin{align}
-    \text{Nu}_G & = 0.5  {\left( \frac{\text{Gr}}{10^5} \right)}^{0.25} + 0.13  {\left(\frac{\text{Gr}}{10^5}\right)}^{0.33} \\
+    \text{Nu}_G & = 0.5  {\left( \frac{\text{Gr}}{10^5} \right)}^{0.25} + 0.13  {\left(\frac{\text{Gr}}{10^5}\right)}^{0.33}, \\
     \text{Nu}_R & = 0.6  {\left(\frac{\text{Re}}{20000}\right)}^{0.5} + 0.032  {\left(\frac{\text{Re}}{20000}\right)}^{0.8},
 \end{align}
 where Re represents the Reynolds number, and Gr represents the Grashof number.
 
-The heat flux due to convection is then calculated as
+The heat flux due to convection is then calculated as:
 \begin{equation}
-    Q_{\text{conv}} = A\, \text{Nu}\, \lambda \frac{T_1 - T_2}{d},
+    Q_{\text{conv}} = A_{\text{c}}\, \text{Nu}\, \lambda_{\text{air}} \frac{T_1 - T_2}{d_{\text{c}}},
 \end{equation}
-% RP: \lambda nie je definovana
-where \(A\) represents the area of a compartment, and \(d\) represents the characteristic length of a compartment.
 
-The radiative heat transfer between two surfaces is described by
+where \(A_c\) and \(d_c\) represent the and the characteristic length of a compartment, respectively, and \(\lambda_{air}\) is the approximate thermal conductivity for air at room temperature.
+
+The radiative heat transfer between two surfaces is described by:
 \begin{equation}
     Q_{\text{rad}} = \frac{\varepsilon_1  \varepsilon_2}{1 - \rho_1  \rho_2  F_{12}  F_{21}}  \sigma  A_1  F_{12}  \left( T_1^4 - T_2^4 \right),
 \end{equation}
 where \(\sigma \) is the Stefan-Boltzmann constant, \(F_{12}\) is the view factor from surface 1 to surface 2, \(T_1\) and \(T_2\) representing the temperatures of the surfaces, and \(\varepsilon \) and \(\rho \) are the emissivity and reflectivity of the surfaces, respectively.
 
-The conductive heat transfer through a medium is given by
+The conductive heat transfer through a medium is given by:
 \begin{equation}
-    Q_{\text{cond}} = \frac{A \lambda}{d} (T_1 - T_2),
+    Q_{\text{cond}} = \frac{A \lambda_{\text{c}}}{d_\text{l}} (T_1 - T_2),
 \end{equation}
-where \(\lambda \) is the thermal conductivity of a compartment, and
-% RP: d uz bolo definovane. lepsie by bolo pouzit ine oznacenie
-\(d\) is the thickness of the conducting layer.
+where \(\lambda_{\text{c}} \) is the thermal conductivity of a compartment, and \(d_{\text{l}}\) is the thickness of the conducting layer.
 
 \subsection{Humidity Dynamics}\label{subsec:humidity}
 
 The humidity within the greenhouse is modeled by considering the mass transfer of water vapor. The specific humidity is calculated as:
-% RP: Doteraz neboli dvojbodky pred rovnicami. Treba to zjednotit. Bud su alebo nie.
 \begin{equation}
     \text{SH} = \exp\left(11.56 - \frac{4030}{T + 235}\right).
 \end{equation}
@@ -138,13 +121,7 @@ The mass transfer of water vapor due to convection is:
 \begin{equation}
     Q_{v} = \frac{A  H_{\text{fg}}}{\rho  c}  \frac{\text{Sh}}{\text{Le}}  \frac{\lambda}{d}  \left( C - C_{\text{sat,}T} \right),
 \end{equation}
-where \(H_{\text{fg}}\) is the latent heat of vaporization, \(\text{Sh}\) is the Sherwood number, and \(\text{Le}\) is the Lewis number,
-% RP: \lambda uz bola definovana
-\(\lambda \) is the thermal conductivity,
-% RP: d uz bolo definovane
-\(d\) is the characteristic length, \(A\) is the heat exchange surface area, \(\rho \) is the density of the vapor, \(c\) is the specific heat capacity,
-% RP: Co znamena koncentracia pary?
-\(C\) is the actual vapor concentration, and \(C_{\text{sat,}T}\) is the saturated vapor concentration at temperature \(T\).
+where \(H_{\text{fg}}\) is the latent heat of vaporization, \(\text{Sh}\) is the Sherwood number, and \(\text{Le}\) is the Lewis number, \(\lambda \) is the thermal conductivity, \(d\) is the characteristic length, \(A\) is the heat exchange surface area, \(\rho \) is the density of the vapor, \(c\) is the specific heat capacity, \(C\) is the actual vapor concentration --- referring  to the amount of water vapor present in the air in a given volume --- and \(C_{\text{sat,}T}\) is the saturated vapor concentration at temperature \(T\).
 
 \subsection{Carbon Dioxide Concentration Dynamics}
 
@@ -160,19 +137,11 @@ The internal CO\textsubscript{2} concentration in parts per million (ppm) is giv
 \end{equation}
 where \(C_c\) is the CO\textsubscript{2} density, and \(T_{\text{in}}\) is the internal air temperature in Kelvin.
 
-The greenhouse climate model integrates the physical models of temperature, humidity, and CO\textsubscript{2} concentration into a dynamic system represented by a state vector \(\mathbf{z}\)
-% RP: takto "(11 \(\times \) 1)" sa velkost vektora nezapisuje.
-(11 \(\times \) 1) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)], and input vector \(\mathbf{u}\) (2 \(\times \) 1) =
-% RP: Co znamena "Ventilation" a "Heating"? Chcelo by to fyzikalne veliciny.
-[\text{Ventilation}, \text{Heating}]. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the CO\textsubscript{2} density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
+The greenhouse climate model integrates the physical models of temperature, humidity, and CO\textsubscript{2} concentration into a dynamic system represented by a state vector \(\mathbf{z}\) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)] with dimension (11, 1), and input vector \(\mathbf{u}\) = [\(Q_{\text{heater}}, R_{\text{fan}}, V_{\text{humid}}, G_{\text{CO2}} \)] with dimension (4, 1) for the heating power, ventilation, humidification, and CO2 enrichment. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the CO\textsubscript{2} density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
 % RP: Cloveka by zaujimalo ako sa dostane k rovniciam dynamiky. Nie je tu uvedene nic k rychlosti rastu salatu.
 
 \subsection{Actuation Control Systems}
-% RP: Na control konferencii mi pride definicia akcneho clena zbytocna.
-An actuator is a critical component within a system responsible for generating force, torque, or displacement in a controlled manner~\cite{Escudier2019}. In our implementation, actuators operate by converting an input control signal from the system into the appropriate mechanical energy required to regulate environmental variables~\cite{Butterfield2018}. These actuators serve to maintain optimal conditions for crop growth by
-% RP: "adjust" sa da pouzit skor na akcne cleny ako na riadene premenne
-adjusting temperature, humidity, ventilation, and CO\textsubscript{2} concentration. Each actuator's functionality is modeled to simulate its contribution to the overall energy balance, operating costs, and CO\textsubscript{2} emissions of the greenhouse. Below, we describe the main equations used to model these actuators, summarized in Table~\ref{tab:actuators}.
-% RP: Preco sa zrazu bavime o 4 akcnych clenoch ked v predchadzajucej casti boli dva vstupy?
+In our implementation, actuators operate by converting an input control signal from the system into the appropriate mechanical energy required to regulate environmental variables~\cite{Butterfield2018}. These actuators serve to maintain optimal conditions for crop growth by regulating temperature, humidity, ventilation, and CO\textsubscript{2} concentration. Each actuator's functionality is modeled to simulate its contribution to the overall energy balance, operating costs, and CO\textsubscript{2} emissions of the greenhouse. Below, we describe the main equations used to model these actuators, summarized in Table~\ref{tab:actuators}.
 
 \begin{table}
     \centering
@@ -218,23 +187,20 @@ where \( I_{\text{CO2}} \) is the carbon intensity in gCO\textsubscript{2}eq/kWh
 \end{equation}
 where \( C_{\text{CO2cost}} \) is the social cost of CO\textsubscript{2} in EUR/gCO\textsubscript{2}eq.\\
 
-The \textbf{heater actuator}'s heating power, \( Q_{\text{heater}} \), is determined based on the desired setpoint temperature, \( T_{\text{sp}} \), and air volume of the greenhouse, \( V \):
+The \textbf{heater actuator}'s heating power, \( Q_{\text{heater}} \), is determined based on the desired setpoint temperature, \( T_{\text{sp}} \), and air volume of the greenhouse, \( \Omega \):
 \begin{equation}
-    Q_{\text{heater}} = \rho_{\text{air}}  c_{\text{air}}  V  (T_{\text{sp}} - T_{\text{ambient}})  \frac{Q_{\text{air}}}{3600},
-    % RP: V_humid bol pritok vody a teda V uz nemoze byt pouzite ako objem.
+    Q_{\text{heater}} = \rho_{\text{air}}  c_{\text{air}}  \Omega  (T_{\text{sp}} - T_{\text{ambient}})  \frac{Q_{\text{air}}}{3600},
 \end{equation}
 where \( \rho_{\text{air}} \) is the density of air, \( c_{\text{air}} \) is the specific heat capacity of air, and \( Q_{\text{air}} \) represents the fresh air exchange rate per hour.
 
-The \textbf{fan actuator} controls the air exchange rate. The ventilation rate, \( R_{\text{fan}} \), is based on the
-% RP: Co znamena "air changes per hour"? - bezne sa pouziva https://en.wikipedia.org/wiki/Air_changes_per_hour
-air changes per hour (\( Q_{\text{air}} \)) and greenhouse volume:
+The \textbf{fan actuator} controls the air exchange rate. The ventilation rate, \( R_{\text{fan}} \), is based on the air changes per hour (\( \text{ACPH} \)) --- the number of times that the total air volume in a room or space is completely removed and replaced in an hour --- and greenhouse volume \(\Omega\):
 \begin{equation}
-    R_{\text{fan}} = V  \frac{\text{\( Q_{\text{air}} \)}}{3600}.
+    R_{\text{fan}} = \Omega \frac{\text{\( \text{ACPH} \)}}{3600}.
 \end{equation}
 
 The \textbf{humidifier actuator} controls the humidity level within the greenhouse. The humidification rate, \( V_{\text{humid}} \), is calculated as:
 \begin{equation}
-    V_{\text{humid}} = V  \frac{\phi_{a, 80 - 40}}{\rho_{\text{water}}},
+    V_{\text{humid}} = \Omega \frac{\phi_{a, 80 - 40}}{\rho_{\text{water}}},
 \end{equation}
 
 where \( \phi_{a, 80 - 40} \) the maximum change in absolute humidity per hour which corresponds to difference between the absolute humidity at 80\% and 40\% relative humidity at a temperature of 20\( ^\circ \)C, and \( \rho_{\text{water}} \) is the density of water.
