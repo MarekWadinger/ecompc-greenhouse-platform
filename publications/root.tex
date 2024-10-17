@@ -13,8 +13,15 @@
 \usepackage{booktabs}
 %% The SI units alignment
 \usepackage{siunitx}
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
  T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\newcommand{\ui}[2]{#1_{\mathrm{#2}}}
+\newcommand{\uis}[2]{#1^{\mathrm{#2}}}
+\newcommand{\coo}{\ensuremath{\mathrm{CO_2}}}
+\newcommand{\chho}{\ensuremath{\mathrm{CH_2O}}}
+
 \begin{document}
 
 \title{Carbon Neutral Greenhouse: Economic Model Predictive Control Framework for Education
@@ -206,7 +213,95 @@ The \textbf{CO\textsubscript{2} actuator} increases the CO\textsubscript{2} conc
 \begin{equation}
     G_{\text{CO2}} = \dot{c}_{co2}  V,
 \end{equation}
-where \( G_{\text{CO2}} \) is the CO\textsubscript{2} generation in kg/h.
+where \( G_{\coo} \) is the \coo\ generation in kg/h.
+
+
+\section{Lettuce Growth Model}\label{sec:lettuce_growth}
+The growth of lettuce is be modeled using a dynamic system of equations that captures the behavior of both structural (SDW) and non-structural dry weight (NSDW) of the plant~\cite{VANHENTEN199455}. The dynamics of conversion of  model is influenced by environmental factors such as temperature, light (PAR), and \coo\ concentration. The model equations are parameterized using well-established constants from the literature and adapted for dynamic simulation. For the complete list of parameters and their values with references, see source code repository~\cite{Wadinger2024}.
+
+\subsection{Dynamic Growth Equations} The dynamic equations for structural and non-structural dry weight are given by the following differential equations. The rate of change of structural dry weight is governed by the specific growth rate \( \ui{r}{gr} \) and is modeled as:
+
+The state equations governing the system are defined as:
+
+\[
+    \diff{\ui{x}{sdw}}{t} = \ui{r}{gr} \ui{x}{sdw}
+\]
+\[
+    \begin{aligned}
+        \diff{\ui{x}{nsdw}}{t} & = c_{\chho/\coo} \ui{f}{phot} - \ui{r}{gr} \ui{x}{sdw} - \ui{f}{resp}                   \\
+                               & \quad - \left( \frac{1 - Y_{\chho/\coo}}{Y_{\chho/\coo}} \right) \ui{r}{gr} \ui{x}{sdw}
+    \end{aligned}
+\]
+
+where \( c_{\chho/\coo} \) is the conversion factor representing the efficiency with which plants convert absorbed carbon dioxide into biomass, \( Y_{\chho/\coo} \) is the yield, \( \ui{f}{phot} \) is the gross photosynthesis, and \( \ui{f}{resp} \) is the maintenance respiration.
+
+The physiological processes that are included in lettuce growth model are described in detail in~\cite{VANHENTEN199455}. These processes include growth, respiration, photosynthesis, and canopy conductance.
+
+\subsection{Specific Growth Rate} The specific growth rate \( \ui{r}{gr} \) describes the rate at which the structural biomass (SDW) accumulates in response to the non-structural dry weight (NSDW) available in the plant. This process is temperature-dependent, with the growth rate scaling based on a plants temperature sensitivity, which adjusts the growth response as the canopy temperature changes. The non-structural dry weight provides a reservoir of energy for structural growth, and the efficiency of this conversion is central to the plant's overall biomass accumulation.
+
+\subsection{Maintenance Respiration} The maintenance respiration rate \( \ui{f}{resp} \) accounts for the energy expenditure required to sustain the plant's basic metabolic functions. This respiration process is divided between the shoot and root components, where each part has its own maintenance respiration rate, scaled to the dry mass of the plant. Respiration demands increase as temperatures rise, reflecting the greater energy requirements at higher temperatures. Respiration is a key factor in determining how much energy is left for growth, as it consumes a portion of the energy generated from photosynthesis.
+
+\subsection{Gross Photosynthesis} The photosynthesis model determines the gross canopy photosynthesis rate \( \ui{f}{phot} \), which represents the total \coo\ assimilation by the plant. This is primarily driven by the maximum \coo\ assimilation rate, which depends on the incident photosynthetically active radiation (PAR), \coo\ concentration, and the canopy's light-use efficiency. The leaf area index and extinction coefficient further influence how efficiently light is absorbed across the canopy. Canopy conductance plays a critical role in this process by regulating the rate at which \coo\ diffuses into the leaf. The combined effect of boundary layer conductance, stomatal conductance, and carboxylation conductance ensures that \coo\ reaches the sites of photosynthesis efficiently. Carboxylation conductance itself is temperature-dependent, following a quadratic relationship with temperature, reflecting how enzymatic activity is influenced by environmental conditions.
+
+
+% \subsection{Specific Growth Rate}
+
+% The specific growth rate \( \ui{r}{gr} \) is defined as:
+
+% \[
+%     \ui{r}{gr} = \ui{c}{gr, max} \frac{\ui{x}{nsdw}}{\ui{c}{\gamma} \ui{x}{sdw} + \ui{x}{nsdw}} \ui{c}{qr, Q10}^{\left(\frac{\ui{u}{T} - 20}{10}\right)}
+% \]
+
+% where \( \ui{u}{T} \) is the canopy temperature, \( \ui{c}{gr, max} \) is the saturated growth rate at 20°C, \( \ui{c}{\gamma} \) is the growth rate coefficient, and \( \ui{c}{qr, Q10} \) is the growth sensitivy to change in temperature by 10\( ^\circ \)C.
+
+% \subsection{Respiration Model}
+
+% The maintenance respiration rate \( \ui{f}{resp} \) is defined as:
+
+% \[
+%     \ui{f}{resp} = \left( \ui{c}{resp, s} (1 - \ui{c}{\tau}) \ui{x}{sdw} + \ui{c}{resp, r} \ui{c}{\tau} \ui{x}{sdw} \right) \ui{c}{resp, Q10}^{\left( \frac{\ui{u}{T} - 25}{10} \right)}
+% \]
+
+% where the \( \ui{c}{resp, s} \) and \( \ui{c}{resp, r} \) are the shoot and root maintenance respiration rate at 25°C, \( \ui{c}{\tau} \) is the root dry mass ratio, and \( \ui{c}{qr, Q10} \) is the respiration sensitivy to change in temperature by 10\( ^\circ \)C.
+
+% \subsection{Photosynthesis Model}
+
+% The photosynthesis model is divided into two parts: the maximum \coo\ assimilation rate and the gross canopy photosynthesis. The maximum \coo\ assimilation rate \( \ui{f}{phot, max} \) is given by:
+
+% \[
+%     \ui{f}{phot, max} = \frac{\epsilon \ui{u}{PAR} \ui{g}{\coo} \ui{c}{\omega} (\ui{u}{\coo} - \Gamma)}{\epsilon \ui{u}{PAR} + \ui{g}{\coo} \ui{c}{\omega} (\ui{u}{\coo} - \Gamma)}
+% \]
+
+% where the \( \ui{u}{PAR} \) is the incident photosynthetically active radiation, \( \ui{u}{\coo} \) is the \coo\ concentration, \( \epsilon \) is the light-use efficiency, \( \ui{g}{\coo} \) is the canopy conductance to \coo\ diffusion, \( \ui{c}{\omega} \) is the density of \coo\ in air, and \( \Gamma \) is the \coo\ compensation point.
+
+% The gross canopy photosynthesis \( \ui{f}{phot} \) is expressed as:
+
+% \[
+%     \ui{f}{phot} = \left( 1 - \exp\left( -\ui{c}{K} \ui{c}{LAR} (1 - \ui{c}{\tau}) \ui{x}{sdw} \right) \right) \ui{f}{phot, max}
+% \]
+
+% where \( \ui{c}{K} \) is the extinction coefficient, and \( \ui{c}{LAR} \) is the structural leaf area ratio.
+
+% \subsection{Canopy Conductance}
+
+% The canopy conductance to \coo\ diffusion \( \ui{g}{\coo} \) is given by:
+
+% \[
+%     \ui{g}{\coo} = \frac{1}{\left( \frac{1}{\ui{g}{BND}} + \frac{1}{\ui{g}{STM}} + \frac{1}{\ui{g}{CAR}} \right)}
+% \]
+
+% where \( \ui{g}{BND} \) is the boundary layer conductance, \( \ui{g}{STM} \) is the stomatal resistance, and \( \ui{g}{CAR} \) is the carboxylation conductance,
+
+% \subsection{Carboxylation Conductance}
+
+% The carboxylation conductance \( \ui{g}{CAR} \) is modeled as a quadratic function of temperature:
+
+% \[
+%     \ui{g}{CAR} = \ui{c}{CAR1} \ui{u}{T}^2 + \ui{c}{CAR2} \ui{u}{T} + \ui{c}{CAR3}
+% \]
+
+% where:
+% - \( \ui{c}{CAR1} \), \( \ui{c}{CAR2} \), and \( \ui{c}{CAR3} \) are carboxylation parameters dependent on temperature.
 
 
 \section{Nonlinear economic model predictive control}\label{sec:mpc}
