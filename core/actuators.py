@@ -58,21 +58,25 @@ class Actuator(ABC):
         )
 
     def signal_to_eur(
-        self, signal: float | ca.GenericExpressionCommon
+        self,
+        signal: float | ca.GenericExpressionCommon,
+        energy_cost: float | None = None,
     ) -> float | ca.GenericExpressionCommon:
+        if energy_cost is None:
+            energy_cost = self.energy_cost
         return (
-            self.energy_cost
-            * self.signal_to_power(signal)
-            / 1000
-            * self.dt
-            / 3600
+            energy_cost * self.signal_to_power(signal) / 1000 * self.dt / 3600
         )
 
     def signal_to_co2(
-        self, signal: float | ca.GenericExpressionCommon
+        self,
+        signal: float | ca.GenericExpressionCommon,
+        co2_intensity: float | None = None,
     ) -> float | ca.GenericExpressionCommon:
+        if co2_intensity is None:
+            co2_intensity = self.co2_intensity
         return (
-            self.co2_intensity
+            co2_intensity
             * self.signal_to_power(signal)
             / 1000
             * self.dt
@@ -80,9 +84,11 @@ class Actuator(ABC):
         )
 
     def signal_to_co2_eur(
-        self, signal: float | ca.GenericExpressionCommon
+        self,
+        signal: float | ca.GenericExpressionCommon,
+        co2_intensity: float | None = None,
     ) -> float | ca.GenericExpressionCommon:
-        return self.co2_cost * self.signal_to_co2(signal)
+        return self.co2_cost * self.signal_to_co2(signal, co2_intensity)
 
 
 class SimpleHeater(Actuator):
