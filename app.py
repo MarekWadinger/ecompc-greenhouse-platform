@@ -10,14 +10,15 @@ import streamlit as st
 from stqdm import stqdm
 from streamlit_theme import st_theme
 
-from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
-from core.greenhouse_model import GreenHouse, x_init_dict
-from core.lettuce_model import DRY_TO_WET_RATIO, RATIO_SDW_NSDW
-from core.openmeteo_query import (
+from core.api_queries import (
+    Entsoe,
     OpenMeteo,
     get_city_geocoding,
     get_co2_intensity,
 )
+from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
+from core.greenhouse_model import GreenHouse, x_init_dict
+from core.lettuce_model import DRY_TO_WET_RATIO, RATIO_SDW_NSDW
 from core.plot import plotly_greenhouse, plotly_response
 
 # --- Page Config ---
@@ -58,14 +59,14 @@ def export_fig(fig) -> bytes:
     return buf.getvalue()
 
 
-@st.cache_resource(ttl=5 * 60, max_entries=10)
+@st.cache_resource(ttl=5 * 60, max_entries=2)
 def plotly_greenhouse_(length, width, height, roof_tilt, azimuth):
     return plotly_greenhouse(length, width, height, roof_tilt, azimuth)
 
 
 @st.cache_resource(ttl=5 * 60, max_entries=2)
 def plotly_weather_(climate):
-    fig = climate.resample("1H").median().plot(backend="plotly")
+    fig = climate.resample("1h").median().plot(backend="plotly")
     # Hide all traces after the first 4
     for i in range(4, len(fig.data)):
         fig.data[
@@ -226,16 +227,12 @@ with st.sidebar:
                     altitude,
                 ) = get_city_geocoding(city_)
                 try:
-                    if st.secrets.load_if_toml_exists():
-                        secret = st.secrets["ELECTRICITYMAP_API_KEY"]
-                    else:
-                        secret = None
                     co2_intensity = get_co2_intensity(
                         country_code,
                     )
                     co2_source = "Current"
                 except ValueError:
-                    co2_intensity = 100.0
+                    co2_intensity = 200.0
                     co2_source = "Default"
         st.markdown(
             f"{co2_source} carbon intensity: **{co2_intensity} gCO₂/kWh**",
@@ -408,20 +405,27 @@ if (
         start_date_,  # type: ignore
         start_time,
     )
+    end_date = start_date + pd.Timedelta(
+        days=min(15, (sim_steps_max + N_max) * Ts // (3600 * 24))
+    )
     climate = (
-        openmeteo.get_weather_data(
-            start_date=start_date,
-            end_date=(
-                start_date
-                + pd.Timedelta(
-                    days=min(15, (sim_steps_max + N_max) * Ts // (3600 * 24))
-                )
-            ),
-        )
+        openmeteo.get_weather_data(start_date=start_date, end_date=end_date)
+        .tz_localize(tz, ambiguous=True)
         .asfreq(f"{Ts}s")
         .interpolate(method="time")
     )
-    start_date = pd.Timestamp(climate.index[0])
+    entsoe = Entsoe()
+    energy_cost = entsoe.get_electricity_price(
+        country_code=country_code,
+        start_date=start_date.tz_localize(tz),
+        end_date=end_date.tz_localize(tz),
+        tz=tz,
+    )
+    energy_cost = pd.concat([pd.Series(index=climate.index), energy_cost])
+    energy_cost = energy_cost[~energy_cost.index.duplicated(keep="first")]
+    climate["energy_cost"] = energy_cost.sort_index().interpolate(
+        method="time", limit_direction="both"
+    )
     runtime_info.info("Plotting forecast ...")
 
     weather_plot = st.empty()
@@ -512,7 +516,7 @@ if (
                 mpc.climate = climate
                 simulator.climate = climate
                 weather_plot.plotly_chart(
-                    climate.resample("1H").median().plot(backend="plotly")
+                    climate.resample("1h").median().plot(backend="plotly")
                 )
                 runtime_info.info("Simulating ...")
 
@@ -535,25 +539,11 @@ if (
     )
 
     # Export results to table
-    profit = pd.Series(
-        mpc.lettuce_price
-        * (x0[-2:].sum() - x_sn_init.sum())
-        / DRY_TO_WET_RATIO
-        * mpc.cultivated_area,
-        index=["Lettuce profit "],
+    profit_costs = model.analyze_profit_and_costs(
+        x0.flatten()[-2:] - x_sn_init,
+        u0s,
+        climate["energy_cost"].values[: len(u0s)],
     )
-    costs = pd.Series(
-        index=[f"Energy ({i})" for i in u0s.columns]
-        + [f"CO2 ({i})" for i in u0s.columns]
-    )
-    for act in [
-        act for act, active in model.gh.active_actuators.items() if active
-    ]:
-        actuator = getattr(model.gh, act.lower().replace(" ", ""))
-        costs[f"Energy ({act})"] = -actuator.signal_to_eur(u0s[act]).sum()
-        costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(u0s[act]).sum()
-    profit_costs = pd.concat([profit, costs]).rename("EUR")
-    profit_costs["Total"] = profit_costs.sum()
 
     st.table(profit_costs.to_frame().style.format("{:.2f}"))
 

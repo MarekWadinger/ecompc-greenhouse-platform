@@ -4,6 +4,7 @@ from do_mpc.controller import MPC
 from do_mpc.model import Model
 from do_mpc.simulator import Simulator
 
+from core.actuators import Actuator
 from core.greenhouse_model import GreenHouse, x_init
 from core.lettuce_model import DRY_TO_WET_RATIO
 
@@ -27,6 +28,7 @@ class GreenHouseModel(Model):  # Create a model instance
             var_type="_x", var_name="x", shape=(len(x_init), 1)
         )
 
+        # TODO: review whether it is needed to store in locals maybe we can use self.u directly?
         actuators = []
         for act, active in gh_model.active_actuators.items():
             if active:
@@ -49,29 +51,28 @@ class GreenHouseModel(Model):  # Create a model instance
 
         self.setup()
 
-    def analyze_profit_and_costs(self, x0, u0s):
+    def analyze_profit_and_costs(self, X, U, energy_cost=None):
         import pandas as pd
 
         profit = pd.Series(
-            self.lettuce_price
-            * (x0[-2:].sum() - x_init[-2:].sum())
-            / DRY_TO_WET_RATIO
-            * self.gh.A_c,
+            self.lettuce_price * X[-2:].sum() / DRY_TO_WET_RATIO * self.gh.A_c,
             index=["Lettuce profit "],
         )
 
         costs = pd.Series(
-            index=[f"Energy ({i})" for i in u0s.columns]
-            + [f"CO2 ({i})" for i in u0s.columns]
+            index=[f"Energy ({i})" for i in U.columns]
+            + [f"CO2 ({i})" for i in U.columns]
         )
         for act in [
             act for act, active in self.gh.active_actuators.items() if active
         ]:
-            actuator = getattr(self.gh, act.lower().replace(" ", ""))
-            costs[f"Energy ({act})"] = -actuator.signal_to_eur(u0s[act]).sum()
-            costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(u0s[act]).sum()
+            actuator: Actuator = getattr(self.gh, act.lower().replace(" ", ""))
+            costs[f"Energy ({act})"] = -actuator.signal_to_eur(
+                U[act], energy_cost
+            ).sum()
+            costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(U[act]).sum()
 
-        profit_costs = pd.concat([profit, costs])
+        profit_costs = pd.concat([profit, costs]).rename("EUR")
         profit_costs["Total"] = profit_costs.sum()
         return profit_costs
 
@@ -165,7 +166,9 @@ class EconomicMPC(MPC):
             ]
         ):
             actuator = getattr(model.gh, act.lower().replace(" ", ""))
-            lterm += actuator.signal_to_eur(model.u[act])
+            lterm += actuator.signal_to_eur(
+                model.u[act], model.tvp["energy_cost"]
+            )
             if co2_we_care:
                 lterm += actuator.signal_to_co2_eur(model.u[act])
             self.set_rterm(**{act: (1 / (model.dt * 1000))})  # type: ignore
