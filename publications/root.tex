@@ -43,7 +43,7 @@
 \end{abstract}
 
 \begin{IEEEkeywords}
-    Model Predictive Control, Lettuce Growth Optimization, Greenhouse Energy Management, Precision Agriculture, Economic Yield Optimization
+    Control education, Computer aided learning, Predictive control for nonlinear systems
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -67,7 +67,7 @@ Integrating advanced control techniques into education has become increasingly i
 This study presents a web interface for optimizing greenhouse climate control, to achieve enhanced crop yields, energy efficiency and reduction in \coo\ emissions. Utilizing principles of thermodynamics, fluid dynamics, and mass transfer, along with real weather and carbon intensity forecasts we developed a simulation environment employed by NEMPC to adjust ventilation, heating, humidification, and \coo\ enrichment in real-time. Beyond technical contributions, the framework serves as an educational tool, allowing students to engage with real-world data and explore the economic and sustainability trade-offs in agricultural systems. Thus, this versatile platform enhances control education by combining theoretical concepts with practical skills in automatic control.
 
 \section{Greenhouse Climate Model}\label{sec:greenhouse}
-In this section we provide a mathematical model of the greenhouse environment, focusing on wind, temperature, humidity, and \coo\ concentration dynamics that implements the GES software~\cite{rmward61_2019} based on the Gembloux Dynamic Greenhouse Climate Model~\cite{GDGCM} and work by Vanthoor~\cite{Vanthoor2011}.
+In this section we provide a mathematical model of the greenhouse environment, focusing on wind, temperature, humidity, and \coo\ concentration dynamics that implements the GES software~\cite{rmward61_2019} based on the Gembloux Dynamic Greenhouse Climate Model~\cite{GDGCM} and work by Vanthoor~\cite{Vanthoor2011}. For the complete list of parameters and their values with references, see source code repository\footnote{\url{https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/core/greenhouse_model.py}}.
 
 \begin{figure}
     \centering
@@ -142,7 +142,6 @@ The internal \coo\ concentration in parts per million (ppm) is given by:
 where \(C_c\) is the \coo\ density, and \(T_{\text{in}}\) is the internal air temperature in Kelvin.
 
 The greenhouse climate model integrates the physical models of temperature, humidity, and \coo\ concentration into a dynamic system represented by a state vector \(\mathbf{z}\) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)] with dimension (11, 1), and input vector \(\mathbf{u}\) = [\(Q_{\text{heater}}, R_{\text{fan}}, V_{\text{humid}}, G_{\coo} \)] with dimension (4, 1) for the heating power, ventilation, humidification, and \coo\ enrichment. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the planted salad temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \coo\ density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
-% RP: Cloveka by zaujimalo ako sa dostane k rovniciam dynamiky. Nie je tu uvedene nic k rychlosti rastu salatu.
 
 \subsection{Actuation Control Systems}
 In our implementation, actuators operate by converting an input control signal from the system into the appropriate mechanical energy required to regulate environmental variables~\cite{Butterfield2018}. These actuators serve to maintain optimal conditions for crop growth by regulating temperature, humidity, ventilation, and \coo\ concentration. Each actuator's functionality is modeled to simulate its contribution to the overall energy balance, operating costs, and \coo\ emissions of the greenhouse. Below, we describe the main equations used to model these actuators, summarized in Table~\ref{tab:actuators}.
@@ -217,7 +216,7 @@ where \( G_{\coo} \) is the \coo\ generation in kg/h.
 
 
 \section{Lettuce Growth Model}\label{sec:lettuce_growth}
-The growth of lettuce is be modeled using a dynamic system of equations that captures the behavior of both structural (SDW) and non-structural dry weight (NSDW) of the plant~\cite{VANHENTEN199455}. The dynamics of conversion of  model is influenced by environmental factors such as temperature, light (PAR), and \coo\ concentration. The model equations are parameterized using well-established constants from the literature and adapted for dynamic simulation. For the complete list of parameters and their values with references, see source code repository~\cite{Wadinger2024}.
+The growth of lettuce is be modeled using a dynamic system of equations that captures the behavior of both structural (SDW) and non-structural dry weight (NSDW) of the plant~\cite{VANHENTEN199455}. The dynamics of conversion of  model is influenced by environmental factors such as temperature, light (PAR), and \coo\ concentration. The model equations are parameterized using well-established constants from the literature and adapted for dynamic simulation. For the complete list of parameters and their values with references, see source code repository\footnote{\url{https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/core/lettuce_model.py}}.
 
 \subsection{Dynamic Growth Equations} The dynamic equations for structural and non-structural dry weight are given by the following differential equations. The rate of change of structural dry weight is governed by the specific growth rate \( \ui{r}{gr} \) and is modeled as:
 
@@ -367,8 +366,12 @@ While the user is customizing the greenhouse, the web interface provides real-ti
 
 \begin{figure}\label{fig:web}
     \centering
-    \includegraphics[width=.5\textwidth]{figures/webpage.png}
+    \makebox[\linewidth]{%
+        \includegraphics[width=1.1\linewidth]{figures/webpage.png}%
+    }
+    % \includegraphics[width=.55\textwidth]{figures/webpage.png}
     % RP: Prilis vela bieleho miesta na okrajoch.
+    % MW: Pri orezani, prip. odstraneni tienov obrazok nevyzera dobre, je makebox ok?
     \caption{Interactive web-based educational tool designed to teach students the principles of NEMPC applied to greenhouse climate management. The sidebar shows customization layers. The main window displays the greenhouse structure, orientation, weather forecast, simulation results, and cost-profit analysis.}
 \end{figure}
 
@@ -385,12 +388,12 @@ Nevertheless, it has a positive effect on convection and the overall transfer of
 \end{figure*}
 
 
-The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm was configured with a prediction horizon of 10 minutes and a control horizon of 10 minutes. The simulations were run for a total of 10,801 steps, with a sampling time of 120 seconds. Results demonstrate that the proposed economic MPC algorithm increased crop yield by 9\% and increased profit by more than 4\% in just 15 days of growth.
+The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm was configured with a prediction horizon and a control horizon of 1 hour. The simulations were run for a total of 10,801 steps, with a sampling time of 120 seconds. Results demonstrate that the proposed economic MPC algorithm increased crop yield by 9\% and increased profit by more than 4\% in just 15 days of growth.
 Moreover, the cost function of the NEMPC algorithm included the social cost of the carbon intensity of the energy sources used. This addition led to a 98\% reduction in \coo\ consumption, although it caused a fourfold decrease in plant growth when compared to a scenario where the social cost of \coo\ was not minimized. This highlights a significant trade-off between economic output and the carbon intensity of the energy sources. While farmers may prioritize economic gains, the environmental impact of production deserves careful consideration.
 
 \begin{figure}\label{fig:control}
     \centering
-    \includegraphics[width=.5\textwidth]{figures/greenhouse_control-mpc_co2-N_30-steps_10801.pdf}
+    \includegraphics[width=.5\textwidth]{figures/greenhouse_control-mpc-N_5-steps_10801.pdf}
     % RP: Tieto grafy by kludne zniesli znizenie vysky o polovicu na usetrenie miesta. Nie je na vrchu a na spodku prilis vela bieleho miesta?
     \caption{A simplified diagram of the heat, mass and \coo\ exchanges modeled within the framework. Image adapted from~\cite{rmward61_2019}.}
 \end{figure}
