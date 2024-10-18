@@ -69,8 +69,8 @@ class GreenHouseModel(Model):  # Create a model instance
             actuator: Actuator = getattr(self.gh, act.lower().replace(" ", ""))
             costs[f"Energy ({act})"] = -actuator.signal_to_eur(
                 U[act], energy_cost
-            ).sum()
-            costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(U[act]).sum()
+            ).sum()  # type: ignore
+            costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(U[act]).sum()  # type: ignore
 
         profit_costs = pd.concat([profit, costs]).rename("EUR")
         profit_costs["Total"] = profit_costs.sum()
