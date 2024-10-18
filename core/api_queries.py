@@ -154,13 +154,14 @@ class Entsoe:
         country_code: str,
         start_date: str | pd.Timestamp,
         end_date: str | pd.Timestamp,
+        tz: str = "UTC",
     ) -> pd.Series:
         from entsoe.exceptions import NoMatchingDataError
 
         if not isinstance(start_date, pd.Timestamp):
-            start_date = pd.Timestamp(start_date, tz="UTC")
+            start_date = pd.Timestamp(start_date, tz=tz)
         if not isinstance(end_date, pd.Timestamp):
-            end_date = pd.Timestamp(end_date, tz="UTC")
+            end_date = pd.Timestamp(end_date, tz=tz)
         try:
             df = self.client.query_day_ahead_prices(
                 country_code,
@@ -176,7 +177,7 @@ class Entsoe:
                 ]
                 extrapolated_index = pd.date_range(
                     end_idx + pd.Timedelta(hours=1),
-                    end_date.tz_convert(end_idx.tz),
+                    end_date.tz_convert(tz),
                     freq="h",
                 )
                 extrapolated_series = pd.Series(
@@ -189,12 +190,12 @@ class Entsoe:
                 df = pd.concat([df, extrapolated_series])
 
             start_idx = pd.Timestamp(df.index[0])
-            if start_idx > start_date:
+            if start_idx > start_date.round("h"):
                 first_day = df.loc[
                     df.index < (start_idx + pd.Timedelta(hours=24))
                 ]
                 prepended_index = pd.date_range(
-                    start_date.tz_convert(start_idx.tz),
+                    start_date.tz_convert(tz).floor("h"),
                     start_idx - pd.Timedelta(hours=1),
                     freq="h",
                 )
@@ -213,7 +214,7 @@ class Entsoe:
                 data=self.default,
             )
 
-        return df
+        return df / 1000  # [EUR/kWh]
 
 
 def get_city_geocoding(
