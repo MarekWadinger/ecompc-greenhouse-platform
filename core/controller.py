@@ -134,10 +134,12 @@ class EconomicMPC(MPC):
             "state_discretization": "discrete",
             "nlpsol_opts": {
                 "ipopt": {  # https://coin-or.github.io/Ipopt/OPTIONS.html
-                    "max_iter": 100,
-                    "tol": 1e-3,
+                    "max_iter": 500,  # TODO: 100 is not enough
+                    "tol": 1e-4,  # obj. function is in EUR, 0.01 cent tol should be enough for given Ts
                     # "linear_solver": "MA57",  # https://licences.stfc.ac.uk/product/coin-hsl
                     "warm_start_init_point": "yes",
+                    # "warm_start_same_structure": "yes",
+                    "warm_start_entire_iterate": "yes",
                     "mu_allow_fast_monotone_decrease": "yes",
                     "fast_step_computation": "yes",
                     "print_level": 0,
