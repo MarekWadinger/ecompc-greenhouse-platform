@@ -34,6 +34,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 sys.path.insert(1, str(Path().resolve()))
+from core.api_queries import OpenMeteo  # noqa: E402
 from core.greenhouse_model import (  # noqa: E402
     GreenHouse,
     M_c,
@@ -42,7 +43,6 @@ from core.greenhouse_model import (  # noqa: E402
     atm,
     x_init,
 )
-from core.openmeteo_query import OpenMeteo  # noqa: E402
 
 results_dir = "examples/results"
 if not os.path.exists(results_dir):
@@ -53,6 +53,7 @@ gh_model = GreenHouse()
 openmeteo = OpenMeteo(
     latitude=52.52,  # Latitude of the location in degrees
     longitude=13.41,  # Longitude of the location in degrees
+    altitude=None,
     tilt=[
         90,
         40,
