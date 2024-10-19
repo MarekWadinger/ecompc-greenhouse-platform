@@ -132,11 +132,16 @@ class EconomicMPC(MPC):
             "n_horizon": N,
             "t_step": model.dt,
             "supress_ipopt_output": True,
-            "state_discretization": "discrete",
+            # "state_discretization": "collocation",
+            # "collocation_type": "radau",
+            # "collocation_deg": 2,
+            # "collocation_ni": 2,
+            # "nl_cons_single_slack": True,
             "nlpsol_opts": {
                 "ipopt": {  # https://coin-or.github.io/Ipopt/OPTIONS.html
-                    "max_iter": 500,  # TODO: 100 is not enough
-                    "tol": 1e-4,  # obj. function is in EUR, 0.01 cent tol should be enough for given Ts
+                    # "max_iter": 100,  # TODO: 100 is not enough
+                    "tol": 1,  # obj. function is in EUR, 0.01 cent tol should be enough for given Ts
+                    "max_cpu_time": 1,  # seconds
                     # "linear_solver": "MA57",  # https://licences.stfc.ac.uk/product/coin-hsl
                     "warm_start_init_point": "yes",
                     # "warm_start_same_structure": "yes",
@@ -144,7 +149,7 @@ class EconomicMPC(MPC):
                     "mu_allow_fast_monotone_decrease": "yes",
                     "fast_step_computation": "yes",
                     "print_level": 0,
-                    # "output_file": "ipopt.out",
+                    "output_file": ".out.ipopt",
                     # "print_user_options": "yes",
                     # "print_options_documentation": "yes",
                     "print_frequency_iter": 10,
@@ -165,7 +170,9 @@ class EconomicMPC(MPC):
                 if active
             ]
         ):
-            actuator = getattr(model.gh, act.lower().replace(" ", ""))
+            actuator: Actuator = getattr(
+                model.gh, act.lower().replace(" ", "")
+            )
             lterm += actuator.signal_to_eur(
                 model.u[act], model.tvp["energy_cost"]
             )
