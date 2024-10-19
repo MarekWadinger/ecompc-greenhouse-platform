@@ -54,7 +54,7 @@ In the rapidly evolving field of engineering, there is an increasing demand for 
 Current farming practices are labor-intensive, seasonal, constrained by irrigation, and rely on subsidized inputs, leading to environmental issues such as eutrophication, deforestation and soil degradation. With nearly 70\% of global water resources consumed by agriculture~\cite{Debroy2024}, greenhouses offer a solution by providing controlled environments that enhance productivity beyond what open-field cultivation can achieve. However, these systems face challenges, such as fluctuating internal temperatures that can harm crops. Effective climate management, through controlled ventilation and heating, is essential for maintaining optimal conditions and improving yields~\cite{Wu2019}.
 
 % - Concrete introduction (what is the state of the art in the domain)
-Solar radiation is vital for plant growth and energy generation in greenhouses. Key metrics include Global Horizontal Irradiance~(\(GHI\)) and Photosynthetically Active Radiation~(\(PAR\)), the latter directly influencing photosynthesis. A recent review highlighted various empirical models developed to estimate PAR in areas lacking regular measurements, emphasizing the relationship between PAR and GHI~\citep{NoriegaGardea2021}. Recent research has advanced these models for accurate \(PAR\) prediction, while also adressing approaches where historic performance data is lacking~\cite{Iddio2020, MaLu2022}. Other modeling papers apply deep learning to predict plant growth using time-series data in forecasting future growth frames for both leaves and roots through machine learning~\cite{rs13030331}."
+Solar radiation is vital for plant growth and energy generation in greenhouses. Key metrics include Global Horizontal Irradiance~(\(GHI\)) and Photosynthetically Active Radiation~(\(PAR\)), the latter directly influencing photosynthesis. A recent review highlighted various empirical models developed to estimate PAR in areas lacking regular measurements, emphasizing the relationship between PAR and GHI~\cite{NoriegaGardea2021}. Recent research has advanced these models for accurate \(PAR\) prediction, while also adressing approaches where historic performance data is lacking~\cite{Iddio2020, MaLu2022}. Other modeling papers apply deep learning to predict plant growth using time-series data in forecasting future growth frames for both leaves and roots through machine learning~\cite{rs13030331}.
 
 Various control methods have also been explored to enhance greenhouse environments and resource use efficiency. Adaptive control adjusts parameters based on real-time feedback, enabling dynamic responses to changing conditions~\cite{Tian2022}. Nonlinear feedback control addresses system complexity through advanced algorithms, improving overall system responsiveness and stability~\cite{Bood2023}. Fuzzy control effectively manages imprecise data and uncertainties, making it suitable for fluctuating environmental variables~\cite{smartcities7030055}. Robust control ensures stability despite external disturbances, contributing to reliable operation under varying conditions~\cite{Zhang2021}. Optimal control fine-tunes actions to achieve the best possible outcomes under specific constraints~\cite{Debroy2024, SVENSEN2024108578}. Despite their strengths, these approaches often require complex implementation, with frequent adjustments leading to higher energy consumption and wear on actuators.
 
@@ -390,12 +390,12 @@ Nevertheless, it has a positive effect on convection and the overall transfer of
 \end{figure*}
 
 
-The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm was configured with a prediction horizon and a control horizon of 1 hour. The simulations were run for a total of 10,801 steps, with a sampling time of 120 seconds. Results demonstrate that the proposed economic MPC algorithm increased crop yield by 9\% and increased profit by more than 4\% in just 15 days of growth.
-Moreover, the cost function of the NEMPC algorithm included the social cost of the carbon intensity of the energy sources used. This addition led to a 98\% reduction in \coo\ consumption, although it caused a fourfold decrease in plant growth when compared to a scenario where the social cost of \coo\ was not minimized. This highlights a significant trade-off between economic output and the carbon intensity of the energy sources. While farmers may prioritize economic gains, the environmental impact of production deserves careful consideration.
+The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm was configured with a prediction horizon and a control horizon of 1 hour. The simulations were run for a total of 10,801 steps, with a sampling time of 120 seconds. Results demonstrate that the proposed economic MPC algorithm increased crop yield by 435\% and increased profit by more than 14\% in just 15 days of growth.
+Moreover, the cost function of the NEMPC algorithm included the social cost of the carbon intensity of the energy sources used. This addition led to a 15\% reduction in \coo\ consumption, although it caused a 11\% decrease in plant growth and 3\% decrease in profit when compared to a scenario where the social cost of \coo\ was not minimized. This highlights a trade-off between economic output and the carbon intensity of the energy sources. While farmers may prioritize economic gains and crop yields, the environmental impact of production deserves careful consideration.
 
 \begin{figure}\label{fig:control}
     \centering
-    \includegraphics[width=.5\textwidth]{figures/greenhouse_control-mpc-N_5-steps_10801.pdf}
+    \includegraphics[width=.5\textwidth]{figures/greenhouse_control-mpc_co2-N_30-steps_10801.pdf}
     % RP: Tieto grafy by kludne zniesli znizenie vysky o polovicu na usetrenie miesta. Nie je na vrchu a na spodku prilis vela bieleho miesta?
     \caption{A simplified diagram of the heat, mass and \coo\ exchanges modeled within the framework. Image adapted from~\cite{rmward61_2019}.}
 \end{figure}
@@ -407,17 +407,19 @@ Moreover, the cost function of the NEMPC algorithm included the social cost of t
         \toprule
         Parameter           & {No control} & {NEMPC (\coo\ )} & {NEMPC (\$)} \\
         \midrule
-        Lettuce profit      & 858.32       & 940.19           & 4120.63      \\
-        Energy (Fan)        & 0.00         & -0.03            & -0.16        \\
-        Energy (Heater)     & 0.00         & -0.45            & -21.68       \\
-        Energy (Humidifier) & 0.00         & -0.05            & -0.00        \\
-        Energy (\coo\ Gen.) & 0.00         & -9.95            & -697.59      \\
-        \coo\ (Fan)         & 0.00         & -0.08            & -0.51        \\
-        \coo\ (Heater)      & 0.00         & -1.48            & -70.84       \\
-        \coo\ (Humidifier)  & 0.00         & -0.17            & -0.01        \\
-        \coo\ (\coo\ Gen.)  & 0.00         & -32.52           & -2279.72     \\
+        Lettuce profit      & 834.01       & 4459.57          & 4979.23      \\
+        Energy (Fan)        & 0.00         & -0.34            & -0.36        \\
+        Energy (Heater)     & 0.00         & -59.30           & -109.66      \\
+        Energy (Humidifier) & 0.00         & -1.79            & -2.23        \\
+        Energy (\coo\ Gen.) & 0.00         & -763.22          & -794.75      \\
+        Energy (Comp.)      & 0.00         & -0.001           & -0.001       \\
+        \coo\ (Fan)         & 0.00         & -0.79            & -0.83        \\
+        \coo\ (Heater)      & 0.00         & -158.51          & -378.51      \\
+        \coo\ (Humidifier)  & 0.00         & -3.90            & -5.78        \\
+        \coo\ (\coo\ Gen.)  & 0.00         & -2521.36         & -2705.12     \\
+        \coo\ (Comp.)       & 0.00         & -0.003           & -0.004       \\
         \midrule
-        Total               & 858.32       & 895.45           & 1050.12      \\
+        Total               & 834.01       & 950.36           & 981.99       \\
         \bottomrule
     \end{tabular}
 \end{table}
