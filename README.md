@@ -17,7 +17,7 @@ Developed to support the publication *"Carbon Neutral Greenhouse: Economic Model
 
 - **Greenhouse Climate Model**: Simulates lettuce growth dynamics influenced by external weather data, temperature, light, and CO₂ concentration.
 - **Economic MPC Framework**: Optimizes climate conditions to balance crop yield, energy consumption, and CO₂ emissions.
-- **Real-Time Data Integration**: Fetches current weather data, carbon intensity forecasts and electricity price to adjust the greenhouse control strategy.
+- **Real-Time Data Integration**: Fetches **[🌦️ weather forecast](https://open-meteo.com)**, **[😶‍🌫️ carbon intensity forecasts](https://api.electricitymap.org)** and **[⚡️ electricity price](https://newtransparency.entsoe.eu/)** to adjust the greenhouse control strategy.
 - **User-Friendly Interface**: Intuitive design for students to visualize simulations, analyze results, and experiment with control parameters.
 - **Educational Focus**: Aimed at bridging the gap between control theory and real-world applications, enhancing problem-solving skills through interactive learning.
 

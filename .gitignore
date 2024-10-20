@@ -101,7 +101,7 @@ plots/
 .mypy_cache/
 
 # Nose test / coverage reports
-.cache
+*.cache
 .coverage
 .coverage.*
 .coveragerc
@@ -122,9 +122,6 @@ target/
 
 # Pyre type checker
 .pyre/
-
-# Pytest
-.pytest_cache/
 
 # SageMath parsed files
 *.sage.py
