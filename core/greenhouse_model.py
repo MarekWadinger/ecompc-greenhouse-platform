@@ -387,8 +387,8 @@ class GreenHouse:
         """
         if climate is None:
             raise ValueError("Climate information must be provided.")
-        dz_dt, __ = self._model(t, x, u, climate)
-        return dz_dt
+        dx_dt, __ = self._model(t, x, u, climate)
+        return dx_dt
 
     def _model(
         self,

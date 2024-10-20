@@ -1,12 +1,13 @@
 casadi~=3.6.3
 do-mpc~=4.6.4
-python-dotenv~=1.0.1
+entsoe-py<1.0.0
 ipykernel~=6.26.0
 matplotlib~=3.8.1
 numpy~=1.26.1
-pandas~=2.1.2
+pandas<3.0.0
 plotly
 pvlib~=0.10.3
+python-dotenv~=1.0.1
 requests
 requests_cache
 retry-requests~=2.0.0
