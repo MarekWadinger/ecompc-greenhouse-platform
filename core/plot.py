@@ -9,9 +9,9 @@ from plotly.subplots import make_subplots
 plt.rcParams.update(
     {
         "figure.subplot.left": 0.1,
-        "figure.subplot.bottom": 0.2,
+        "figure.subplot.bottom": 0.05,
         "figure.subplot.right": 0.95,
-        "figure.subplot.top": 0.85,
+        "figure.subplot.top": 0.95,
     }
 )
 
@@ -80,7 +80,7 @@ def set_size(
         fig_width_in * golden_ratio * ((subplots[0] * fraction) / subplots[1])
     )
 
-    return (fig_width_in * 1.2, fig_height_in * 1.2)
+    return (fig_width_in, fig_height_in)
 
 
 def format_str_(str_: str) -> str:
@@ -280,8 +280,8 @@ def plotly_response(
             fig = add_bound_trace(_timestamps, u_min[:, i], fig, label, color)
             fig = add_bound_trace(_timestamps, u_max[:, i], fig, label, color)
 
-    fig.update_yaxes(title_text="Lettuce Dry Weight (g)", row=1, col=1)
-    fig.update_yaxes(title_text="Actuation [%]", row=2, col=1)
+    fig.update_yaxes(title_text="Dry Weight (g/m$^2$)", row=1, col=1)
+    fig.update_yaxes(title_text="Actuation (%)", row=2, col=1)
     fig.update_layout(
         legend=dict(
             orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
