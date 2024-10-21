@@ -1,4 +1,3 @@
-
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts{}
 
@@ -72,7 +71,7 @@ In this section, we provide a mathematical model of the greenhouse environment, 
 
 \begin{figure}
     \centering
-    \includegraphics[width=.5\textwidth]{images/diagram.pdf}
+    \includegraphics[width=\linewidth]{images/diagram.pdf}
     \caption{A simplified diagram of the heat, mass and \coo\ exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}\label{fig:diagram}
 \end{figure}
 
@@ -135,12 +134,10 @@ The internal \coo\ concentration in ppm is given by:
 \end{equation}
 where \(C_c\) is the \coo\ density, and \(T_{\text{in}}\) is the internal air temperature in Kelvin.
 
-The greenhouse climate model integrates the models of temperature, humidity, and \coo\ concentration into a dynamic system represented by a state vector \(\mathbf{z}\) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)] with dimension
-% RP: Znovu opakujem, ze takto sa rozmery neuvadzaju. z\in\mathbb R^11 je urcite lepsi sposob.
-(11, 1), and input vector \(\mathbf{u}\) = [\(Q_{\text{heater}}, R_{\text{fan}}, V_{\text{humid}}, G_{\coo} \)] with dimension (4, 1) for the heating power, ventilation, humidification, and \coo\ enrichment. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the plant temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \coo\ density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
+The greenhouse climate model integrates the models of temperature, humidity, and \coo\ concentration into a dynamic system represented by a state vector \(\mathbf{x}\) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)] \( \in\mathbb R^{11} \), and input vector \(\mathbf{u}\) = [\(Q_{\text{heater}}, R_{\text{fan}}, V_{\text{humid}}, G_{\coo} \)] \( \in\mathbb R^{4} \) for the heating power, ventilation, humidification, and \coo\ enrichment. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the plant temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \coo\ density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
 
 \subsection{Actuation Control Systems}
-% RP: Tejto vete nerozumiem. Zda sa mi, ze chce povedat nieco uplne jednoduche ale hovori to velmi komplikovane. 
+% RP: Tejto vete nerozumiem. Zda sa mi, ze chce povedat nieco uplne jednoduche ale hovori to velmi komplikovane.
 In our implementation, actuators operate by converting an input control signal from the system into the appropriate mechanical energy required to regulate environmental variables~\cite{Butterfield2018}. The actuators are used to control temperature, humidity, ventilation, and \coo\ concentration, summarized in Table~\ref{tab:actuators}. We monitor each actuator's contribution to the overall energy balance, operating costs, and \coo\ emissions.
 
 \begin{table}
@@ -208,21 +205,20 @@ The \coo\ generation is based on the desired change rate of the \coo\ density, \
     G_{\coo} = \dot{c}_{co2}  V.
 \end{equation}
 
-\section{Lettuce Growth Model}\label{sec:lettuce_growth}
-% RP: salat sa tu zjavi z cista jasna. hodilo by sa ho tu uviest.
-The growth of lettuce model captures the dynamic behavior of both structural (SDW) and non-structural dry weight (NSDW) of the plant~\cite{VANHENTEN199455}. The dynamics is influenced by environmental factors such as temperature, light (PAR), and \coo\ concentration. The model is parameterized using well-established constants from the literature. For the complete list of parameters and their values with references, see the source code repository\footnote{\url{https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/core/lettuce_model.py}}.
+\section{Plant Growth Model}\label{sec:lettuce_growth}
+The growth of plant is modeled using a dynamic system of equations that captures the behavior of both structural (SDW) and non-structural dry weight (NSDW) of the plant~\cite{VANHENTEN199455}. The dynamics of conversion of  model is influenced by environmental factors such as temperature, light (PAR), and \coo\ concentration. The model equations are parameterized using well-established constants from the literature and adapted for dynamic simulation. For the complete list of parameters and their values with references, see source code repository\footnote{\url{https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/core/lettuce_model.py}}.
 
 \subsection{Growth Dynamics} The rate of change of structural dry weight is governed by the specific growth rate \( \ui{r}{gr} \) and is modeled as:
-% RP: ako recenzent absolutne neznasam necislovane rovnice. neviem sa vtedy odkazat na rovnicu ak ju chcem komentovat. akoby to tu niekto nedokoncil. Bolo by tiez fajn naznacit zavislost jednotlivych casti na ostatnych stavoch. nieco ako "\ui{r}{gr}(T)"
-\[
-    \diff{\ui{x}{sdw}}{t} = \ui{r}{gr} \ui{x}{sdw}
-\]
-\[
+
+\begin{equation}
+    \diff{\ui{x}{sdw}}{t} = \ui{r}{gr}(T_i) \ui{x}{sdw}
+\end{equation}
+\begin{equation}
     \begin{aligned}
-        \diff{\ui{x}{nsdw}}{t} & = c_{\chho/\coo} \ui{f}{phot} - \ui{r}{gr} \ui{x}{sdw} - \ui{f}{resp}                   \\
-                               & \quad - \left( \frac{1 - Y_{\chho/\coo}}{Y_{\chho/\coo}} \right) \ui{r}{gr} \ui{x}{sdw}
+        \diff{\ui{x}{nsdw}}{t} & = c_{\chho/\coo} \ui{f}{phot}(C_c, T_i) - \ui{r}{gr}(T_i) \ui{x}{sdw} - \ui{f}{resp}(T_i)    \\
+                               & \quad - \left( \frac{1 - Y_{\chho/\coo}}{Y_{\chho/\coo}} \right) \ui{r}{gr}(T_i) \ui{x}{sdw}
     \end{aligned}
-\]
+\end{equation}
 
 where \( c_{\chho/\coo} \) is the conversion factor representing the efficiency of absorbed carbon dioxide conversion into biomass, \( Y_{\chho/\coo} \) is the yield, \( \ui{f}{phot} \) is the gross photosynthesis rate, and \( \ui{f}{resp} \) is the maintenance respiration rate.
 
@@ -237,9 +233,9 @@ where \( c_{\chho/\coo} \) is the conversion factor representing the efficiency 
 
 % The specific growth rate \( \ui{r}{gr} \) is defined as:
 
-% \[
+% \begin{equation}
 %     \ui{r}{gr} = \ui{c}{gr, max} \frac{\ui{x}{nsdw}}{\ui{c}{\gamma} \ui{x}{sdw} + \ui{x}{nsdw}} \ui{c}{qr, Q10}^{\left(\frac{\ui{u}{T} - 20}{10}\right)}
-% \]
+% \end{equation}
 
 % where \( \ui{u}{T} \) is the canopy temperature, \( \ui{c}{gr, max} \) is the saturated growth rate at 20°C, \( \ui{c}{\gamma} \) is the growth rate coefficient, and \( \ui{c}{qr, Q10} \) is the growth sensitivy to change in temperature by 10\( ^\circ \)C.
 
@@ -247,9 +243,9 @@ where \( c_{\chho/\coo} \) is the conversion factor representing the efficiency 
 
 % The maintenance respiration rate \( \ui{f}{resp} \) is defined as:
 
-% \[
+% \begin{equation}
 %     \ui{f}{resp} = \left( \ui{c}{resp, s} (1 - \ui{c}{\tau}) \ui{x}{sdw} + \ui{c}{resp, r} \ui{c}{\tau} \ui{x}{sdw} \right) \ui{c}{resp, Q10}^{\left( \frac{\ui{u}{T} - 25}{10} \right)}
-% \]
+% \end{equation}
 
 % where the \( \ui{c}{resp, s} \) and \( \ui{c}{resp, r} \) are the shoot and root maintenance respiration rate at 25°C, \( \ui{c}{\tau} \) is the root dry mass ratio, and \( \ui{c}{qr, Q10} \) is the respiration sensitivy to change in temperature by 10\( ^\circ \)C.
 
@@ -257,17 +253,17 @@ where \( c_{\chho/\coo} \) is the conversion factor representing the efficiency 
 
 % The photosynthesis model is divided into two parts: the maximum \coo\ assimilation rate and the gross canopy photosynthesis. The maximum \coo\ assimilation rate \( \ui{f}{phot, max} \) is given by:
 
-% \[
+% \begin{equation}
 %     \ui{f}{phot, max} = \frac{\epsilon \ui{u}{PAR} \ui{g}{\coo} \ui{c}{\omega} (\ui{u}{\coo} - \Gamma)}{\epsilon \ui{u}{PAR} + \ui{g}{\coo} \ui{c}{\omega} (\ui{u}{\coo} - \Gamma)}
-% \]
+% \end{equation}
 
 % where the \( \ui{u}{PAR} \) is the incident photosynthetically active radiation, \( \ui{u}{\coo} \) is the \coo\ concentration, \( \epsilon \) is the light-use efficiency, \( \ui{g}{\coo} \) is the canopy conductance to \coo\ diffusion, \( \ui{c}{\omega} \) is the density of \coo\ in air, and \( \Gamma \) is the \coo\ compensation point.
 
 % The gross canopy photosynthesis \( \ui{f}{phot} \) is expressed as:
 
-% \[
+% \begin{equation}
 %     \ui{f}{phot} = \left( 1 - \exp\left( -\ui{c}{K} \ui{c}{LAR} (1 - \ui{c}{\tau}) \ui{x}{sdw} \right) \right) \ui{f}{phot, max}
-% \]
+% \end{equation}
 
 % where \( \ui{c}{K} \) is the extinction coefficient, and \( \ui{c}{LAR} \) is the structural leaf area ratio.
 
@@ -275,9 +271,9 @@ where \( c_{\chho/\coo} \) is the conversion factor representing the efficiency 
 
 % The canopy conductance to \coo\ diffusion \( \ui{g}{\coo} \) is given by:
 
-% \[
+% \begin{equation}
 %     \ui{g}{\coo} = \frac{1}{\left( \frac{1}{\ui{g}{BND}} + \frac{1}{\ui{g}{STM}} + \frac{1}{\ui{g}{CAR}} \right)}
-% \]
+% \end{equation}
 
 % where \( \ui{g}{BND} \) is the boundary layer conductance, \( \ui{g}{STM} \) is the stomatal resistance, and \( \ui{g}{CAR} \) is the carboxylation conductance,
 
@@ -285,25 +281,22 @@ where \( c_{\chho/\coo} \) is the conversion factor representing the efficiency 
 
 % The carboxylation conductance \( \ui{g}{CAR} \) is modeled as a quadratic function of temperature:
 
-% \[
+% \begin{equation}
 %     \ui{g}{CAR} = \ui{c}{CAR1} \ui{u}{T}^2 + \ui{c}{CAR2} \ui{u}{T} + \ui{c}{CAR3}
-% \]
+% \end{equation}
 
 % where:
 % - \( \ui{c}{CAR1} \), \( \ui{c}{CAR2} \), and \( \ui{c}{CAR3} \) are carboxylation parameters dependent on temperature.
 
 
-\section{Nonlinear economic model predictive control}
-% RP: Treba zjednotit kapitalizaciu nazvov. Teraz je to mix.
-\label{sec:mpc}
-
+\section{Nonlinear Economic Model Predictive Control}\label{sec:mpc}
 The NEMPC is adopted to maximize the profit of growing lettuce in a greenhouse. This is achieved by maximizing lettuce yield while minimizing operating costs over a finite prediction horizon. The NEMPC framework incorporates the dynamics of the greenhouse and time-varying external conditions.
 
 \subsection{System Dynamics}\label{subsec:mpc_dynamics}
 
 The greenhouse system dynamics is modeled by a set of nonlinear equations (see Section~\ref{sec:greenhouse}) as:
 \begin{equation}
-% RP: Stav sa v casti "model" volal "z", tu sa vola "x". Treba to zjednotit. Aj typ fontu.
+    % RP: Stav sa v casti "model" volal "z", tu sa vola "x". Treba to zjednotit. Aj typ fontu.
     x(t+1) = f\left( x(t), u(t), p(t) \right),
 \end{equation}
 where, at time step \(t\), \(x(t) \in \mathbb{R}^{n_x}\) represents the state vector, \(u(t) \in \mathbb{R}^{n_u}\) is the control input vector (actuators), and \(p(t)\) are time-varying parameters, i.e., external climate conditions.
@@ -314,8 +307,8 @@ The goal of NEMPC is to maximize the revenue from lettuce production while minim
 
 The revenue from lettuce production is proportional to the change in biomass between the initial state and the current state, expressed as:
 \begin{equation}
-% RP: Co znamena initial state? t = 0 alebo t = k?
-    R(t) = \frac{P_L A_c}{\rho_{dw}} \textstyle\sum_{i\in\{\text{sdw}, \text{nsdw}\}}x_i(t) - x_{0, i},
+    % RP: Co znamena initial state? t = 0 alebo t = k?
+    R(t) = \frac{P_L A_c}{\rho_{dw}} \textstyle\sum_{i\in \{ \text{sdw}, \text{nsdw} \}}x_i(t) - x_{0, i},
 \end{equation}
 where \(P_L\) is the price of lettuce per gram, \(A_c\) is the cultivated area, and \(\rho_{dw}\) stands for dry-to-wet ratio.
 
@@ -337,16 +330,16 @@ The objective of the NEMPC is to minimize the cumulative stage cost over a finit
 \end{equation}
 subject to:
 \begin{align}
-    \text{s.t. } x(t+1)   & = f(x(t), u(t), p(t)),                                    \\
-    u_{\min} & \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
-    x_{\min} & \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
-    x(0)     & = x_{\text{initial}}.
+    \text{s.t. } x(t+1) & = f(x(t), u(t), p(t)),                                    \\
+    u_{\min}            & \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
+    x_{\min}            & \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
+    x(0)                & = x_{\text{initial}}.
 \end{align}
 Here, \(x_{\min}\) and \(x_{\max}\), respectively, \(u_{\min}\) and \(u_{\max}\) represent the bounds on the state, respectively, control input variables.
 
 \subsection{Time-Varying Parameters}
 
-The external climate conditions are modeled as time-varying parameters $p(t)$. These include outdoor temperature, solar radiation, and humidity, all provided by real-time weather data.
+The external climate conditions are modeled as time-varying parameters \( p(t) \). These include outdoor temperature, solar radiation, and humidity, all provided by real-time weather data.
 
 \section{Educational Web Interface}
 Figure~\ref{fig:web} demonstrates the interactive web-based educational tool. Via four layers of customization of the greenhouse, users may learn the main benefits of optimal control and challenges related to non-linearity. The first layer is the greenhouse structure, where the user can select the shape of the greenhouse, affecting the energy exchange with the environment and suggested scaling of the actuation units.
@@ -358,23 +351,16 @@ While the user interacts with the interface, it provides real-time calculations.
 
 \begin{figure}\label{fig:web}
     \centering
-    \makebox[\linewidth]{%
-        \includegraphics[width=1.1\linewidth]{figures/webpage.png}%
-    }
-    % \includegraphics[width=.55\textwidth]{figures/webpage.png}
-    % RP: Prilis vela bieleho miesta na okrajoch.
-    % MW: Pri orezani, prip. odstraneni tienov obrazok nevyzera dobre, je makebox ok?
-    % RP: Tiene mozu ostat, hoci mne sa nepacia. Neda sa aspon nieco spravit s bielym miestom, najma na hornom a dolnom okraji? To iba zbyticne zabera miesto v clanku.
-    \caption{Education web interface. The sidebar --  customization layers; the main window -- greenhouse structure, orientation, weather forecast, simulation results, and cost-profit analysis.}
+    \includegraphics[width=\linewidth, trim=50 50 50 50]{figures/webpage.png}
+    \caption{Education web interface. The sidebar ---  customization layers; the main window --- greenhouse structure, orientation, weather forecast, simulation results, and cost-profit analysis.}
 \end{figure}
 
 \section{Results}
 % Comparison of controlled greenhouse vs greenhouse without actuation
-% RP: Ake numericke nastroje boli pouzite na optimalizaciu/simulaciu? Ak napr. CasADi, tak by malo byt referencovane. 
-First, we analyze the nonlinear behavior of the greenhouse under varying climate and actuation conditions. We observed how the actuators influence the growth of SDW and NSDW. The simulations were run under a mild climate of Bratislava (Slovakia) on the day of 11\textsuperscript{th} October. Figure~\ref{fig:steps} shows that the influence of ventilation 
-% RP: tu by sme mali citatela nasmerovat na spravny stlpec in obrazku. inak nema sancu.
-and humidification is insignificant on growth as compared to no change in actuation applied.
-Nevertheless, there is a positive effect on convection and the overall transfer of energy. Intense heating positively influences the conversion of NSDW into SDW, yet it does not influence the overall NSDW buildup. \coo\ enrichment has a significant impact on non-structural plant growth.
+In this study, the optimization and simulation were carried out using CasADi\cite{Andersson2019}, a powerful tool for symbolic algorithmic differentiation, along with the IPOPT solver\cite{Wachter2006} for solving the nonlinear program. CasADi was used to model and discretize the Nonlinear Economic MPC problem, while IPOPT efficiently handled the optimization. These tools enabled the dynamic simulations of the greenhouse control system, ensuring computational efficiency and scalability.
+
+First, we analyze the nonlinear behavior of the greenhouse under varying climate and actuation conditions. We observed how the actuators influence the growth of SDW and NSDW.\@ The simulations were run under a mild climate of Bratislava (Slovakia) on the day of 11\textsuperscript{th} October. Column 1 and 3 in Figure~\ref{fig:steps} show that the influence of ventilation and humidification is insignificant on growth as compared to no change in actuation in column 5.
+Nevertheless, there is a positive effect on convection and the overall transfer of energy. Intense heating positively influences the conversion of NSDW into SDW, yet it does not influence the overall NSDW buildup, as shown in 2\textsuperscript{nd} column. 4\textsuperscript{th} column displays, that \coo\ enrichment has a significant impact on non-structural plant growth.
 
 \begin{figure*}
     \centering
@@ -382,14 +368,12 @@ Nevertheless, there is a positive effect on convection and the overall transfer 
     \caption{Responses of structural and non-structural dry weight on step changes from off to maximum in following actuations from the left to the right: ventilation, heating, humidification, and \coo\ enrichment, no step made.}\label{fig:steps}
 \end{figure*}
 
-The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm is configured with a prediction horizon and a control horizon of 1 hour. The simulations are run for a total of 10,801 steps, with a sampling time of 120 seconds. Results demonstrate that the proposed NEMPC increased crop yield by 435\% and increased profit by more than 14\% in just 15 days of growth.
-% RP: chyba tu referencia na obr./tab., ktory ukazuje vysledky graficky
+The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm is configured with a prediction horizon and a control horizon of 1 hour. The simulations are run for a total of 10,801 steps, with a sampling time of 120 seconds. Results in Figure~\ref{fig:control} demonstrate that the proposed NEMPC increased crop yield by 435\% and increased profit by more than 14\% in just 15 days of growth.
 The inclusion of the social cost of the carbon intensity into the cost function of the NEMPC leads to a 15\% reduction in \coo\ consumption, although it caused a 11\% decrease in plant growth and 3\% decrease in profit when compared to a scenario where the social cost of \coo\ was not minimized. This highlights a significant trade-off between economic output and the carbon intensity of the energy sources. While farmers may prioritize economic gains, the environmental impact of production deserves careful consideration.
 
 \begin{figure}\label{fig:control}
     \centering
-    \includegraphics[width=.5\textwidth]{figures/greenhouse_control-mpc_co2-N_30-steps_10801.pdf}
-    % RP: Tieto grafy by kludne zniesli znizenie vysky o polovicu na usetrenie miesta. Nie je na vrchu a na spodku prilis vela bieleho miesta?
+    \includegraphics[width=\linewidth, trim=10 10 10 10]{figures/greenhouse_control-mpc_co2-N_30-steps_10801.pdf}
     \caption{A simplified diagram of the heat, mass and \coo\ exchanges modeled within the framework. Image adapted from~\cite{rmward61_2019}.}
 \end{figure}
 
