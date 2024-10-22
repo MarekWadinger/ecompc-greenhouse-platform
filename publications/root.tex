@@ -67,7 +67,7 @@ Integrating advanced control techniques into education has become increasingly i
 This study presents a web interface to optimal greenhouse climate control, to achieve enhanced crop yields, energy efficiency and reduction in \coo\ emissions. Utilizing principles of thermodynamics, fluid dynamics, and mass transfer, along with weather and carbon intensity forecasts, we developed a simulation environment employed by NEMPC to adjust ventilation, heating, humidification, and \coo\ enrichment in real-time. Beyond technical contributions, the framework serves as an educational tool, allowing students to engage with explore the economic and sustainability trade-offs in agricultural systems.
 
 \section{Greenhouse Climate Model}\label{sec:greenhouse}
-In this section, we provide a mathematical model of the greenhouse environment, focusing on wind, temperature, humidity, and \coo\ concentration dynamics implemented within the GES software~\cite{rmward61_2019} based on the Gembloux Dynamic Greenhouse Climate Model~\cite{GDGCM} and the work by Vanthoor~\cite{Vanthoor2011}. For the complete list of parameters and their values with references, see the source code repository\footnote{\url{https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/core/greenhouse_model.py}}.
+In this section, we provide a mathematical model of the greenhouse environment, focusing on wind, temperature, humidity, and \coo\ concentration dynamics implemented within the GES software~\cite{rmward61_2019} based on the Gembloux Dynamic Greenhouse Climate Model~\cite{GDGCM} and the work by Vanthoor~\cite{Vanthoor2011}. For the complete list of parameters and their values with references, see the source code repository\footnote{\url{https://github.com/MarekWadinger/ecompc-greenhouse-platform/blob/main/core/greenhouse_model.py}}.
 
 \begin{figure}
     \centering
@@ -209,7 +209,7 @@ The \coo\ generation is based on the desired change rate of the \coo\ density, \
 \end{equation}
 
 \section{Plant Growth Model}\label{sec:lettuce_growth}
-The growth of plant is modeled using a dynamic system of equations that captures the behavior of both structural (SDW) and non-structural dry weight (NSDW) of the plant~\cite{VANHENTEN199455}. The dynamics of conversion of  model is influenced by environmental factors such as temperature, light (PAR), and \coo\ concentration. The model equations are parameterized using well-established constants from the literature and adapted for dynamic simulation. For the complete list of parameters and their values with references, see source code repository\footnote{\url{https://github.com/MarekWadinger/dynamic_opt_growth_model/blob/main/core/lettuce_model.py}}.
+The growth of plant is modeled using a dynamic system of equations that captures the behavior of both structural (SDW) and non-structural dry weight (NSDW) of the plant~\cite{VANHENTEN199455}. The dynamics of conversion of  model is influenced by environmental factors such as temperature, light (PAR), and \coo\ concentration. The model equations are parameterized using well-established constants from the literature and adapted for dynamic simulation. For the complete list of parameters and their values with references, see source code repository\footnote{\url{https://github.com/MarekWadinger/ecompc-greenhouse-platform/blob/main/core/lettuce_model.py}}.
 
 \subsection{Growth Dynamics} The rate of change of structural dry weight is governed by the specific growth rate \( \ui{r}{gr} \) and is modeled as:
 

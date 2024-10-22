@@ -1,9 +1,9 @@
 # 🌱 EcoMPC4Greenhouse: Education Platform
 
 [![Platform Access](https://img.shields.io/badge/Platform-Access%20Here-brightgreen)](http://ecompc4greenhouse.streamlit.app)
-[![Python application](https://github.com/MarekWadinger/dynamic_opt_growth_model/actions/workflows/python-app.yml/badge.svg)](https://github.com/MarekWadinger/dynamic_opt_growth_model/actions/workflows/python-app.yml)
+[![Python application](https://github.com/MarekWadinger/ecompc-greenhouse-platform/actions/workflows/python-app.yml/badge.svg)](https://github.com/MarekWadinger/ecompc-greenhouse-platform/actions/workflows/python-app.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![codecov](https://codecov.io/gh/MarekWadinger/dynamic_opt_growth_model/graph/badge.svg?token=UWBJ585H4J)](https://codecov.io/gh/MarekWadinger/dynamic_opt_growth_model)
+[![codecov](https://codecov.io/gh/MarekWadinger/ecompc-greenhouse-platform/graph/badge.svg?token=UWBJ585H4J)](https://codecov.io/gh/MarekWadinger/ecompc-greenhouse-platform)
 
 ![Webpage Overview](publications/figures/webpage.png)
 
