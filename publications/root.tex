@@ -71,7 +71,7 @@ In this section, we provide a mathematical model of the greenhouse environment, 
 
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{images/diagram.pdf}
+    \includegraphics[width=\linewidth]{figures/diagram.pdf}
     \caption{A simplified diagram of the heat, mass and \coo\ exchanges modelled within the framework. Image adapted from~\cite{rmward61_2019}.}\label{fig:diagram}
 \end{figure}
 
@@ -331,10 +331,10 @@ The objective of the NEMPC is to minimize the cumulative stage cost over a finit
 \end{equation}
 subject to:
 \begin{align}
-    \text{s.t. } & x(t+1) = f(x(t), u(t), p(t)),                                    \\
-    & u_{\min} \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
-    & x_{\min} \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
-    & x(0) = x_{\text{initial}}.
+    \text{s.t. } & x(t+1) = f(x(t), u(t), p(t)),                                      \\
+                 & u_{\min} \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
+                 & x_{\min} \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
+                 & x(0) = x_{\text{initial}}.
 \end{align}
 Here, \(x_{\min}\) and \(x_{\max}\), respectively, \(u_{\min}\) and \(u_{\max}\) represent the bounds on the state, respectively, control input variables.
 
