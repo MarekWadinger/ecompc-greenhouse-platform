@@ -5,7 +5,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![codecov](https://codecov.io/gh/MarekWadinger/ecompc-greenhouse-platform/graph/badge.svg?token=UWBJ585H4J)](https://codecov.io/gh/MarekWadinger/ecompc-greenhouse-platform)
 
-![Webpage Overview](publications/figures/webpage.png)
+[![Webpage Overview](publications/figures/webpage.png)](http://ecompc4greenhouse.streamlit.app)
 
 ## 🌍 Overview
 
