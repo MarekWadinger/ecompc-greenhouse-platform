@@ -136,9 +136,12 @@ where \(C_c\) is the \coo\ density, and \(T_{\text{in}}\) is the internal air te
 
 The greenhouse climate model integrates the models of temperature, humidity, and \coo\ concentration into a dynamic system represented by a state vector \(\mathbf{x}\) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)] \( \in\mathbb R^{11} \), and input vector \(\mathbf{u}\) = [\(Q_{\text{heater}}, R_{\text{fan}}, V_{\text{humid}}, G_{\coo} \)] \( \in\mathbb R^{4} \) for the heating power, ventilation, humidification, and \coo\ enrichment. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the plant temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \coo\ density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
 
+The model is influenced by external conditions \( \mathbf{p} = \left[
+T_{\text{ext}}, T_{\text{app}}, v_{\text{wind}}, H_{\text{rel}}, \mathbf{I}_{\text{POA,direct}}\in \mathbb{R}^{8}, \mathbf{I}_{\text{POA,diffuse}}\in \mathbb{R}^{8}
+\right] \in \mathbb{R}^{20} \). The \(T_{\text{ext}}\) represents the external air temperature, \(T_{\text{app}}\) the apparent temperature, \(v_{\text{wind}}\) the wind speed, \(H_{\text{rel}}\) the relative humidity, and \(\mathbf{I}_{\text{POA,direct}}\) and \(\mathbf{I}_{\text{POA,diffuse}}\) the POA (plane of array) direct and diffuse solar radiation, respectively. Additionally, \(\mathbf{I}_{\text{POA,direct}}\) and \(\mathbf{I}_{\text{POA,diffuse}}\) from all planes of the greenhouse are integrated, providing a realistic and dynamic input for the control strategy.
+
 \subsection{Actuation Control Systems}
-% RP: Tejto vete nerozumiem. Zda sa mi, ze chce povedat nieco uplne jednoduche ale hovori to velmi komplikovane.
-In our implementation, actuators operate by converting an input control signal from the system into the appropriate mechanical energy required to regulate environmental variables~\cite{Butterfield2018}. The actuators are used to control temperature, humidity, ventilation, and \coo\ concentration, summarized in Table~\ref{tab:actuators}. We monitor each actuator's contribution to the overall energy balance, operating costs, and \coo\ emissions.
+Actuators operate by converting an input control signal from the system into the appropriate mechanical action to regulate environmental variables~\cite{Butterfield2018}. The actuators are used to control temperature, humidity, ventilation, and \coo\ concentration, summarized in Table~\ref{tab:actuators}. We monitor each actuator's contribution to the overall energy balance, operating costs, and \coo\ emissions.
 
 \begin{table}
     \centering
@@ -382,21 +385,21 @@ The inclusion of the social cost of the carbon intensity into the cost function 
     \caption{Performance comparison: NEMPC {vs. } no control.}\label{tab:comparison}
     \begin{tabular}{lS[table-format=4.2]S[table-format=4.2]S[table-format=4.2]}
         \toprule
-        Parameter           & {No control} & {NEMPC (\coo\ )} & {NEMPC (\$)} \\
+        Parameter            & {No control} & {NEMPC (\coo\ )} & {NEMPC (\$)} \\
         \midrule
-        Lettuce profit      & 834.01       & 4459.57          & 4979.23      \\
-        Energy (Fan)        & 0.00         & -0.34            & -0.36        \\
-        Energy (Heater)     & 0.00         & -59.30           & -109.66      \\
-        Energy (Humidifier) & 0.00         & -1.79            & -2.23        \\
-        Energy (\coo\ Gen.) & 0.00         & -763.22          & -794.75      \\
-        Energy (Comp.)      & 0.00         & -0.001           & -0.001       \\
-        \coo\ (Fan)         & 0.00         & -0.79            & -0.83        \\
-        \coo\ (Heater)      & 0.00         & -158.51          & -378.51      \\
-        \coo\ (Humidifier)  & 0.00         & -3.90            & -5.78        \\
-        \coo\ (\coo\ Gen.)  & 0.00         & -2521.36         & -2705.12     \\
-        \coo\ (Comp.)       & 0.00         & -0.003           & -0.004       \\
+        Lettuce profit       & 834.01       & 4459.57          & 4979.23      \\
+        Energy (Fan)         & 0.00         & -0.34            & -0.36        \\
+        Energy (Heater)      & 0.00         & -59.30           & -109.66      \\
+        Energy (Humidifier)  & 0.00         & -1.79            & -2.23        \\
+        Energy (\coo\ Gen.)  & 0.00         & -763.22          & -794.75      \\
+        Energy (Computation) & 0.00         & -0.001           & -0.001       \\
+        \coo\ (Fan)          & 0.00         & -0.79            & -0.83        \\
+        \coo\ (Heater)       & 0.00         & -158.51          & -378.51      \\
+        \coo\ (Humidifier)   & 0.00         & -3.90            & -5.78        \\
+        \coo\ (\coo\ Gen.)   & 0.00         & -2521.36         & -2705.12     \\
+        \coo\ (Computation)  & 0.00         & -0.003           & -0.004       \\
         \midrule
-        Total               & 834.01       & 950.36           & 981.99       \\
+        Total                & 834.01       & 950.36           & 981.99       \\
         \bottomrule
     \end{tabular}
 \end{table}
