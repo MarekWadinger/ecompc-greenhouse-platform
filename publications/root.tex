@@ -134,9 +134,9 @@ The internal \coo\ concentration in ppm is given by:
 \end{equation}
 where \(C_c\) is the \coo\ density, and \(T_{\text{in}}\) is the internal air temperature in Kelvin.
 
-The greenhouse climate model integrates the models of temperature, humidity, and \coo\ concentration into a dynamic system represented by a state vector \(\mathbf{x}\) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)] \( \in\mathbb R^{11} \), and input vector \(\mathbf{u}\) = [\(Q_{\text{heater}}, R_{\text{fan}}, V_{\text{humid}}, G_{\coo} \)] \( \in\mathbb R^{4} \) for the heating power, ventilation, humidification, and \coo\ enrichment. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the plant temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \coo\ density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
+The greenhouse climate model integrates the models of temperature, humidity, and \coo\ concentration into a dynamic system represented by a state vector \(x\) = [\(T_c, T_i, T_v, T_m, T_p, T_f, T_s, C_w, C_c, x_{\text{sdw}}, x_{\text{nsdw}}\)] \( \in\mathbb R^{11} \), and input vector \(u\) = [\(Q_{\text{heater}}, R_{\text{fan}}, V_{\text{humid}}, G_{\coo} \)] \( \in\mathbb R^{4} \) for the heating power, ventilation, humidification, and \coo\ enrichment. The \(T_c\) represents the cover temperature, \(T_i\) the internal air temperature, \(T_v\) the plant temperature, \(T_m\) the growing medium temperature, \(T_p\) the tray temperature, \(T_f\) the floor temperature, and \(T_s\) the temperature of the soil layer. Additionally, \(C_w\) denotes the density of water vapor, \(C_c\) the \coo\ density, \(x_{\text{sdw}}\) the structural dry weight of the plant, and \(x_{\text{nsdw}}\) the non-structural dry weight of the plant.
 
-The model is influenced by external conditions \( \mathbf{p} = \left[
+The model is influenced by external conditions \( p = \left[
 T_{\text{ext}}, T_{\text{app}}, v_{\text{wind}}, H_{\text{rel}}, \mathbf{I}_{\text{POA,direct}}\in \mathbb{R}^{8}, \mathbf{I}_{\text{POA,diffuse}}\in \mathbb{R}^{8}
 \right] \in \mathbb{R}^{20} \). The \(T_{\text{ext}}\) represents the external air temperature, \(T_{\text{app}}\) the apparent temperature, \(v_{\text{wind}}\) the wind speed, \(H_{\text{rel}}\) the relative humidity, and \(\mathbf{I}_{\text{POA,direct}}\) and \(\mathbf{I}_{\text{POA,diffuse}}\) the POA (plane of array) direct and diffuse solar radiation, respectively. Additionally, \(\mathbf{I}_{\text{POA,direct}}\) and \(\mathbf{I}_{\text{POA,diffuse}}\) from all planes of the greenhouse are integrated, providing a realistic and dynamic input for the control strategy.
 
@@ -299,7 +299,6 @@ The NEMPC is adopted to maximize the profit of growing lettuce in a greenhouse. 
 
 The greenhouse system dynamics is modeled by a set of nonlinear equations (see Section~\ref{sec:greenhouse}) as:
 \begin{equation}
-    % RP: Stav sa v casti "model" volal "z", tu sa vola "x". Treba to zjednotit. Aj typ fontu.
     x(t+1) = f\left( x(t), u(t), p(t) \right),
 \end{equation}
 where, at time step \(t\), \(x(t) \in \mathbb{R}^{n_x}\) represents the state vector, \(u(t) \in \mathbb{R}^{n_u}\) is the control input vector (actuators), and \(p(t)\) are time-varying parameters, i.e., external climate conditions.
@@ -308,10 +307,9 @@ where, at time step \(t\), \(x(t) \in \mathbb{R}^{n_x}\) represents the state ve
 
 The goal of NEMPC is to maximize the revenue from lettuce production while minimizing the costs associated with actuator use. The objective function is composed of two terms: the profit from biomass accumulation and the actuating costs.
 
-The revenue from lettuce production is proportional to the change in biomass between the initial state and the current state, expressed as:
+The revenue from lettuce production is proportional to the change in biomass between the initial state~\(x(0)\) and the current state~\(x(t)\), expressed as:
 \begin{equation}
-    % RP: Co znamena initial state? t = 0 alebo t = k?
-    R(t) = \frac{P_L A_c}{\rho_{dw}} \textstyle\sum_{i\in \{ \text{sdw}, \text{nsdw} \}}x_i(t) - x_{0, i},
+    R(t) = \frac{P_L A_c}{\rho_{dw}} \textstyle\sum_{i\in \{ \text{sdw}, \text{nsdw} \}}(x_i(t) - x_i(0)),
 \end{equation}
 where \(P_L\) is the price of lettuce per gram, \(A_c\) is the cultivated area, and \(\rho_{dw}\) stands for dry-to-wet ratio.
 
@@ -333,10 +331,10 @@ The objective of the NEMPC is to minimize the cumulative stage cost over a finit
 \end{equation}
 subject to:
 \begin{align}
-    \text{s.t. } x(t+1) & = f(x(t), u(t), p(t)),                                    \\
-    u_{\min}            & \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
-    x_{\min}            & \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
-    x(0)                & = x_{\text{initial}}.
+    \text{s.t. } & x(t+1) = f(x(t), u(t), p(t)),                                    \\
+    & u_{\min} \leq u(t) \leq u_{\max}, \quad \forall t = 0, \dots, N-1, \\
+    & x_{\min} \leq x(t) \leq x_{\max}, \quad \forall t = 0, \dots, N,   \\
+    & x(0) = x_{\text{initial}}.
 \end{align}
 Here, \(x_{\min}\) and \(x_{\max}\), respectively, \(u_{\min}\) and \(u_{\max}\) represent the bounds on the state, respectively, control input variables.
 
