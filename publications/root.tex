@@ -369,7 +369,7 @@ Nevertheless, there is a positive effect on convection and the overall transfer 
     \caption{Responses of structural and non-structural dry weight on step changes from off to maximum in following actuations from the left to the right: ventilation, heating, humidification, and \coo\ enrichment, no step made.}\label{fig:steps}
 \end{figure*}
 
-The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm is configured with a prediction horizon and a control horizon of 1 hour. The simulations are run for a total of 10,801 steps, with a sampling time of 120 seconds. Results in Figure~\ref{fig:control} demonstrate that the proposed NEMPC increased crop yield by 435\% and increased profit by more than 14\% in just 15 days of growth.
+The second set of simulations compares the performance of the proposed NEMPC algorithm with a no-control scenario. The NEMPC algorithm is configured with a prediction horizon and a control horizon of 1 hour. The simulations are run for a total of 10,801 steps, with a sampling time of 120 seconds. Results in Table~\ref{tab:comparison} demonstrate that the proposed NEMPC increased crop yield by 435\% and increased profit by more than 14\% in just 15 days of growth. As illustrated in Figure~\ref{fig:control}, which shows the lettuce growth and actuation patterns, the \coo\ generator is heavily relied upon, while the heater is used sparingly due to high electricity consumption and mild autumn weather.
 The inclusion of the social cost of the carbon intensity into the cost function of the NEMPC leads to a 15\% reduction in \coo\ consumption, although it caused a 11\% decrease in plant growth and 3\% decrease in profit when compared to a scenario where the social cost of \coo\ was not minimized. This highlights a significant trade-off between economic output and the carbon intensity of the energy sources. While farmers may prioritize economic gains, the environmental impact of production deserves careful consideration.
 
 \begin{figure}\label{fig:control}
@@ -381,23 +381,24 @@ The inclusion of the social cost of the carbon intensity into the cost function 
 \begin{table}
     \centering
     \caption{Performance comparison: NEMPC {vs. } no control.}\label{tab:comparison}
-    \begin{tabular}{lS[table-format=4.2]S[table-format=4.2]S[table-format=4.2]}
+    \setlength{\tabcolsep}{4pt} % Reduce the column separation
+    \begin{tabular}{lS[table-format=3.2]S[table-format=4.2]S[table-format=4.2]}
         \toprule
-        Parameter            & {No control} & {NEMPC (\coo\ )} & {NEMPC (\$)} \\
+        \textbf{Parameter}  & {No control} & {NEMPC (\coo)} & {NEMPC (\$)} \\
         \midrule
-        Lettuce profit       & 834.01       & 4459.57          & 4979.23      \\
-        Energy (Fan)         & 0.00         & -0.34            & -0.36        \\
-        Energy (Heater)      & 0.00         & -59.30           & -109.66      \\
-        Energy (Humidifier)  & 0.00         & -1.79            & -2.23        \\
-        Energy (\coo\ Gen.)  & 0.00         & -763.22          & -794.75      \\
-        Energy (Computation) & 0.00         & -0.001           & -0.001       \\
-        \coo\ (Fan)          & 0.00         & -0.79            & -0.83        \\
-        \coo\ (Heater)       & 0.00         & -158.51          & -378.51      \\
-        \coo\ (Humidifier)   & 0.00         & -3.90            & -5.78        \\
-        \coo\ (\coo\ Gen.)   & 0.00         & -2521.36         & -2705.12     \\
-        \coo\ (Computation)  & 0.00         & -0.003           & -0.004       \\
+        Lettuce profit      & 834.01       & 4459.57        & 4979.23      \\
+        Energy (Fan)        & 0.00         & -0.34          & -0.36        \\
+        Energy (Heater)     & 0.00         & -59.30         & -109.66      \\
+        Energy (Humidifier) & 0.00         & -1.79          & -2.23        \\
+        Energy (\coo\ Gen.) & 0.00         & -763.22        & -794.75      \\
+        Energy (Solver)     & 0.00         & -0.001         & -0.001       \\
+        \coo\ (Fan)         & 0.00         & -0.79          & -0.83        \\
+        \coo\ (Heater)      & 0.00         & -158.51        & -378.51      \\
+        \coo\ (Humidifier)  & 0.00         & -3.90          & -5.78        \\
+        \coo\ (\coo\ Gen.)  & 0.00         & -2521.36       & -2705.12     \\
+        \coo\ (Solver)      & 0.00         & -0.003         & -0.004       \\
         \midrule
-        Total                & 834.01       & 950.36           & 981.99       \\
+        \textbf{Total}      & 834.01       & 950.36         & 981.99       \\
         \bottomrule
     \end{tabular}
 \end{table}
