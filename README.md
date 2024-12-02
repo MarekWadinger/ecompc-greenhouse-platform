@@ -26,12 +26,12 @@ Developed to support the publication *"Carbon Neutral Greenhouse: Economic Model
 If you use this platform for academic purposes, please cite our publication:
 
 ```bibtex
-@misc{Wadinger2024,
-  author = {Wadinger, Marek and F'aber, Rastislav and Pavlovi\v cov'a, Erika and Paulen, Radoslav},
-  note   = {Submitted to European Control Conference (ECC)},
-  title  = {Carbon Neutral Greenhouse: Economic Model Predictive Control Framework for Education},
-  url    = {},
-  year   = {2025},
+@misc{wadinger2024carbonneutralgreenhouseeconomic,
+  author        = {Marek Wadinger and Rastislav Fáber and Erika Pavlovičová and Radoslav Paulen},
+  note          = {Submitted to European Control Conference (ECC)},
+  title         = {Carbon Neutral Greenhouse: Economic Model Predictive Control Framework for Education},
+  url           = {https://arxiv.org/abs/2410.23793},
+  year          = {2024},
 }
 ```
 
