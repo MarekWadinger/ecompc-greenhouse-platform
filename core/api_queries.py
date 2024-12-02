@@ -213,6 +213,12 @@ class Entsoe:
                 index=pd.date_range(start_date, end_date, freq="h"),
                 data=self.default,
             )
+        except ConnectionError:
+            warnings.warn("Connection error. Using default price.")
+            df = pd.Series(
+                index=pd.date_range(start_date, end_date, freq="h"),
+                data=self.default,
+            )
 
         return df / 1000  # [EUR/kWh]
 
