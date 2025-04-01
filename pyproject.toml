@@ -1,3 +1,12 @@
+[project]
+name = "greenhouse-mpc"
+version = "0.1.1"
+description = "Greenhouse MPC"
+authors = [{ name = "Marek Wadinger", email = "marek.wadinger@stuba.sk" }]
+requires-python = ">=3.8"
+readme = "README.md"
+license = { file = "LICENSE" }
+
 [tool.pytest.ini_options]
 addopts = [
     "--doctest-modules",
@@ -55,3 +64,10 @@ exclude_lines = [
     "class .*\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "pep440"
+version_provider = "pep621"
+update_changelog_on_bump = true
