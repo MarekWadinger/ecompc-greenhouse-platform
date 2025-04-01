@@ -2,7 +2,6 @@ import os
 import sys
 from contextlib import contextmanager
 from functools import partial
-from io import BytesIO
 
 import numpy as np
 import pandas as pd
@@ -11,15 +10,16 @@ from stqdm import stqdm
 from streamlit_theme import st_theme
 
 from core.api_queries import (
+    ElectricityMap,
     Entsoe,
     OpenMeteo,
     get_city_geocoding,
-    get_co2_intensity,
+    get_weather_and_energy_data,
 )
 from core.controller import EconomicMPC, GreenHouseModel, GreenhouseSimulator
 from core.greenhouse_model import GreenHouse, x_init_dict
 from core.lettuce_model import DRY_TO_WET_RATIO, RATIO_SDW_NSDW
-from core.plot import plotly_greenhouse, plotly_response
+from core.plot import plotly_greenhouse, plotly_response, plotly_weather
 
 # --- Page Config ---
 
@@ -29,15 +29,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-# CONSTANTS
-sim_steps_max = 60 * 24
-N_max = 60
-Ts_default = 300
-
-
-get_city_geocoding = st.cache_data(get_city_geocoding)
-get_co2_intensity = st.cache_data(get_co2_intensity)
 
 
 @contextmanager
@@ -51,46 +42,15 @@ def suppress_stdout():
             sys.stdout = old_stdout
 
 
+# --- Constants ---
+sim_steps_max = 60 * 24
+N_max = 60
+Ts_default = 300
+
+TTL = 5 * 60  # Cache for 5 minutes
+
+
 # --- Functions ---
-def export_fig(fig) -> bytes:
-    buf = BytesIO()
-    fig.savefig(buf, format="pdf")
-    buf.seek(0)
-    return buf.getvalue()
-
-
-@st.cache_resource(ttl=5 * 60, max_entries=2)
-def plotly_greenhouse_(length, width, height, roof_tilt, azimuth):
-    return plotly_greenhouse(length, width, height, roof_tilt, azimuth)
-
-
-@st.cache_resource(ttl=5 * 60, max_entries=2)
-def plotly_weather_(climate):
-    fig = climate.resample("1h").median().plot(backend="plotly")
-    # Hide all traces after the first 4
-    for i in range(4, len(fig.data)):
-        fig.data[
-            i
-        ].visible = (
-            "legendonly"  # Keeps the plot in the legend but hides the trace
-        )
-    fig.update_layout(
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-        )
-    )
-    return fig
-
-
-@st.cache_resource(ttl=5 * 60, max_entries=1)
-def plotly_response_(
-    _timestamps,
-    y_nexts,
-    u0s,
-    u_min,
-    u_max,
-):
-    return plotly_response(_timestamps, y_nexts, u0s, u_min, u_max)
 
 
 # # --- Initialize session ---
@@ -227,7 +187,7 @@ with st.sidebar:
                     altitude,
                 ) = get_city_geocoding(city_)
                 try:
-                    co2_intensity = get_co2_intensity(
+                    co2_intensity = ElectricityMap().get_co2_intensity(
                         country_code,
                     )
                     co2_source = "Current"
@@ -376,7 +336,7 @@ runtime_info = st.empty()
 # === Enable after submitting parameters ===
 if st.session_state.shape_form_submitted:
     st.header("Greenhouse Visualization")
-    fig_gh = plotly_greenhouse_(length, width, height, roof_tilt, azimuth_face)
+    fig_gh = plotly_greenhouse(length, width, height, roof_tilt, azimuth_face)
     st.plotly_chart(fig_gh)
 
 
@@ -408,30 +368,21 @@ if (
     end_date = start_date + pd.Timedelta(
         days=min(15, (sim_steps_max + N_max) * Ts // (3600 * 24))
     )
-    climate = (
-        openmeteo.get_weather_data(start_date=start_date, end_date=end_date)
-        .tz_localize(tz, ambiguous=True)
-        .asfreq(f"{Ts}s")
-        .interpolate(method="time")
-    )
-    entsoe = Entsoe()
-    energy_cost = entsoe.get_electricity_price(
-        country_code=country_code,
-        start_date=start_date.tz_localize(tz),
-        end_date=end_date.tz_localize(tz),
-        tz=tz,
-    )
-    energy_cost = pd.concat([pd.Series(index=climate.index), energy_cost])
-    energy_cost = energy_cost[~energy_cost.index.duplicated(keep="first")]
-    climate["energy_cost"] = energy_cost.sort_index().interpolate(
-        method="time", limit_direction="both"
+    climate = get_weather_and_energy_data(
+        openmeteo,
+        Entsoe(),
+        start_date,
+        end_date,
+        tz,
+        country_code,
+        Ts,
     )
     runtime_info.info("Plotting forecast ...")
 
     weather_plot = st.empty()
-    weather_plot.plotly_chart(plotly_weather_(climate))
+    weather_plot.plotly_chart(plotly_weather(climate))
     runtime_info.success(
-        "Forecast fetched from [Open-Meteo](https://open-meteo.com) ..."
+        "Forecast fetched from [Open-Meteo](https://open-meteo.com)."
     )
 
 if (
@@ -502,15 +453,21 @@ if (
             if step + N == len(climate):
                 runtime_info.info("Fetching new forecast")
                 start_date = start_date + pd.Timedelta(seconds=step * Ts)
-                climate = (
-                    openmeteo.get_weather_data(
-                        start_date=start_date,
-                        end_date=(start_date + pd.Timedelta(days=1)).strftime(
-                            "%Y-%m-%d"
-                        ),
-                    )
-                    .asfreq(f"{Ts}s")
-                    .interpolate(method="time")
+                climate = get_weather_and_energy_data(
+                    OpenMeteo(
+                        latitude=latitude,
+                        longitude=longitude,
+                        altitude=altitude,
+                        tilt=tilt,
+                        azimuth=azimuth,
+                        frequency="minutely_15",
+                    ),
+                    Entsoe(),
+                    start_date,
+                    start_date + pd.Timedelta(days=1),
+                    tz,
+                    country_code,
+                    Ts,
                 )
 
                 mpc.climate = climate
@@ -535,7 +492,7 @@ if (
     )
     forecast_plot = st.empty()
     forecast_plot.plotly_chart(
-        plotly_response_(timestamps, x0s, u0s, [u_min], [u_max])
+        plotly_response(timestamps, x0s, u0s, [u_min], [u_max])
     )
 
     # Export results to table

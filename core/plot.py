@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import streamlit as st
 from plotly.subplots import make_subplots
 
 plt.rcParams.update(
@@ -27,6 +28,8 @@ plotly_colors = [
     "#FF97FF",
     "#FECB52",
 ]
+
+TTL = 5 * 60  # Cache for 5 minutes
 
 
 def set_size(
@@ -180,6 +183,7 @@ def plot_states(
     return axs
 
 
+@st.cache_resource(ttl=TTL, max_entries=1)
 def plotly_response(
     _timestamps,
     y_nexts,
@@ -291,6 +295,7 @@ def plotly_response(
     return fig
 
 
+@st.cache_resource(ttl=TTL, max_entries=2)
 def plotly_greenhouse(length, width, height, roof_tilt, azimuth):
     fig = make_subplots(
         rows=1,
@@ -511,3 +516,40 @@ def plotly_compass_with_greenhouse(
     )
 
     return fig
+
+
+@st.cache_resource(ttl=TTL, max_entries=2)
+def plotly_weather(climate: pd.DataFrame):
+    fig = climate.resample("1h").median().plot(backend="plotly")
+    # Hide all traces after the first 4
+    for i in range(4, len(fig.data)):
+        fig.data[
+            i
+        ].visible = (
+            "legendonly"  # Keeps the plot in the legend but hides the trace
+        )
+    fig.update_layout(
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+        )
+    )
+    return fig
+
+
+def export_fig(fig: go.Figure) -> bytes:
+    """Export figure to bytes.
+
+    Args:
+        fig: Either a matplotlib figure or a plotly figure
+
+    Returns:
+        Bytes representation of the figure in PDF format
+    """
+    from io import BytesIO
+
+    buf = BytesIO()
+
+    fig.write_image(buf, format="pdf")
+
+    buf.seek(0)
+    return buf.getvalue()

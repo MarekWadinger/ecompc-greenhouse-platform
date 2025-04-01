@@ -5,37 +5,40 @@ from typing import Literal
 
 import pandas as pd
 import pvlib
-import requests
 import requests_cache
+import streamlit as st
 from dotenv import load_dotenv
 from retry_requests import retry
 
 load_dotenv()
 
 
-def get_co2_intensity(
-    country_code: str, api_key: str | None = None, default: float = 200.0
-) -> float:
-    """This endpoint retrieves the last 24 hours of carbon intensity (in gCO2eq/kWh) of an area. It can either be queried by zone identifier or by geolocation. The resolution is 60 minutes."""
+TTL = 5 * 60  # Cache for 5 minutes
 
-    if api_key is None:
-        api_key = os.getenv("ELECTRICITYMAP_API_KEY")
-        if api_key is None:
-            raise ValueError(
-                "API key must be provided or set in the .env file"
-            )
 
-    url = f"https://api.electricitymap.org/v3/carbon-intensity/latest?zone={country_code}"
-    headers = {"auth-token": api_key}
-    response = requests.get(url, headers=headers)
+@st.cache_data(ttl=TTL)
+def get_city_geocoding(
+    city: str,
+) -> tuple[str, str, str, str, float, float, int]:
+    url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
+    cache_session = requests_cache.CachedSession(
+        ".openmeteo.cache", expire_after=3600
+    )
+    retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+    response = retry_session.get(url)
     if response.ok:
-        data = response.json()
-        return data["carbonIntensity"]
-    else:
-        warnings.warn(
-            f"Failed to fetch CO2 intensity data. Using {default} gCO₂eq/kWh. Details:\n{response.text}"
+        data = response.json()["results"][0]
+        return (
+            data["name"],
+            data["country"],
+            data["country_code"],
+            data["timezone"],
+            data["latitude"],
+            data["longitude"],
+            data["elevation"],
         )
-        return default
+    else:
+        raise ValueError(f"Failed to fetch city data: {response.text}")
 
 
 class ElectricityMap:
@@ -62,8 +65,9 @@ class ElectricityMap:
         headers = {"auth-token": api_key}
         self.retry_session.headers.update(headers)
 
+    @st.cache_data(ttl=TTL)
     def get_co2_intensity(
-        self,
+        _self,
         country_code: str,
     ) -> float:
         """This endpoint retrieves the last 24 hours of carbon intensity (in gCO2eq/kWh) of an area. It can either be queried by zone identifier or by geolocation. The resolution is 60 minutes."""
@@ -73,7 +77,7 @@ class ElectricityMap:
         params = {
             "zone": country_code,
         }
-        response = self.retry_session.get(
+        response = _self.retry_session.get(
             "https://api.electricitymap.org/v3/carbon-intensity/latest",
             params=params,
         )
@@ -83,12 +87,13 @@ class ElectricityMap:
             return data["carbonIntensity"]
         else:
             warnings.warn(
-                f"Failed to fetch CO2 intensity data. Using {self.default} gCO₂eq/kWh. Details:\n{response.text}"
+                f"Failed to fetch CO2 intensity data. Using {_self.default} gCO₂eq/kWh. Details:\n{response.text}"
             )
-            return self.default
+            return _self.default
 
+    @st.cache_data(ttl=TTL)
     def get_co2_intensity_history(
-        self,
+        _self,
         country_code: str,
     ) -> pd.DataFrame:
         """This endpoint retrieves the last 24 hours of carbon intensity (in gCO2eq/kWh) of an area. It can either be queried by zone identifier or by geolocation. The resolution is 60 minutes."""
@@ -98,7 +103,7 @@ class ElectricityMap:
         params = {
             "zone": country_code,
         }
-        response = self.retry_session.get(
+        response = _self.retry_session.get(
             "https://api.electricitymap.org/v3/carbon-intensity/history",
             params=params,
         )
@@ -112,7 +117,7 @@ class ElectricityMap:
             )
         else:
             warnings.warn(
-                f"Failed to fetch CO2 intensity data. Using {self.default} gCO₂eq/kWh. Details:\n{response.text}"
+                f"Failed to fetch CO2 intensity data. Using {_self.default} gCO₂eq/kWh. Details:\n{response.text}"
             )
             return pd.DataFrame(
                 {
@@ -122,7 +127,7 @@ class ElectricityMap:
                         periods=24,
                         freq="H",
                     ),
-                    "carbonIntensity": [self.default] * 24,
+                    "carbonIntensity": [_self.default] * 24,
                 }
             ).set_index("datetime")
 
@@ -146,11 +151,20 @@ class Entsoe:
                 )
         from entsoe import EntsoePandasClient
 
-        self.client = EntsoePandasClient(api_key=api_key)
+        cache_session = requests_cache.CachedSession(
+            ".entsoe.cache", expire_after=3600
+        )
+        self.retry_session = retry(
+            cache_session, retries=5, backoff_factor=0.2
+        )
+        self.client = EntsoePandasClient(
+            api_key=api_key, session=self.retry_session
+        )
         self.default = default
 
+    @st.cache_data(ttl=TTL)
     def get_electricity_price(
-        self,
+        _self,
         country_code: str,
         start_date: str | pd.Timestamp,
         end_date: str | pd.Timestamp,
@@ -163,7 +177,7 @@ class Entsoe:
         if not isinstance(end_date, pd.Timestamp):
             end_date = pd.Timestamp(end_date, tz=tz)
         try:
-            df = self.client.query_day_ahead_prices(
+            df = _self.client.query_day_ahead_prices(
                 country_code,
                 start=start_date,
                 end=end_date,
@@ -211,36 +225,16 @@ class Entsoe:
             warnings.warn("No matching data found. Using default price.")
             df = pd.Series(
                 index=pd.date_range(start_date, end_date, freq="h"),
-                data=self.default,
+                data=_self.default,
             )
         except ConnectionError:
             warnings.warn("Connection error. Using default price.")
             df = pd.Series(
                 index=pd.date_range(start_date, end_date, freq="h"),
-                data=self.default,
+                data=_self.default,
             )
 
         return df / 1000  # [EUR/kWh]
-
-
-def get_city_geocoding(
-    city: str,
-) -> tuple[str, str, str, str, float, float, int]:
-    url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
-    response = requests.get(url)
-    if response.ok:
-        data = response.json()["results"][0]
-        return (
-            data["name"],
-            data["country"],
-            data["country_code"],
-            data["timezone"],
-            data["latitude"],
-            data["longitude"],
-            data["elevation"],
-        )
-    else:
-        raise ValueError(f"Failed to fetch city data: {response.text}")
 
 
 class OpenMeteo:
@@ -255,21 +249,7 @@ class OpenMeteo:
     ):
         self.latitude = latitude
         self.longitude = longitude
-        if altitude is None:
-            # Get altitude based on latitude and longitude
-            altitude_url = f"https://api.open-meteo.com/v1/elevation?latitude={self.latitude}&longitude={self.longitude}"
-            altitude_response = requests.get(altitude_url)
-            if altitude_response.ok:
-                altitude_data = altitude_response.json()
-                self.altitude: int = altitude_data["results"][0]["elevation"][
-                    0
-                ]
-            else:
-                raise ValueError(
-                    f"Failed to fetch altitude data: {altitude_response.text}"
-                )
-        else:
-            self.altitude = altitude
+        self.altitude_: int | None = altitude
 
         self.tilt = tilt
         self.azimuth = azimuth
@@ -282,6 +262,24 @@ class OpenMeteo:
         self.retry_session = retry(
             cache_session, retries=5, backoff_factor=0.2
         )
+
+    @property
+    def altitude(self) -> int:
+        if self.altitude_ is None:
+            # Get altitude based on latitude and longitude
+            altitude_url = f"https://api.open-meteo.com/v1/elevation?latitude={self.latitude}&longitude={self.longitude}"
+            altitude_response = self.retry_session.get(altitude_url)
+            if altitude_response.ok:
+                altitude_data = altitude_response.json()
+                altitude_: int = altitude_data["results"][0]["elevation"][0]
+            else:
+                raise ValueError(
+                    f"Failed to fetch altitude data: {altitude_response.text}"
+                )
+            self.altitude_ = altitude_
+            return altitude_
+        else:
+            return self.altitude_
 
     def azimuth_to_deg(self, azimuth: str):
         directions = {
@@ -297,8 +295,9 @@ class OpenMeteo:
 
         return directions.get(azimuth.upper(), None)
 
+    @st.cache_data(ttl=TTL)
     def get_openmeteo(
-        self,
+        _self,
         forecast: int | None = None,
         start_date: str | pd.Timestamp | None = None,
         end_date: str | pd.Timestamp | None = None,
@@ -308,7 +307,7 @@ class OpenMeteo:
         if isinstance(end_date, pd.Timestamp):
             end_date = end_date.strftime("%Y-%m-%dT%H:%M")
 
-        if self.frequency != "current":
+        if _self.frequency != "current":
             if forecast is not None and (
                 start_date is not None or end_date is not None
             ):
@@ -320,36 +319,36 @@ class OpenMeteo:
         now = datetime.now()
         if end_date is not None and pd.to_datetime(end_date) < now:
             if pd.to_datetime(end_date) < datetime(2022, 1, 1):
-                self.frequency = "hourly"
+                _self.frequency = "hourly"
                 url = "https://archive-api.open-meteo.com/v1/archive"
             else:
-                self.frequency = "minutely_15"
+                _self.frequency = "minutely_15"
                 url = "https://historical-forecast-api.open-meteo.com/v1/forecast"
         else:
-            self.frequency = "minutely_15"
+            _self.frequency = "minutely_15"
             url = "https://api.open-meteo.com/v1/forecast"
 
         # Make sure all required weather variables are listed here
         # The order of variables in hourly or daily is important to assign them correctly below
         params = {
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            self.frequency: [
+            "latitude": _self.latitude,
+            "longitude": _self.longitude,
+            _self.frequency: [
                 "temperature_2m",
                 "apparent_temperature",
                 "wind_speed_10m",
                 "relative_humidity_2m",
             ],
             "forecast_days": forecast,
-            f"start_{self.frequency.rstrip('ly')}": start_date,
-            f"end_{self.frequency.rstrip('ly')}": end_date,
+            f"start_{_self.frequency.rstrip('ly')}": start_date,
+            f"end_{_self.frequency.rstrip('ly')}": end_date,
         }
-        responses = self.retry_session.get(url, params=params)
+        responses = _self.retry_session.get(url, params=params)
 
         if responses.ok:
             r = responses.json()
             # Convert the response to a pandas DataFrame
-            data = r.pop(self.frequency)
+            data = r.pop(_self.frequency)
             if "interval" in data:
                 del data["interval"]
             if isinstance(data["time"], list):
@@ -360,7 +359,7 @@ class OpenMeteo:
             df.index = pd.to_datetime(df.index)
 
             # Add units to column names
-            suffix_dict = r[f"{self.frequency}_units"]
+            suffix_dict = r[f"{_self.frequency}_units"]
             for col in df.columns:
                 if col in suffix_dict:
                     df.rename(
@@ -373,8 +372,9 @@ class OpenMeteo:
                 f"Failed to fetch data from Open-Meteo API: {responses.text}"
             )
 
+    @st.cache_data(ttl=TTL)
     def get_irr_at_tilt_and_azimuth(
-        self,
+        _self,
         forecast: int | None = None,
         start_date: str | pd.Timestamp | None = None,
         end_date: str | pd.Timestamp | None = None,
@@ -407,7 +407,7 @@ class OpenMeteo:
         if isinstance(end_date, pd.Timestamp):
             end_date = end_date.strftime("%Y-%m-%d")
 
-        if self.frequency != "current":
+        if _self.frequency != "current":
             if forecast is not None and (
                 start_date is not None or end_date is not None
             ):
@@ -429,8 +429,8 @@ class OpenMeteo:
             "minutely_15": "15min",
             "current": "h",
         }
-        freq = frequency_mapping[self.frequency]
-        if self.frequency == "current":
+        freq = frequency_mapping[_self.frequency]
+        if _self.frequency == "current":
             date_time = pd.date_range(start=now, end=now, freq=freq)
         elif forecast is not None:
             now = pd.Timestamp.now().normalize()
@@ -448,9 +448,9 @@ class OpenMeteo:
 
         # Define location
         location = pvlib.location.Location(
-            latitude=self.latitude,
-            longitude=self.longitude,
-            altitude=self.altitude,
+            latitude=_self.latitude,
+            longitude=_self.longitude,
+            altitude=_self.altitude,
         )
 
         # Solar position
@@ -468,19 +468,19 @@ class OpenMeteo:
             dhi_ = dhi
 
         # Tilted surface radiation
-        if not isinstance(self.tilt, list):
-            tilt = [self.tilt]
+        if not isinstance(_self.tilt, list):
+            tilt = [_self.tilt]
         else:
-            tilt = self.tilt
-        if not isinstance(self.azimuth, list):
-            azimuth = [self.azimuth]
+            tilt = _self.tilt
+        if not isinstance(_self.azimuth, list):
+            azimuth = [_self.azimuth]
         else:
-            azimuth = self.azimuth
+            azimuth = _self.azimuth
         df_rad = pd.DataFrame()
         df_rad["elevation"] = solar_position["elevation"]
         for t, a in zip(tilt, azimuth):
             if not isinstance(a, (int, float)):
-                a = self.azimuth_to_deg(a)
+                a = _self.azimuth_to_deg(a)
             radiation = pvlib.irradiance.get_total_irradiance(
                 surface_tilt=t,
                 surface_azimuth=a,
@@ -518,8 +518,9 @@ class OpenMeteo:
         df = df[cols_sort]
         return df
 
+    @st.cache_data(ttl=TTL)
     def get_weather_data(
-        self,
+        _self,
         forecast: int | None = None,
         start_date: str | pd.Timestamp | None = None,
         end_date: str | pd.Timestamp | None = None,
@@ -529,8 +530,8 @@ class OpenMeteo:
         if isinstance(end_date, pd.Timestamp):
             end_date = end_date.strftime("%Y-%m-%dT%H:%M")
 
-        df = self.get_openmeteo(forecast, start_date, end_date)
-        df_rad = self.get_irr_at_tilt_and_azimuth(
+        df = _self.get_openmeteo(forecast, start_date, end_date)
+        df_rad = _self.get_irr_at_tilt_and_azimuth(
             forecast,
             start_date,
             end_date,
@@ -539,7 +540,7 @@ class OpenMeteo:
         df = pd.concat([df, df_rad], axis=1)
 
         df = df.dropna()
-        df = self.sort_diffuse_last(df)
+        df = _self.sort_diffuse_last(df)
         return df
 
 
@@ -580,3 +581,48 @@ if __name__ == "__main__":
         start_date,
         end_date,
     )
+
+
+@st.cache_data(ttl=TTL)
+def get_weather_and_energy_data(
+    _openmeteo: OpenMeteo,
+    _entsoe: Entsoe,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
+    tz: str,
+    country_code: str,
+    Ts: int,
+) -> pd.DataFrame:
+    """Get weather and energy data with caching.
+
+    Args:
+        openmeteo: OpenMeteo API instance
+        entsoe: Entsoe API instance
+        start_date: Start date for data
+        end_date: End date for data
+        tz: Timezone
+        country_code: Country code for energy data
+        Ts: Sampling time in seconds
+
+    Returns:
+        DataFrame with weather and energy data
+    """
+    climate = (
+        _openmeteo.get_weather_data(start_date=start_date, end_date=end_date)
+        .tz_localize(tz, ambiguous=True)
+        .asfreq(f"{Ts}s")
+        .interpolate(method="time")
+    )
+
+    energy_cost = _entsoe.get_electricity_price(
+        country_code=country_code,
+        start_date=start_date.tz_localize(tz),
+        end_date=end_date.tz_localize(tz),
+        tz=tz,
+    )
+    energy_cost = pd.concat([pd.Series(index=climate.index), energy_cost])
+    energy_cost = energy_cost[~energy_cost.index.duplicated(keep="first")]
+    climate["energy_cost"] = energy_cost.sort_index().interpolate(
+        method="time", limit_direction="both"
+    )
+    return climate
