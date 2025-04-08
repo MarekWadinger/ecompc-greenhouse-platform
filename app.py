@@ -22,7 +22,6 @@ from core.lettuce_model import DRY_TO_WET_RATIO, RATIO_SDW_NSDW
 from core.plot import plotly_greenhouse, plotly_response, plotly_weather
 
 # --- Page Config ---
-
 st.set_page_config(
     page_title="Green House Control",
     page_icon=":seedling:",
@@ -50,7 +49,12 @@ Ts_default = 300
 TTL = 5 * 60  # Cache for 5 minutes
 
 
-# --- Functions ---
+# --- Cache Functions ---
+plotly_greenhouse = st.cache_resource(ttl=TTL, max_entries=2)(
+    plotly_greenhouse
+)
+plotly_response = st.cache_resource(ttl=TTL, max_entries=1)(plotly_response)
+plotly_weather = st.cache_resource(ttl=TTL, max_entries=2)(plotly_weather)
 
 
 # # --- Initialize session ---
@@ -333,6 +337,7 @@ with st.sidebar:
 # === Main ===
 st.title("Economic MPC for Greenhouse Climate Control")
 runtime_info = st.empty()
+
 # === Enable after submitting parameters ===
 if st.session_state.shape_form_submitted:
     st.header("Greenhouse Visualization")
@@ -361,6 +366,7 @@ if (
         azimuth=azimuth,  # Azimuth angle of the surface in degrees (South facing)
         frequency="minutely_15",  # Frequency of the data
     )
+    entsoe = Entsoe()
     start_date = pd.Timestamp.combine(
         start_date_,  # type: ignore
         start_time,
@@ -370,7 +376,7 @@ if (
     )
     climate = get_weather_and_energy_data(
         openmeteo,
-        Entsoe(),
+        entsoe,
         start_date,
         end_date,
         tz,
@@ -420,17 +426,21 @@ if (
 
     runtime_info.info("Simulating ...")
 
+    @st.cache_data(ttl=TTL, max_entries=1)
+    def init_states(x0, u0, tvp):
+        return model.init_states(x0, u0, tvp)
+
+    @st.cache_data(ttl=TTL)
+    def make_step(x0):
+        u0 = mpc.make_step(x0)
+        x0 = simulator.make_step(u0)
+        return x0, u0
+
     # Find feasible initial state for given climate
     x0 = np.array([*x_init_dict.values()])
     x0[-2:] = x_sn_init
     u0 = np.array([50.0] * len(gh_model.active_actuators))
-    for k in range(N):
-        k1 = greenhouse_model(k, x0, u0)
-        k2 = greenhouse_model(k, x0 + Ts / 2 * k1, u0)
-        k3 = greenhouse_model(k, x0 + Ts / 2 * k2, u0)
-        k4 = greenhouse_model(k, x0 + Ts * k3, u0)
-        x_next = x0 + Ts / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-        x0 = x_next
+    x0 = init_states(x0, u0, tuple(climate.values[0]))
 
     mpc.x0 = x0
     mpc.u0 = np.array([50.0] * model.n_u)
@@ -449,26 +459,23 @@ if (
     )
     x0s = pd.DataFrame(columns=[*x_init_dict.keys()], index=range(sim_steps))
     for step in stqdm(range(sim_steps)):
+        # Fetch new forecast if needed
         if step * Ts + N + 1 > len(climate):
             if step + N == len(climate):
                 runtime_info.info("Fetching new forecast")
                 start_date = start_date + pd.Timedelta(seconds=step * Ts)
-                climate = get_weather_and_energy_data(
-                    OpenMeteo(
-                        latitude=latitude,
-                        longitude=longitude,
-                        altitude=altitude,
-                        tilt=tilt,
-                        azimuth=azimuth,
-                        frequency="minutely_15",
+                climate = pd.concat([
+                    climate,
+                    get_weather_and_energy_data(
+                        openmeteo,
+                        entsoe,
+                        start_date,
+                        start_date + pd.Timedelta(days=1),
+                        tz,
+                        country_code,
+                        Ts,
                     ),
-                    Entsoe(),
-                    start_date,
-                    start_date + pd.Timedelta(days=1),
-                    tz,
-                    country_code,
-                    Ts,
-                )
+                ])
 
                 mpc.climate = climate
                 simulator.climate = climate
@@ -478,12 +485,11 @@ if (
                 runtime_info.info("Simulating ...")
 
         with suppress_stdout():
-            u0 = mpc.make_step(x0)
-            u0s.iloc[step] = u0.flatten()
-            x0 = simulator.make_step(u0)
+            x0, u0 = make_step(x0)
             if np.isnan(x0).any():
                 runtime_info.error("x0 contains NaN values.")
                 break
+            u0s.iloc[step] = u0.flatten()
             x0s.iloc[step] = x0.flatten()
 
     runtime_info.info("Plotting results ...")
