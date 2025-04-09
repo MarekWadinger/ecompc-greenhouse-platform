@@ -57,7 +57,7 @@ plotly_response = st.cache_resource(ttl=TTL, max_entries=1)(plotly_response)
 plotly_weather = st.cache_resource(ttl=TTL, max_entries=2)(plotly_weather)
 
 
-# # --- Initialize session ---
+# --- Initialize session ---
 def set_shape_form_submit():
     st.session_state["shape_form_submitted"] = True
     st.session_state["location_form_submitted"] = False
@@ -84,6 +84,25 @@ def set_params_form_submit():
 if "params_form_submitted" not in st.session_state:
     st.session_state["params_form_submitted"] = False
 
+# --- Initialize learning content ---
+
+if "greenhouse_description" not in st.session_state:
+    with open("app/learn/greenhouse.md") as f:
+        st.session_state.greenhouse_description = f.read()
+
+if "forecast_description" not in st.session_state:
+    with open("app/learn/forecast.md") as f:
+        st.session_state.forecast_description = f.read()
+
+if "mpc_description" not in st.session_state:
+    with open("app/learn/mpc.md") as f:
+        st.session_state.mpc_description = f.read()
+
+if "sustainability_description" not in st.session_state:
+    with open("app/learn/sustainability.md") as f:
+        st.session_state.sustainability_description = f.read()
+
+
 #  === Sidebar ===
 with st.sidebar:
     theme: dict | None = st_theme()
@@ -91,6 +110,16 @@ with st.sidebar:
         st.image("app/qr-white_transparent.png")
     else:
         st.image("app/qr-black_transparent.png")
+    feedback = st.link_button(
+        "Give Feedback",
+        "https://forms.gle/pRvXkB69w3vp8c688",
+        use_container_width=True,
+    )
+
+    st.session_state["education_mode"] = st.toggle(
+        "Education mode",
+        value=True,
+    )
 
     st.title("Greenhouse Designer")
     st.markdown("Design new greenhouse or create digital twin of your own.")
@@ -232,13 +261,16 @@ with st.sidebar:
                 step=1.0,
                 format="%.0f",
             )
-            max_heat = st.slider(
-                "Max. heating power (W)",
-                min_value=0.0,
-                max_value=gh_model.heater.max_unit * 2,
-                value=gh_model.heater.max_unit,
-                step=1.0,
-                format="%.0f",
+            max_heat = (
+                st.slider(
+                    "Max. heating power (kW)",
+                    min_value=0.0,
+                    max_value=gh_model.heater.max_unit * 2 / 1000,
+                    value=gh_model.heater.max_unit / 1000,
+                    step=1.0,
+                    format="%.0f",
+                )
+                * 1000
             )
             max_hum = st.slider(
                 "Max. humidifier power (l/h)",
@@ -283,7 +315,7 @@ with st.sidebar:
                     "Planted seeds weight (g/m²)",
                     min_value=5,
                     max_value=500,
-                    value=500,
+                    value=50,
                     step=1,
                     help=(
                         "This parameter impacts the potential yield; more seeds can lead to higher biomass but also requires more resources.\n"
@@ -341,15 +373,29 @@ runtime_info = st.empty()
 # === Enable after submitting parameters ===
 if st.session_state.shape_form_submitted:
     st.header("Greenhouse Visualization")
-    fig_gh = plotly_greenhouse(length, width, height, roof_tilt, azimuth_face)
-    st.plotly_chart(fig_gh)
+    with st.expander(
+        "Learn more about greenhouse design",
+        expanded=st.session_state["education_mode"],
+    ):
+        st.markdown(st.session_state.greenhouse_description)
 
+    runtime_info.info("Building greenhouse ...")
+    st.plotly_chart(
+        plotly_greenhouse(length, width, height, roof_tilt, azimuth_face)
+    )
+    runtime_info.success("Greenhouse built")
 
 if (
     st.session_state.shape_form_submitted
     and st.session_state.location_form_submitted
 ):
     st.header(f"Weather Forecast for {city} ({country})")
+    with st.expander(
+        "Learn more about weather forecast",
+        expanded=st.session_state["education_mode"],
+    ):
+        st.markdown(st.session_state.forecast_description)
+
     tilt = [90, 90, 90, 90, 89, 89, roof_tilt, roof_tilt]
     azimuth: list[int | str] = [
         azimuth_face,  # Front
@@ -386,7 +432,8 @@ if (
     runtime_info.info("Plotting forecast ...")
 
     weather_plot = st.empty()
-    weather_plot.plotly_chart(plotly_weather(climate))
+    fig_weather = plotly_weather(climate)
+    weather_plot.plotly_chart(fig_weather)
     runtime_info.success(
         "Forecast fetched from [Open-Meteo](https://open-meteo.com)."
     )
@@ -397,6 +444,11 @@ if (
     and st.session_state.params_form_submitted
 ):
     st.header("Simulation Results")
+    with st.expander(
+        "Learn more about eMPC", expanded=st.session_state["education_mode"]
+    ):
+        st.markdown(st.session_state.mpc_description)
+
     runtime_info.info("Preparing simulation ...")
 
     # Overwrite by user specification
@@ -429,12 +481,6 @@ if (
     @st.cache_data(ttl=TTL, max_entries=1)
     def init_states(x0, u0, tvp):
         return model.init_states(x0, u0, tvp)
-
-    @st.cache_data(ttl=TTL)
-    def make_step(x0):
-        u0 = mpc.make_step(x0)
-        x0 = simulator.make_step(u0)
-        return x0, u0
 
     # Find feasible initial state for given climate
     x0 = np.array([*x_init_dict.values()])
@@ -479,13 +525,12 @@ if (
 
                 mpc.climate = climate
                 simulator.climate = climate
-                weather_plot.plotly_chart(
-                    climate.resample("1h").median().plot(backend="plotly")
-                )
+                weather_plot.plotly_chart(plotly_weather(climate))
                 runtime_info.info("Simulating ...")
 
         with suppress_stdout():
-            x0, u0 = make_step(x0)
+            u0 = mpc.make_step(x0)
+            x0 = simulator.make_step(u0)
             if np.isnan(x0).any():
                 runtime_info.error("x0 contains NaN values.")
                 break
@@ -500,13 +545,25 @@ if (
     forecast_plot.plotly_chart(
         plotly_response(timestamps, x0s, u0s, [u_min], [u_max])
     )
+    # Create a zoomed view of the weather data based on simulation timestamps
+    fig_weather_zoomed = fig_weather
+    fig_weather_zoomed.update_layout(
+        xaxis=dict(range=[timestamps[0], timestamps[-1]], autorange=False)
+    )
+    weather_plot.plotly_chart(fig_weather_zoomed, key="weather_zoomed")
 
     # Export results to table
     profit_costs = model.analyze_profit_and_costs(
-        x0.flatten()[-2:] - x_sn_init,
+        x0.flatten()[-2:],
         u0s,
+        x_sn_init,
         climate["energy_cost"].values[: len(u0s)],
     )
+
+    with st.expander(
+        "Learn more about sustainable agriculture", expanded=False
+    ):
+        st.markdown(st.session_state.sustainability_description)
 
     st.table(profit_costs.to_frame().style.format("{:.2f}"))
 
