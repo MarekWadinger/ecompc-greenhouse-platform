@@ -1,19 +1,89 @@
 from typing import Literal, Union
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from cycler import cycler
 from plotly.subplots import make_subplots
 
 pd.options.plotting.backend = "plotly"
 
+line_styles = [
+    "-",
+    "--",
+    "-.",
+    ":",
+    (0, (3, 1, 1, 1)),
+    (0, (5, 5)),
+    (0, (3, 5, 1, 5)),
+    (0, (3, 10, 1, 10)),
+    (0, (5, 1)),
+    (0, (5, 10)),
+]
+
+# Combine default color cycle with the line styles
+colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+line_cycler = cycler("color", colors) + cycler("linestyle", line_styles)
+
+# Apply the combined cycler to the axes
 plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Computer Modern",
+    "font.serif": "Computer Modern",
+    "axes.prop_cycle": line_cycler,
+    "axes.grid": True,
     "figure.subplot.left": 0.1,
     "figure.subplot.bottom": 0.05,
     "figure.subplot.right": 0.95,
     "figure.subplot.top": 0.95,
 })
+
+
+# Configure default datetime formatting for plots
+# Set up the default date formatter globally
+locator = mdates.AutoDateLocator()
+formatter = mdates.ConciseDateFormatter(locator)
+formatter.formats = [
+    "%y",  # ticks are mostly years
+    "%b",  # ticks are mostly months
+    "%d",  # ticks are mostly days
+    "%H:%M",  # hrs
+    "%H:%M",  # min
+    "%S.%f",  # secs
+]
+# these are mostly just the level above...
+formatter.zero_formats = [""] + formatter.formats[:-1]
+# ...except for ticks that are mostly hours, then it is nice to have month-day:
+formatter.zero_formats[3] = "%d-%b"
+
+formatter.offset_formats = [
+    "",
+    "%Y",
+    "%b %Y",
+    "%d %b %Y",
+    "%d %b %Y",
+    "%d %b %Y %H:%M",
+]
+
+# Apply globally to matplotlib
+plt.rcParams["date.autoformatter.year"] = formatter.formats[0]
+plt.rcParams["date.autoformatter.month"] = formatter.formats[1]
+plt.rcParams["date.autoformatter.day"] = formatter.formats[2]
+plt.rcParams["date.autoformatter.hour"] = formatter.formats[3]
+plt.rcParams["date.autoformatter.minute"] = formatter.formats[4]
+plt.rcParams["date.autoformatter.second"] = formatter.formats[5]
+
+
+# Helper function to apply to specific axes if needed
+def configure_date_formatter(ax):
+    """Configure concise date formatter for the given axis."""
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(formatter)
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(formatter)
+
 
 plotly_colors = [
     "#636EFA",
@@ -207,9 +277,9 @@ def format_str_(str_: str) -> str:
 
 
 def plot_response(
-    t_out: list,
-    y_out: list,
-    u_out: list,
+    t_out: list | pd.DatetimeIndex,
+    y_out: list | pd.DataFrame,
+    u_out: list | pd.DataFrame,
     y_ref: Union[list, None] = None,
     u_min: Union[list[float], None] = None,
     u_max: Union[list[float], None] = None,
@@ -238,11 +308,22 @@ def plot_response(
         axs[0].set_ylabel(y_label)
         axs[0].legend()
 
-    axs[1].plot(
-        t_out,
-        u_out,
-        label=u_legend,
-    )
+    if isinstance(u_out, pd.DataFrame):
+        # Sort u_out columns based on maximum values in descending order
+        max_values = u_out.max()
+        sorted_columns = max_values.sort_values(ascending=False).index
+        u_out = u_out[sorted_columns]
+        axs[1].plot(
+            t_out,
+            u_out,
+            label=u_out.columns,
+        )
+    else:
+        axs[1].plot(
+            t_out,
+            u_out,
+            label=u_legend,
+        )
     if u_min is not None and u_max is not None:
         axs[1]._get_lines.set_prop_cycle(None)
         for u_min_, u_max_ in zip(u_min, u_max):
@@ -255,10 +336,32 @@ def plot_response(
         axs[1].set_xlabel(t_label)
         axs[1].set_ylabel(u_label)
         axs[1].legend()
-        axs[1].tick_params(axis="x", rotation=90)
+        axs[1].tick_params(axis="x")
 
+    for ax in axs:
+        configure_date_formatter(ax)
     fig.align_ylabels()
     fig.tight_layout()
+    # Place legend above each subplot with proper spacing
+    for i, ax in enumerate(axs):
+        # Get the current legend
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            # Remove the current legend
+            if ax.get_legend():
+                ax.get_legend().remove()
+
+            ax.legend(
+                handles,
+                labels,
+                loc="lower center",
+                bbox_to_anchor=(0.5, 0.95),
+                ncol=2,
+                frameon=False,
+            )
+
+    # Adjust figure layout to accommodate legends
+    plt.subplots_adjust(hspace=0.32)
 
     return axs
 
@@ -387,9 +490,6 @@ def plotly_response(
 
     fig.update_yaxes(title_text="Dry Weight (g/m$^2$)", row=1, col=1)
     fig.update_yaxes(title_text="Actuation (%)", row=2, col=1)
-    # Link x-axes between subplots for synchronized zooming and panning
-    # fig.update_xaxes(row=1, col=1, matches="x")
-    # fig.update_xaxes(row=2, col=1, matches="x")
 
     return fig
 

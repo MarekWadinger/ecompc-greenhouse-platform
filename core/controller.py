@@ -268,7 +268,7 @@ class EconomicMPC(MPC):
                 model.gh, act.lower().replace(" ", "")
             )
             lterm += actuator.signal_to_eur(
-                model.u[act], model.tvp["energy_cost"]
+                model.u[act], model.tvp["Electricity price [EUR/kWh]"]
             )
             if co2_we_care:
                 lterm += actuator.signal_to_co2_eur(model.u[act])

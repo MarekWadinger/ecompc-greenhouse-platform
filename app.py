@@ -541,6 +541,16 @@ if (
     timestamps = pd.date_range(
         start=start_date, periods=sim_steps, freq=pd.Timedelta(seconds=Ts)
     )
+
+    # Convert temperature columns from K to C
+    temp_columns = [
+        col for col in x0s.columns if "temperature" in col and "[K]" in col
+    ]
+    for col in temp_columns:
+        x0s[col] = x0s[col] - 273.15
+
+    x0s.columns = x0s.columns.str.replace("[K]", "[°C]")
+
     forecast_plot = st.empty()
     forecast_plot.plotly_chart(
         plotly_response(timestamps, x0s, u0s, [u_min], [u_max])
@@ -557,7 +567,7 @@ if (
         x0.flatten()[-2:],
         u0s,
         x_sn_init,
-        climate["energy_cost"].values[: len(u0s)],
+        climate["Electricity price [EUR/kWh]"].values[: len(u0s)],
     )
 
     with st.expander(

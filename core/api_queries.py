@@ -119,17 +119,15 @@ class ElectricityMap:
             warnings.warn(
                 f"Failed to fetch CO2 intensity data. Using {_self.default} gCO₂eq/kWh. Details:\n{response.text}"
             )
-            return pd.DataFrame(
-                {
-                    "datetime": pd.date_range(
-                        start=pd.Timestamp.now().normalize()
-                        - pd.Timedelta(days=1),
-                        periods=24,
-                        freq="H",
-                    ),
-                    "carbonIntensity": [_self.default] * 24,
-                }
-            ).set_index("datetime")
+            return pd.DataFrame({
+                "datetime": pd.date_range(
+                    start=pd.Timestamp.now().normalize()
+                    - pd.Timedelta(days=1),
+                    periods=24,
+                    freq="H",
+                ),
+                "carbonIntensity": [_self.default] * 24,
+            }).set_index("datetime")
 
 
 class Entsoe:
@@ -345,6 +343,12 @@ class OpenMeteo:
         }
         responses = _self.retry_session.get(url, params=params)
 
+        params_map = {
+            "temperature_2m": "Air temperature",
+            "apparent_temperature": "Apparent temperature",
+            "wind_speed_10m": "Wind speed",
+            "relative_humidity_2m": "Relative humidity",
+        }
         if responses.ok:
             r = responses.json()
             # Convert the response to a pandas DataFrame
@@ -363,7 +367,9 @@ class OpenMeteo:
             for col in df.columns:
                 if col in suffix_dict:
                     df.rename(
-                        columns={col: f"{col} [{suffix_dict[col]}]"},
+                        columns={
+                            col: f"{params_map[col]} [{suffix_dict[col]}]"
+                        },
                         inplace=True,
                     )
             return df
@@ -477,7 +483,7 @@ class OpenMeteo:
         else:
             azimuth = _self.azimuth
         df_rad = pd.DataFrame()
-        df_rad["elevation"] = solar_position["elevation"]
+        df_rad["Solar elevation [°]"] = solar_position["elevation"]
         for t, a in zip(tilt, azimuth):
             if not isinstance(a, (int, float)):
                 a = _self.azimuth_to_deg(a)
@@ -497,8 +503,12 @@ class OpenMeteo:
                         "poa_sky_diffuse",
                         "poa_ground_diffuse",
                     ]
+                ).rename(
+                    columns={
+                        "poa_direct": "Direct irradiance [W/m²]",
+                        "poa_diffuse": "Diffuse irradiance [W/m²]",
+                    }
                 )
-                radiation.loc[:, ~radiation.columns.str.contains("poa_global")]
                 df_rad = pd.concat(
                     [df_rad, radiation.add_suffix(f" [W/m²]:t{t}a{a}")],
                     axis=1,
@@ -622,7 +632,9 @@ def get_weather_and_energy_data(
     )
     energy_cost = pd.concat([pd.Series(index=climate.index), energy_cost])
     energy_cost = energy_cost[~energy_cost.index.duplicated(keep="first")]
-    climate["energy_cost"] = energy_cost.sort_index().interpolate(
-        method="time", limit_direction="both"
+    climate["Electricity price [EUR/kWh]"] = (
+        energy_cost.sort_index().interpolate(
+            method="time", limit_direction="both"
+        )
     )
     return climate

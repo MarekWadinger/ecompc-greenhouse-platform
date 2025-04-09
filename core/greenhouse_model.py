@@ -177,17 +177,17 @@ x_init = np.array(
     dtype=float,
 )
 x_init_dict = {
-    "Cover temperature": T_c_0,
-    "Internal air temperature": T_i_0,
-    "Vegetation temperature": T_v_0,
-    "Growing medium temperature": T_m_0,
-    "Tray temperature": T_p_0,
-    "Floor temperature": T_f_0,
-    "Temperature of soil layer 1": T_s1_0,
-    "Water vapor concentration": C_w_0,
-    "CO2 concentration": C_c_0,
-    "Structural dry weight": x_sdw,
-    "Non-structural dry weight": x_nsdw,
+    "Cover temperature [K]": T_c_0,
+    "Internal air temperature [K]": T_i_0,
+    "Vegetation temperature [K]": T_v_0,
+    "Growing medium temperature [K]": T_m_0,
+    "Tray temperature [K]": T_p_0,
+    "Floor temperature [K]": T_f_0,
+    "Soil layer temperature [K]": T_s1_0,
+    "Water vapor concentration [kg/m^3]": C_w_0,
+    "CO2 concentration [kg/m^3]": C_c_0,
+    "Structural dry weight [g/m^2]": x_sdw,
+    "Non-structural dry weight [g/m^2]": x_nsdw,
 }
 
 
@@ -268,6 +268,7 @@ class GreenHouse:
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
         dt=60,  # sampling time in seconds
+        return_format: str = "array",
         **act_kwargs,
     ) -> None:
         self.length = length
@@ -277,6 +278,7 @@ class GreenHouse:
         self.latitude = latitude
         self.longitude = longitude
         self.dt = dt
+        self.return_format = return_format
 
         # Geometry
         roof_height = width / 2 * np.tan(np.radians(roof_tilt))
@@ -909,7 +911,7 @@ class GreenHouse:
         ]
 
         # Check if using numpy or CasADi
-        if all(isinstance(output, np.ndarray) for output in outputs):
+        if self.return_format == "array":
             return np.array(outputs), locals()
         else:
             return ca.vertcat(*outputs), locals()

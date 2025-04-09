@@ -17,7 +17,7 @@ def simulate(
     t_s: int = 1,
     x0: Union[list[float], None] = None,
     ref_gen: Union[GenProt, None] = None,
-    method: str = "RK45",
+    method: str = "BDF",
 ) -> tuple:
     """Simulation of the system in the open-loop/closed-loop.
 
