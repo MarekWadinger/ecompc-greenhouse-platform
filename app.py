@@ -239,7 +239,7 @@ with st.sidebar:
             latitude=latitude,
             longitude=longitude,
             dt=Ts_default,
-            **{"co2_intensity": co2_intensity},
+            **{"co2_intensity": co2_intensity},  # type: ignore
         )
 
         st.header(
@@ -508,18 +508,20 @@ if (
             if step + N == len(climate):
                 runtime_info.info("Fetching new forecast")
                 start_date = start_date + pd.Timedelta(seconds=step * Ts)
-                climate = pd.concat([
-                    climate,
-                    get_weather_and_energy_data(
-                        openmeteo,
-                        entsoe,
-                        start_date,
-                        start_date + pd.Timedelta(days=1),
-                        tz,
-                        country_code,
-                        Ts,
-                    ),
-                ])
+                climate = pd.concat(
+                    [
+                        climate,
+                        get_weather_and_energy_data(
+                            openmeteo,
+                            entsoe,
+                            start_date,
+                            start_date + pd.Timedelta(days=1),
+                            tz,
+                            country_code,
+                            Ts,
+                        ),
+                    ]
+                )
 
                 mpc.climate = climate
                 simulator.climate = climate

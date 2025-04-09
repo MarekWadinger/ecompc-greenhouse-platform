@@ -28,17 +28,19 @@ colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 line_cycler = cycler("color", colors) + cycler("linestyle", line_styles)
 
 # Apply the combined cycler to the axes
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Computer Modern",
-    "font.serif": "Computer Modern",
-    "axes.prop_cycle": line_cycler,
-    "axes.grid": True,
-    "figure.subplot.left": 0.1,
-    "figure.subplot.bottom": 0.05,
-    "figure.subplot.right": 0.95,
-    "figure.subplot.top": 0.95,
-})
+plt.rcParams.update(
+    {
+        "text.usetex": True,
+        "font.family": "Computer Modern",
+        "font.serif": "Computer Modern",
+        "axes.prop_cycle": line_cycler,
+        "axes.grid": True,
+        "figure.subplot.left": 0.1,
+        "figure.subplot.bottom": 0.05,
+        "figure.subplot.right": 0.95,
+        "figure.subplot.top": 0.95,
+    }
+)
 
 
 # Configure default datetime formatting for plots
@@ -566,14 +568,16 @@ def plotly_3d_greenhouse(
 
     # Roof vertices
     peak_height = height + np.tan(np.radians(roof_tilt)) * (width / 2)
-    roof = np.array([
-        [0, 0, height],
-        [length, 0, height],
-        [length, width, height],
-        [0, width, height],
-        [0, width / 2, peak_height],
-        [length, width / 2, peak_height],
-    ])
+    roof = np.array(
+        [
+            [0, 0, height],
+            [length, 0, height],
+            [length, width, height],
+            [0, width, height],
+            [0, width / 2, peak_height],
+            [length, width / 2, peak_height],
+        ]
+    )
 
     # Center the greenhouse
     center_x = length / 2
@@ -587,10 +591,12 @@ def plotly_3d_greenhouse(
 
     # Rotate the greenhouse according to azimuth
     azimuth_radians = np.radians(azimuth)
-    rotation_matrix = np.array([
-        [np.cos(azimuth_radians), -np.sin(azimuth_radians)],
-        [np.sin(azimuth_radians), np.cos(azimuth_radians)],
-    ])
+    rotation_matrix = np.array(
+        [
+            [np.cos(azimuth_radians), -np.sin(azimuth_radians)],
+            [np.sin(azimuth_radians), np.cos(azimuth_radians)],
+        ]
+    )
 
     # Apply rotation to base and roof
     for i in range(len(base)):

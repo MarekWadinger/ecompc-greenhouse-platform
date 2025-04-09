@@ -27,10 +27,10 @@ The temperature dynamics in different greenhouse compartments (cover, internal a
 
 - **Convective Heat Transfer**:
   $ Q_{\text{conv}} = A_{\text{c}}\, \text{Nu}\, \lambda_{\text{air}} \frac{T_1 - T_2}{d_{\text{c}}} $
-  
+
 - **Radiative Heat Transfer**:
   $ Q_{\text{rad}} = \frac{\varepsilon_1 \varepsilon_2}{1 - \rho_1 \rho_2 F_{12} F_{21}} \sigma A_1 F_{12} (T_1^4 - T_2^4) $
-  
+
 - **Conductive Heat Transfer**:
   $ Q_{\text{cond}} = \frac{A \lambda_{\text{c}}}{d_\text{l}} (T_1 - T_2) $
 

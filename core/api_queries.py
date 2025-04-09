@@ -119,15 +119,17 @@ class ElectricityMap:
             warnings.warn(
                 f"Failed to fetch CO2 intensity data. Using {_self.default} gCO₂eq/kWh. Details:\n{response.text}"
             )
-            return pd.DataFrame({
-                "datetime": pd.date_range(
-                    start=pd.Timestamp.now().normalize()
-                    - pd.Timedelta(days=1),
-                    periods=24,
-                    freq="H",
-                ),
-                "carbonIntensity": [_self.default] * 24,
-            }).set_index("datetime")
+            return pd.DataFrame(
+                {
+                    "datetime": pd.date_range(
+                        start=pd.Timestamp.now().normalize()
+                        - pd.Timedelta(days=1),
+                        periods=24,
+                        freq="H",
+                    ),
+                    "carbonIntensity": [_self.default] * 24,
+                }
+            ).set_index("datetime")
 
 
 class Entsoe:

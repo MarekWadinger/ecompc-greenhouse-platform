@@ -75,15 +75,6 @@ class GreenHouseModel(Model):  # Create a model instance
 
         Returns:
             The next state vector after integration.
-
-        Examples:
-            >>> controller = Controller(...)
-            >>> t = 0.0
-            >>> x = np.zeros(10)  # Example state vector
-            >>> u = np.array([50.0, 30.0])  # Example control inputs
-            >>> tvp = (20.0, 400.0)  # Example time-varying parameters
-            >>> controller.runge_kutta_step(t, x, u, tvp)
-
         """
         k1 = self.gh.model(t, x, u, tvp)
         k2 = self.gh.model(t, x + self.dt / 2 * k1, u, tvp)
@@ -104,14 +95,6 @@ class GreenHouseModel(Model):  # Create a model instance
 
         Returns:
             The next state vector after integration.
-
-        Examples:
-            >>> controller = Controller(...)
-            >>> t = 0.0
-            >>> x = np.zeros(10)  # Example state vector
-            >>> u = np.array([50.0, 30.0])  # Example control inputs
-            >>> tvp = (20.0, 400.0)  # Example time-varying parameters
-            >>> controller.backward_euler_step(t, x, u, tvp)
         """
         f = self.gh.model(t + self.dt, x, u, tvp)
         return x + self.dt * f
@@ -133,14 +116,6 @@ class GreenHouseModel(Model):  # Create a model instance
 
         Returns:
             The state vector after BDF2 integration.
-
-        Examples:
-            >>> controller = Controller(...)
-            >>> t = 0.0
-            >>> x = np.zeros(10)  # Example state vector
-            >>> u = np.array([50.0, 30.0])  # Example control inputs
-            >>> tvp = (20.0, 400.0)  # Example time-varying parameters
-            >>> controller.bdf2_step(t, x, u, tvp)
         """
         return (
             4 / 3 * x
@@ -261,9 +236,13 @@ class EconomicMPC(MPC):
             / DRY_TO_WET_RATIO
             * self.cultivated_area
         )
-        for i, act in enumerate([
-            act for act, active in model.gh.active_actuators.items() if active
-        ]):
+        for i, act in enumerate(
+            [
+                act
+                for act, active in model.gh.active_actuators.items()
+                if active
+            ]
+        ):
             actuator: Actuator = getattr(
                 model.gh, act.lower().replace(" ", "")
             )
@@ -340,9 +319,9 @@ class GreenhouseSimulator(Simulator):
 
         self.climate = climate
         # Convert to numpy array directly for fastest access
-        self.climate_values = np.array([
-            climate[col].values for col in climate.columns
-        ])
+        self.climate_values = np.array(
+            [climate[col].values for col in climate.columns]
+        )
         self.climate_keys = list(climate.columns)
         self.climate_len = len(climate)
 
@@ -354,23 +333,25 @@ class GreenhouseSimulator(Simulator):
 
         if model.model_type == "continuous":
             # Configure simulator for stiff systems
-            params_simulator.update({
-                "integration_tool": "cvodes",
-                "integration_opts": {
-                    "max_num_steps": 100,  # Increase max steps for stiff systems
-                    "sensitivity_method": "simultaneous",
-                    "linear_multistep_method": "bdf",  # Better for stiff systems
-                    "nonlinear_solver_iteration": "newton",  # More robust for stiff systems
-                    "newton_scheme": "direct",  # Direct solver for better convergence
-                    "max_step_size": 100,  # Limit step size for stability
-                    "min_step_size": 1,  # Prevent too small steps
-                    "scale_abstol": True,  # Scale tolerances for better performance
-                    "always_recalculate_jacobian": False,  # Reuse Jacobian when possible
-                    "use_preconditioner": True,  # Improve convergence
-                    "max_krylov": 10,  # Maximum Krylov dimension
-                    "step0": 1e-4,  # Initial step size
-                },
-            })
+            params_simulator.update(
+                {
+                    "integration_tool": "cvodes",
+                    "integration_opts": {
+                        "max_num_steps": 100,  # Increase max steps for stiff systems
+                        "sensitivity_method": "simultaneous",
+                        "linear_multistep_method": "bdf",  # Better for stiff systems
+                        "nonlinear_solver_iteration": "newton",  # More robust for stiff systems
+                        "newton_scheme": "direct",  # Direct solver for better convergence
+                        "max_step_size": 100,  # Limit step size for stability
+                        "min_step_size": 1,  # Prevent too small steps
+                        "scale_abstol": True,  # Scale tolerances for better performance
+                        "always_recalculate_jacobian": False,  # Reuse Jacobian when possible
+                        "use_preconditioner": True,  # Improve convergence
+                        "max_krylov": 10,  # Maximum Krylov dimension
+                        "step0": 1e-4,  # Initial step size
+                    },
+                }
+            )
 
         self.set_param(**params_simulator)
 
