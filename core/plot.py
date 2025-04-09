@@ -4,17 +4,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import streamlit as st
 from plotly.subplots import make_subplots
 
-plt.rcParams.update(
-    {
-        "figure.subplot.left": 0.1,
-        "figure.subplot.bottom": 0.05,
-        "figure.subplot.right": 0.95,
-        "figure.subplot.top": 0.95,
-    }
-)
+pd.options.plotting.backend = "plotly"
+
+plt.rcParams.update({
+    "figure.subplot.left": 0.1,
+    "figure.subplot.bottom": 0.05,
+    "figure.subplot.right": 0.95,
+    "figure.subplot.top": 0.95,
+})
 
 plotly_colors = [
     "#636EFA",
@@ -29,17 +28,18 @@ plotly_colors = [
     "#FECB52",
 ]
 
-TTL = 5 * 60  # Cache for 5 minutes
-
 
 def set_size(
     width: float
     | int
-    | Literal["article", "ieee", "ieee_full", "thesis", "beamer"] = 307.28987,
+    | Literal["article", "ieee", "ieee_full", "thesis", "beamer"] = "ieee",
     fraction=1.0,
     subplots=(1, 1),
+    return_size: Literal["matplotlib", "plotly"] = "matplotlib",
 ):
     """Set figure dimensions to avoid scaling in LaTeX.
+
+    By default, 1 pt ≈ 1.33 px, meaning an 8 pt font in LaTeX is roughly 10.67 px in Plotly.
 
     Parameters
     ----------
@@ -67,23 +67,123 @@ def set_size(
     else:
         width_pt = width
 
-    # Width of figure (in pts)
-    fig_width_pt = width_pt
-    # Convert from pt to inches
-    inches_per_pt = 1 / 72.27
-
     # Golden ratio to set aesthetic figure height
     # https://disq.us/p/2940ij3
     golden_ratio = (5**0.5 - 1) / 2
 
-    # Figure width in inches
-    fig_width_in = fig_width_pt * inches_per_pt
-    # Figure height in inches
-    fig_height_in = (
-        fig_width_in * golden_ratio * ((subplots[0] * fraction) / subplots[1])
+    # Width of figure (in pts)
+    fig_width_pt = width_pt
+    fig_height_pt = (
+        fig_width_pt * golden_ratio * ((subplots[0] * fraction) / subplots[1])
     )
 
-    return (fig_width_in, fig_height_in)
+    if return_size == "matplotlib":
+        # Convert from pt to inches
+        inches_per_pt = 1 / 72.27
+
+        # Figure width in inches
+        fig_width_in = fig_width_pt * inches_per_pt
+        # Figure height in inches
+        fig_height_in = fig_height_pt * inches_per_pt
+
+        return (fig_width_in, fig_height_in)
+
+    return (fig_width_pt * 1.33, fig_height_pt * 1.33)
+
+
+def set_plotly_defaults_for_latex():
+    """
+    Configure Plotly defaults to generate plots that are style-compliant with LaTeX documents.
+    This includes setting appropriate fonts, sizes, and styling for academic publications.
+    """
+    import plotly.io as pio
+
+    # Get default figure dimensions for academic papers
+    default_width, default_height = set_size(
+        width="ieee", return_size="plotly"
+    )
+
+    # Define LaTeX-friendly template based on plotly white
+    pio.templates["latex"] = pio.templates["plotly_white"]
+
+    # Update the template with LaTeX-friendly settings
+    pio.templates["latex"].layout.update(
+        font=dict(
+            family="Computer Modern",  # LaTeX default font
+            size=8 * 1.33,  # Reasonable size for documents
+            color="black",
+        ),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        margin=dict(l=50, r=0, t=20, b=0),
+        legend=dict(
+            font=dict(size=8 * 1.33),
+            # borderwidth=0.5,
+            # bordercolor="black",
+            itemsizing="constant",
+            orientation="h",  # Horizontal legend
+            yanchor="bottom",
+            y=1.02,  # Position above the plot
+            xanchor="right",
+            x=1,
+            itemwidth=30,
+            tracegroupgap=0,
+            traceorder="normal",
+        ),
+        # legend2 configuration for secondary legend
+        legend2=dict(
+            font=dict(size=8 * 1.33),
+            # borderwidth=0.5,
+            # bordercolor="black",
+            itemsizing="constant",
+            orientation="h",  # Horizontal legend
+            yanchor="bottom",
+            y=-0.4,  # Position below the plot
+            xanchor="right",
+            x=1,
+            itemwidth=30,
+            tracegroupgap=0,
+            traceorder="normal",
+        ),
+        xaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor="lightgray",
+            linewidth=1,
+            linecolor="black",
+            mirror=False,
+            ticks="outside",
+            showline=True,
+            zeroline=False,
+            title=dict(font=dict(size=8 * 1.33)),
+            tickfont=dict(size=8 * 1.33),
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor="lightgray",
+            linewidth=1,
+            linecolor="black",
+            mirror=False,
+            ticks="outside",
+            showline=True,
+            zeroline=False,
+            title=dict(font=dict(size=8 * 1.33)),
+            tickfont=dict(size=8 * 1.33),
+        ),
+        width=default_width,  # Convert inches to points
+        height=default_height * 2,  # Convert inches to points
+        title=dict(font=dict(size=8 * 1.33)),
+        annotations=[dict(font=dict(size=8 * 1.33))],
+        hovermode="x unified",
+    )
+
+    # Set the default template
+    pio.templates.default = "latex"
+
+
+# Initialize the LaTeX-friendly defaults
+set_plotly_defaults_for_latex()
 
 
 def format_str_(str_: str) -> str:
@@ -155,7 +255,7 @@ def plot_response(
         axs[1].set_xlabel(t_label)
         axs[1].set_ylabel(u_label)
         axs[1].legend()
-        axs[1].tick_params(axis="x", rotation=15)
+        axs[1].tick_params(axis="x", rotation=90)
 
     fig.align_ylabels()
     fig.tight_layout()
@@ -183,7 +283,6 @@ def plot_states(
     return axs
 
 
-@st.cache_resource(ttl=TTL, max_entries=1)
 def plotly_response(
     _timestamps,
     y_nexts,
@@ -232,6 +331,7 @@ def plotly_response(
         rows=2,
         cols=1,
         shared_xaxes=True,
+        shared_yaxes=True,
         # subplot_titles=("Lettuce Dry Weight (g)", "Actuation [%]"),
     )
 
@@ -239,7 +339,7 @@ def plotly_response(
     for i, column in enumerate(y_nexts.columns):
         fig.add_trace(
             go.Scatter(
-                x=y_nexts.index,
+                x=_timestamps,
                 y=y_nexts[column],
                 name=column,
                 visible=True if i in y_visible else "legendonly",
@@ -265,13 +365,14 @@ def plotly_response(
                 mode="lines",
                 name=label,
                 line=dict(color=color),
+                legend="legend2",
                 legendgroup=label,
                 showlegend=True,
             ),
             row=2,
             col=1,
         )
-        print()
+
         if u_min.shape[1] == 1:
             if i == 0:
                 fig = add_bound_trace(
@@ -286,34 +387,50 @@ def plotly_response(
 
     fig.update_yaxes(title_text="Dry Weight (g/m$^2$)", row=1, col=1)
     fig.update_yaxes(title_text="Actuation (%)", row=2, col=1)
-    fig.update_layout(
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-        )
-    )
+    # Link x-axes between subplots for synchronized zooming and panning
+    # fig.update_xaxes(row=1, col=1, matches="x")
+    # fig.update_xaxes(row=2, col=1, matches="x")
 
     return fig
 
 
-@st.cache_resource(ttl=TTL, max_entries=2)
-def plotly_greenhouse(length, width, height, roof_tilt, azimuth):
-    fig = make_subplots(
-        rows=1,
-        cols=2,
-        specs=[[{"type": "scatter3d"}, {"type": "polar"}]],
-        # subplot_titles=("3D Greenhouse Model", "Greenhouse Orientation"),
-    )
+def plotly_greenhouse(
+    length: float,
+    width: float,
+    height: float,
+    roof_tilt: float,
+    azimuth: float,
+):
+    """
+    Create a 3D visualization of a greenhouse with a compass on the ground plane.
 
-    # Plot the 3D Greenhouse
-    plotly_3d_greenhouse(length, width, height, roof_tilt, azimuth, fig, 1, 1)
+    Args:
+        length: Length of the greenhouse in meters
+        width: Width of the greenhouse in meters
+        height: Height of the greenhouse walls in meters
+        roof_tilt: Angle of the roof in degrees
+        azimuth: Orientation angle in degrees (0 = North, 90 = East, etc.)
+        fig: Plotly figure object to add the visualization to
+    """
+    fig = go.Figure()
 
-    # Plot the 2D Compass with Greenhouse Orientation
-    plotly_compass_with_greenhouse(azimuth, length, width, fig, 1, 2)
+    # Create the greenhouse
+    plotly_3d_greenhouse(length, width, height, roof_tilt, azimuth, fig)
+
+    # Add the compass
+    plotly_3d_compass(length, width, azimuth, fig)
 
     fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0, pad=0),
         autosize=True,  # Make the figure responsive to window size
+        scene=dict(
+            aspectmode="data",  # Ensure the aspect ratio is based on data
+            xaxis=dict(showgrid=False),
+            yaxis=dict(showgrid=False),
+            zaxis=dict(showgrid=False),
+        ),
     )
+
     return fig
 
 
@@ -322,11 +439,20 @@ def plotly_3d_greenhouse(
     width: float,
     height: float,
     roof_tilt: float,
-    azimuth,
+    azimuth: float,
     fig: go.Figure,
-    row: int,
-    col: int,
 ):
+    """
+    Create a 3D visualization of a greenhouse with specified dimensions and orientation.
+
+    Args:
+        length: Length of the greenhouse in meters
+        width: Width of the greenhouse in meters
+        height: Height of the greenhouse walls in meters
+        roof_tilt: Angle of the roof in degrees
+        azimuth: Orientation angle in degrees (0 = North, 90 = East, etc.)
+        fig: Plotly figure object to add the greenhouse to
+    """
     # Vertices of the greenhouse base (rectangle)
     base = np.array(
         [
@@ -340,16 +466,38 @@ def plotly_3d_greenhouse(
 
     # Roof vertices
     peak_height = height + np.tan(np.radians(roof_tilt)) * (width / 2)
-    roof = np.array(
-        [
-            [0, 0, height],
-            [length, 0, height],
-            [length, width, height],
-            [0, width, height],
-            [0, width / 2, peak_height],
-            [length, width / 2, peak_height],
-        ]
-    )
+    roof = np.array([
+        [0, 0, height],
+        [length, 0, height],
+        [length, width, height],
+        [0, width, height],
+        [0, width / 2, peak_height],
+        [length, width / 2, peak_height],
+    ])
+
+    # Center the greenhouse
+    center_x = length / 2
+    center_y = width / 2
+
+    # Adjust all vertices to be centered
+    base[:, 0] -= center_x
+    base[:, 1] -= center_y
+    roof[:, 0] -= center_x
+    roof[:, 1] -= center_y
+
+    # Rotate the greenhouse according to azimuth
+    azimuth_radians = np.radians(azimuth)
+    rotation_matrix = np.array([
+        [np.cos(azimuth_radians), -np.sin(azimuth_radians)],
+        [np.sin(azimuth_radians), np.cos(azimuth_radians)],
+    ])
+
+    # Apply rotation to base and roof
+    for i in range(len(base)):
+        base[i, 0:2] = np.dot(base[i, 0:2], rotation_matrix.T)
+
+    for i in range(len(roof)):
+        roof[i, 0:2] = np.dot(roof[i, 0:2], rotation_matrix.T)
 
     # Define the faces of the greenhouse
     vertices = [
@@ -372,10 +520,9 @@ def plotly_3d_greenhouse(
                 mode="lines",
                 line=dict(color=plotly_colors[0], width=5),
                 showlegend=False,
-            ),
-            row=row,
-            col=col,
+            )
         )
+
     vertices = [
         # Roof
         [roof[0], roof[1], roof[5], roof[4]],  # Roof face 1
@@ -384,7 +531,7 @@ def plotly_3d_greenhouse(
         [roof[1], roof[2], roof[5]],  # Roof face 4
     ]
 
-    # Plot the 4 side walls
+    # Plot the roof faces
     for face in vertices:
         x = [v[0] for v in face] + [face[0][0]]  # Close the face
         y = [v[1] for v in face] + [face[0][1]]
@@ -397,141 +544,164 @@ def plotly_3d_greenhouse(
                 mode="lines",
                 line=dict(color=plotly_colors[0], width=5),
                 showlegend=False,
-            ),
-            row=row,
-            col=col,
+            )
         )
 
-    fig.update_scenes(
-        camera=dict(
-            eye=dict(
-                x=np.cos(np.radians(azimuth)) * 3.0,  # Controls azimuth angle
-                y=np.sin(np.radians(azimuth)) * 3.0,
-                z=1.0,  # You can adjust the z to control elevation
-            )
-        ),
-        xaxis=dict(title="Length", range=[0, length]),
-        yaxis=dict(title="Width", range=[0, width]),
-        zaxis=dict(title="Wall Height", range=[0, peak_height]),
-        aspectmode="data",  # Ensure the aspect ratio is based on data
-    )
+    return peak_height
 
 
-def plotly_compass_with_greenhouse(
-    azimuth: float,
+def plotly_3d_compass(
     length: float,
     width: float,
+    azimuth: float,
     fig: go.Figure,
-    row: int,
-    col: int,
 ):
-    # Directions and their angles (0° for N, 90° for E, etc.)
+    """
+    Create a 3D compass visualization on the ground plane.
+
+    Args:
+        length: Length reference for sizing the compass
+        width: Width reference for sizing the compass
+        peak_height: Height reference for scene configuration
+        azimuth: Orientation angle in degrees to highlight on the compass
+        fig: Plotly figure object to add the compass to
+    """
+    # Create a circle for the compass base
+    radius = max(length, width) // 1.5
+    theta = np.linspace(0, 2 * np.pi, 100)
+    x_circle = radius * np.cos(theta)
+    y_circle = radius * np.sin(theta)
+    z_circle = np.zeros_like(theta) - 0.1  # Slightly below ground level
+
+    fig.add_trace(
+        go.Scatter3d(
+            x=x_circle,
+            y=y_circle,
+            z=z_circle,
+            mode="lines",
+            line=dict(color="gray", width=2),
+            showlegend=False,
+        )
+    )
+
+    # Add cardinal directions
     directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
     angles = [0, 45, 90, 135, 180, 225, 270, 315]
 
-    # Azimuth in degrees
-    azimuth_angle = azimuth % 360  # Ensure azimuth is within [0, 360]
+    for direction, angle in zip(directions, angles):
+        angle_rad = np.radians(angle)
+        x_pos = (radius + 0.2 * radius) * np.cos(angle_rad)
+        y_pos = (radius + 0.2 * radius) * np.sin(angle_rad)
 
-    # Base plot (empty compass)
-    fig.add_trace(
-        go.Scatterpolar(
-            r=[1, 1, 1, 1],  # Radius for directions
-            theta=angles,  # Angles for N, E, S, W
-            mode="lines",
-            line=dict(width=0),
-            showlegend=False,
-        ),
-        row=row,
-        col=col,
-    )
+        fig.add_trace(
+            go.Scatter3d(
+                x=[x_pos],
+                y=[y_pos],
+                z=[0.05],  # Slightly above the compass circle
+                mode="text",
+                text=[direction],
+                textposition="middle center",
+                textfont=dict(size=14, color="black"),
+                showlegend=False,
+            )
+        )
 
-    # Compute the four corners of the greenhouse rectangle in Cartesian coordinates
-    corners = np.array(
-        [
-            [-length, -width],  # Bottom-left
-            [length, -width],  # Bottom-right
-            [length, width],  # Top-right
-            [-length, width],  # Top-left
-        ]
-    )
+    # Add directional lines
+    for angle in angles:
+        angle_rad = np.radians(angle)
+        x_line = [0, radius * np.cos(angle_rad)]
+        y_line = [0, radius * np.sin(angle_rad)]
+        z_line = [-0.1, -0.1]  # Same level as compass circle
 
-    # Convert azimuth to radians and create a rotation matrix
-    azimuth_radians = np.radians(azimuth)
-    rotation_matrix = np.array(
-        [
-            [np.cos(azimuth_radians), -np.sin(azimuth_radians)],
-            [np.sin(azimuth_radians), np.cos(azimuth_radians)],
-        ]
-    )
-
-    # Rotate the corners by the azimuth angle
-    rotated_corners = np.dot(corners, rotation_matrix.T)
-
-    # Convert rotated Cartesian coordinates to polar coordinates (angle in degrees, radius)
-    theta = np.degrees(
-        np.arctan2(rotated_corners[:, 1], rotated_corners[:, 0])
-    )
-    r = np.sqrt(rotated_corners[:, 0] ** 2 + rotated_corners[:, 1] ** 2)
-
-    # Close the rectangle by appending the first point again
-    theta = np.append(theta, theta[0])
-    r = np.append(r, r[0])
-
-    # Add the rotated greenhouse rectangle to the polar plot
-    fig.add_trace(
-        go.Scatterpolar(
-            r=r,  # Radii
-            theta=theta,  # Angles in degrees
-            mode="lines",
-            line=dict(color=plotly_colors[0], width=2),
-            fill="toself",
-            name="Greenhouse",
-            showlegend=False,
-        ),
-        row=row,
-        col=col,
-    )
+        fig.add_trace(
+            go.Scatter3d(
+                x=x_line,
+                y=y_line,
+                z=z_line,
+                mode="lines",
+                line=dict(color="gray", width=2),
+                showlegend=False,
+            )
+        )
 
     # Add an arrow to indicate the azimuth
+    azimuth_rad = np.radians(azimuth)
+    x_arrow = [0, radius * 0.8 * np.cos(azimuth_rad)]
+    y_arrow = [0, radius * 0.8 * np.sin(azimuth_rad)]
+    z_arrow = [-0.1, -0.1]  # Same level as compass circle
+
     fig.add_trace(
-        go.Scatterpolar(
-            r=[0, max(length, width)],  # From center to outer edge
-            theta=[0, azimuth_angle],  # Pointing in the direction of azimuth
+        go.Scatter3d(
+            x=x_arrow,
+            y=y_arrow,
+            z=z_arrow,
             mode="lines",
-            line=dict(color=plotly_colors[1], width=3),
+            line=dict(color=plotly_colors[1], width=4),
             showlegend=False,
-        ),
-        row=row,
-        col=col,
-    )
-    fig.update_layout(
-        polar=dict(
-            bgcolor="rgba(0,0,0,0)",  # Transparent background
-            angularaxis=dict(
-                tickvals=angles,  # Set angular tick values
-                ticktext=directions,  # N, E, S, W labels
-                direction="clockwise",  # Set azimuth to increment clockwise
-            ),
-        ),
+        )
     )
 
+    # Set up the 3D scene
+    fig.update_layout(
+        scene=dict(
+            # xaxis=dict(range=[-max_dim, max_dim], title=""),
+            # yaxis=dict(range=[-max_dim, max_dim], title=""),
+            # zaxis=dict(range=[-0.2, max_dim * 1.1], title="Height"),
+            aspectmode="data",
+            camera=dict(
+                eye=dict(
+                    x=1.5,
+                    y=1.5,
+                    z=1.0,
+                )
+            ),
+        )
+    )
     return fig
 
 
-@st.cache_resource(ttl=TTL, max_entries=2)
 def plotly_weather(climate: pd.DataFrame):
-    fig = climate.resample("1h").median().plot(backend="plotly")
-    # Hide all traces after the first 4
-    for i in range(4, len(fig.data)):
-        fig.data[
-            i
-        ].visible = (
-            "legendonly"  # Keeps the plot in the legend but hides the trace
-        )
+    # Resample data to hourly intervals
+    climate_hourly = climate.resample("1h").median()
+
+    # Create a new figure
+    fig = go.Figure()
+
+    # Group columns by their base name (before "[")
+    column_groups: dict[str, list[str]] = {}
+    for col in climate_hourly.columns:
+        base_name = col.split("[")[0].strip()
+        if base_name not in column_groups:
+            column_groups[base_name] = []
+        column_groups[base_name].append(col)
+
+    # Add traces for each group
+    for i, (base_name, columns) in enumerate(column_groups.items()):
+        # Use different colors for each column in the same group
+        for j, col in enumerate(columns):
+            color = plotly_colors[(i + j) % len(plotly_colors)]
+            # Only show in legend for the first item in each group
+            show_legend = j == 0
+            # Get the unit from the column name if available
+            unit = col.split("[")[-1].split("]")[0] if "[" in col else ""
+            # Create display name with unit if needed
+            display_name = f"{base_name} [{unit}]" if unit else base_name
+
+            fig.add_trace(
+                go.Scatter(
+                    x=climate_hourly.index,
+                    y=climate_hourly[col],
+                    mode="lines",
+                    name=display_name,
+                    line=dict(color=color),
+                    legendgroup=base_name,
+                    showlegend=show_legend,
+                    visible=True if i < 5 else "legendonly",
+                )
+            )
     fig.update_layout(
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-        )
+        xaxis_title=None,
+        yaxis_title=None,
     )
     return fig
 
@@ -540,7 +710,7 @@ def export_fig(fig: go.Figure) -> bytes:
     """Export figure to bytes.
 
     Args:
-        fig: Either a matplotlib figure or a plotly figure
+        fig: A plotly figure
 
     Returns:
         Bytes representation of the figure in PDF format
