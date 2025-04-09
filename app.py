@@ -121,10 +121,10 @@ with st.sidebar:
         value=True,
     )
 
-    st.title("Greenhouse Designer")
+    st.title("Greenhouse Design")
     st.markdown("Design new greenhouse or create digital twin of your own.")
 
-    st.header("Shape")
+    st.header("1. Shape")
     with st.expander(
         "Customize",
         icon="🏠",
@@ -133,7 +133,7 @@ with st.sidebar:
         with st.form(key="shape_form", border=False):
             # Input for length and width
             length = st.number_input(
-                "Length (meters)",
+                "Length (m)",
                 min_value=0.0,
                 value=25.0,
                 step=0.1,
@@ -141,7 +141,7 @@ with st.sidebar:
             )
 
             width = st.number_input(
-                "Width (meters)",
+                "Width (m)",
                 min_value=0.0,
                 value=10.0,
                 step=0.1,
@@ -149,7 +149,7 @@ with st.sidebar:
             )
 
             height = st.number_input(
-                "Wall Height (meters)",
+                "Wall Height (m)",
                 min_value=1.0,
                 value=4.0,
                 step=0.1,
@@ -157,7 +157,7 @@ with st.sidebar:
             )
             # Tilt for roof (0° to 90°)
             roof_tilt = st.slider(
-                "Roof Tilt (degrees)",
+                "Roof Tilt (°)",
                 min_value=0,
                 max_value=45,
                 value=30,
@@ -167,11 +167,9 @@ with st.sidebar:
             )
             wall_tilt = 90
 
-            st.header("Orientation")
-
             # Compass azimuth selection (slider from 0° to 360°)
             azimuth_face = st.slider(
-                "Azimuth (degrees - greenhouse width faces)",
+                "Azimuth (°) - greenhouse width faces",
                 min_value=0,
                 max_value=360,
                 value=90,  # Default to South
@@ -185,7 +183,7 @@ with st.sidebar:
 
     if st.session_state.shape_form_submitted:
         st.header(
-            "Location",
+            "2. Location",
             help="Weather forecast and geolocation data provided by [Open-Meteo](https://open-meteo.com).",
         )
         st.markdown("Fetch weather forecast for your location.")
@@ -245,7 +243,7 @@ with st.sidebar:
         )
 
         st.header(
-            "Climate Controls",
+            "3. Climate Controls",
             help="Optimally scaled actuators for your greenhouse. But you're in control.",
         )
         with st.expander(

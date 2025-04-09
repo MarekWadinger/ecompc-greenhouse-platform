@@ -268,7 +268,7 @@ class GreenHouse:
         latitude: float = 53.193583,  #  latitude of greenhouse
         longitude: float = 5.799383,  # longitude of greenhouse
         dt=60,  # sampling time in seconds
-        return_format: str = "array",
+        return_format: str = "ca",
         **act_kwargs,
     ) -> None:
         self.length = length
