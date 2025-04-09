@@ -1,0 +1,18 @@
+# LaTeX
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.pdfsync
+*.synctex.gz
+*.synctex.gz(busy)
+*.synctex.gz(busy)*
+*.synctex.gz([0-9])
+*.synctex.gz([0-9])*
+*.toc
+
+# MacOS
+.DS_Store
