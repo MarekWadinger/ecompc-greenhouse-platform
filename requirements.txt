@@ -4,6 +4,7 @@ entsoe-py<1.0.0
 ipykernel~=6.26.0
 matplotlib~=3.8.1
 numpy~=1.26.1
+orjson<4.0.0
 pandas<3.0.0
 plotly
 pvlib~=0.10.3

@@ -367,10 +367,10 @@ class GreenHouse:
     def model(
         self,
         t,
-        x: tuple | np.ndarray,
-        u: tuple | np.ndarray,
+        x: tuple | np.ndarray | ca.DM,
+        u: tuple | np.ndarray | ca.DM,
         climate: tuple | np.ndarray | None = None,
-    ) -> np.ndarray:
+    ) -> np.ndarray | ca.DM:
         """Greenhouse model.
 
         This function models the greenhouse system with
@@ -393,10 +393,10 @@ class GreenHouse:
     def _model(
         self,
         t,
-        z: tuple | np.ndarray,
-        u: tuple | np.ndarray,
+        z: tuple | np.ndarray | ca.DM,
+        u: tuple | np.ndarray | ca.DM,
         climate: tuple | np.ndarray,
-    ) -> tuple[np.ndarray, dict]:
+    ) -> tuple[np.ndarray | ca.DM, dict]:
         T_c = z[0]  # Cover temperature [K]
         T_i = z[1]  # Internal air temperature [K]
         T_v = z[2]  # Vegetation temperature [K]
@@ -893,21 +893,23 @@ class GreenHouse:
             t, (x_sdw, x_nsdw), (T_i - T_k, u_par, u_co2)
         )
 
-        return (
-            np.array(
-                [
-                    dT_c_dt,
-                    dT_i_dt,
-                    dT_v_dt,
-                    dT_m_dt,
-                    dT_p_dt,
-                    dT_f_dt,
-                    dT_s1_dt,
-                    dC_w_dt,
-                    dC_c_dt,
-                    dx_sdw_dt,
-                    dx_nsdw_dt,
-                ]
-            ),
-            locals(),
-        )
+        # Store all outputs in a list first
+        outputs = [
+            dT_c_dt,
+            dT_i_dt,
+            dT_v_dt,
+            dT_m_dt,
+            dT_p_dt,
+            dT_f_dt,
+            dT_s1_dt,
+            dC_w_dt,
+            dC_c_dt,
+            dx_sdw_dt,
+            dx_nsdw_dt,
+        ]
+
+        # Check if using numpy or CasADi
+        if all(isinstance(output, np.ndarray) for output in outputs):
+            return np.array(outputs), locals()
+        else:
+            return ca.vertcat(*outputs), locals()

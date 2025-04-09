@@ -1,4 +1,7 @@
+from typing import Literal
+
 import numpy as np
+import pandas as pd
 from casadi import SX, vertcat
 from do_mpc.controller import MPC
 from do_mpc.model import Model
@@ -14,13 +17,14 @@ class GreenHouseModel(Model):  # Create a model instance
         self,
         gh_model: GreenHouse,
         climate_vars,
+        model_type: Literal["continuous", "discrete"] = "continuous",
         lettuce_price=0.0054,  # EUR/g
     ):
         self.gh = gh_model
         self.dt = self.gh.dt
         self.lettuce_price = lettuce_price
 
-        super().__init__("discrete")
+        super().__init__(model_type)
 
         # Define state and control variables
         t = self.set_variable(var_type="_tvp", var_name="t")
@@ -43,17 +47,108 @@ class GreenHouseModel(Model):  # Create a model instance
             for name in climate_vars
         }
 
-        x_next = self.runge_kutta_step(t, x, self.u_, tuple(tvp.values()))
-        # x_next = backward_euler_step(f, t, x, self.u_, tvp, dt)
-        # x_next = bdf2_step(f, t + dt, x, x_next, self.u_, tvp, dt)
+        if model_type == "discrete":
+            # x_next = self.runge_kutta_step(t, x, self.u_, tuple(tvp.values()))
+            x_next = self.backward_euler_step(
+                t, x, self.u_, tuple(tvp.values())
+            )
+            # x_next = self.bdf2_step(
+            #     t + self.dt, x, x_next, self.u_, tuple(tvp.values())
+            # )
+        else:
+            x_next = gh_model.model(t, x, self.u_, tuple(tvp.values()))
 
         self.set_rhs("x", x_next)
 
         self.setup()
 
-    def analyze_profit_and_costs(self, X, U, energy_cost=None):
-        import pandas as pd
+    def runge_kutta_step(
+        self, t: float, x: np.ndarray, u: np.ndarray, tvp: tuple
+    ) -> np.ndarray:
+        """Performs a single Runge-Kutta 4th order integration step.
 
+        Args:
+            t: Current time.
+            x: Current state vector.
+            u: Control input vector.
+            tvp: Tuple of time-varying parameters.
+
+        Returns:
+            The next state vector after integration.
+
+        Examples:
+            >>> controller = Controller(...)
+            >>> t = 0.0
+            >>> x = np.zeros(10)  # Example state vector
+            >>> u = np.array([50.0, 30.0])  # Example control inputs
+            >>> tvp = (20.0, 400.0)  # Example time-varying parameters
+            >>> controller.runge_kutta_step(t, x, u, tvp)
+
+        """
+        k1 = self.gh.model(t, x, u, tvp)
+        k2 = self.gh.model(t, x + self.dt / 2 * k1, u, tvp)
+        k3 = self.gh.model(t, x + self.dt / 2 * k2, u, tvp)
+        k4 = self.gh.model(t, x + self.dt * k3, u, tvp)
+        return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    def backward_euler_step(
+        self, t: float, x: np.ndarray, u: np.ndarray, tvp: tuple
+    ) -> np.ndarray:
+        """Performs a single backward Euler integration step.
+
+        Args:
+            t: Current time.
+            x: Current state vector.
+            u: Control input vector.
+            tvp: Tuple of time-varying parameters.
+
+        Returns:
+            The next state vector after integration.
+
+        Examples:
+            >>> controller = Controller(...)
+            >>> t = 0.0
+            >>> x = np.zeros(10)  # Example state vector
+            >>> u = np.array([50.0, 30.0])  # Example control inputs
+            >>> tvp = (20.0, 400.0)  # Example time-varying parameters
+            >>> controller.backward_euler_step(t, x, u, tvp)
+        """
+        f = self.gh.model(t + self.dt, x, u, tvp)
+        return x + self.dt * f
+
+    def bdf2_step(
+        self,
+        t: float,
+        x: np.ndarray,
+        u: np.ndarray,
+        tvp: tuple,
+    ) -> np.ndarray:
+        """Performs a single BDF2 (Backward Differentiation Formula) integration step.
+
+        Args:
+            t: Current time.
+            x: Current state vector.
+            u: Control input vector.
+            tvp: Tuple of time-varying parameters.
+
+        Returns:
+            The state vector after BDF2 integration.
+
+        Examples:
+            >>> controller = Controller(...)
+            >>> t = 0.0
+            >>> x = np.zeros(10)  # Example state vector
+            >>> u = np.array([50.0, 30.0])  # Example control inputs
+            >>> tvp = (20.0, 400.0)  # Example time-varying parameters
+            >>> controller.bdf2_step(t, x, u, tvp)
+        """
+        return (
+            4 / 3 * x
+            - 1 / 3 * x
+            + 2 / 3 * self.backward_euler_step(t, x, u, tvp)
+        )
+
+    def analyze_profit_and_costs(self, X, U, X0=None, energy_cost=None):
         profit = pd.Series(
             self.lettuce_price * X[-2:].sum() / DRY_TO_WET_RATIO * self.gh.A_c,
             index=["Lettuce profit "],
@@ -71,29 +166,23 @@ class GreenHouseModel(Model):  # Create a model instance
                 U[act], energy_cost
             ).sum()  # type: ignore
             costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(U[act]).sum()  # type: ignore
+        if X0 is not None:
+            costs["Seedlings"] = (
+                -self.lettuce_price
+                * X0[-2:].sum()
+                / DRY_TO_WET_RATIO
+                * self.gh.A_c
+            )  # type: ignore
 
         profit_costs = pd.concat([profit, costs]).rename("EUR")
         profit_costs["Total"] = profit_costs.sum()
         return profit_costs
 
-    def runge_kutta_step(self, t, x, u, tvp):
-        k1 = self.gh.model(t, x, u, tvp)
-        k2 = self.gh.model(t, x + self.dt / 2 * k1, u, tvp)
-        k3 = self.gh.model(t, x + self.dt / 2 * k2, u, tvp)
-        k4 = self.gh.model(t, x + self.dt * k3, u, tvp)
-        return x + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-
-    def backward_euler_step(self, t, x, u, tvp):
-        return x + self.dt * self.gh.model(t + self.dt, x, u, tvp)
-
-    def bdf2_step(self, t, x, x_next, u, tvp):
-        return 4 / 3 * x_next - 1 / 3 * self.backward_euler_step(t, x, u, tvp)
-
     def init_states(self, x, u, tvp, steps=300):
         x_next = x
         for t in range(steps):
             x_next = self.runge_kutta_step(t, x_next, u, tvp)
-        return x_next
+        return np.array(x_next).flatten()
 
 
 class EconomicMPC(MPC):
@@ -110,6 +199,8 @@ class EconomicMPC(MPC):
         # Define optimization variables
         self.x = model.x["x"]
         self.u = model.u
+        self.N = N  # Store horizon length
+        self.model = model  # Store model reference
 
         self.climate = climate
 
@@ -132,27 +223,34 @@ class EconomicMPC(MPC):
             "n_horizon": N,
             "t_step": model.dt,
             "supress_ipopt_output": True,
-            # "state_discretization": "collocation",
-            # "collocation_type": "radau",
-            # "collocation_deg": 2,
-            # "collocation_ni": 2,
-            # "nl_cons_single_slack": True,
+            "state_discretization": "collocation",
+            "collocation_type": "radau",
+            "collocation_deg": 1,
+            "collocation_ni": 1,
+            "nl_cons_single_slack": True,
+            "store_full_solution": True,  # Important for warm starting
             "nlpsol_opts": {
                 "ipopt": {  # https://coin-or.github.io/Ipopt/OPTIONS.html
-                    # "max_iter": 100,  # TODO: 100 is not enough
-                    "tol": 1,  # obj. function is in EUR, 0.01 cent tol should be enough for given Ts
-                    "max_cpu_time": 1,  # seconds
+                    "max_iter": 100,  # TODO: 100 is not enough
+                    "tol": 0.01,  # obj. function is in EUR, 0.01 cent tol should be enough for given Ts
+                    "max_cpu_time": 0.5,  # seconds
                     # "linear_solver": "MA57",  # https://licences.stfc.ac.uk/product/coin-hsl
                     "warm_start_init_point": "yes",
-                    # "warm_start_same_structure": "yes",
+                    # "warm_start_same_structure": "yes",  # Speeds things up, but does not seem to optimize anything
                     "warm_start_entire_iterate": "yes",
                     "mu_allow_fast_monotone_decrease": "yes",
                     "fast_step_computation": "yes",
                     "print_level": 0,
-                    "output_file": ".out.ipopt",
+                    "output_file": "/dev/null",
                     # "print_user_options": "yes",
                     # "print_options_documentation": "yes",
-                    "print_frequency_iter": 10,
+                    # "print_frequency_iter": 10,
+                    "hessian_approximation": "limited-memory",
+                    "limited_memory_max_history": 3,  # Minimal history
+                    # "acceptable_tol": 1,  # More relaxed acceptable tolerance
+                    # "acceptable_iter": 3,  # Accept solution faster
+                    "nlp_scaling_method": "none",  # Skip scaling for speed
+                    "fixed_variable_treatment": "make_parameter",  # Fa
                 }
             },
         }
@@ -163,13 +261,9 @@ class EconomicMPC(MPC):
             / DRY_TO_WET_RATIO
             * self.cultivated_area
         )
-        for i, act in enumerate(
-            [
-                act
-                for act, active in model.gh.active_actuators.items()
-                if active
-            ]
-        ):
+        for i, act in enumerate([
+            act for act, active in model.gh.active_actuators.items() if active
+        ]):
             actuator: Actuator = getattr(
                 model.gh, act.lower().replace(" ", "")
             )
@@ -221,6 +315,19 @@ class EconomicMPC(MPC):
         self.setup()
         self.set_initial_guess()
 
+    def make_step(self, x0):
+        """Make one MPC step with warm-starting.
+
+        Args:
+            x0: Current state vector.
+
+        Returns:
+            Optimal control input for the current step.
+        """
+        for k in range(0, self._settings.n_horizon - 1):
+            self.opt_x_num["_u", k, :] = self.opt_x_num["_u", k + 1, :]
+        return super().make_step(x0)
+
 
 class GreenhouseSimulator(Simulator):
     def __init__(
@@ -232,22 +339,62 @@ class GreenhouseSimulator(Simulator):
         super().__init__(model)
 
         self.climate = climate
+        # Convert to numpy array directly for fastest access
+        self.climate_values = np.array([
+            climate[col].values for col in climate.columns
+        ])
+        self.climate_keys = list(climate.columns)
+        self.climate_len = len(climate)
 
-        params_simulator = {"t_step": model.dt}
+        params_simulator = {
+            "t_step": model.dt,
+            "abstol": 1e-2,
+            "reltol": 1e-2,
+        }
+
+        if model.model_type == "continuous":
+            # Configure simulator for stiff systems
+            params_simulator.update({
+                "integration_tool": "cvodes",
+                "integration_opts": {
+                    "max_num_steps": 100,  # Increase max steps for stiff systems
+                    "sensitivity_method": "simultaneous",
+                    "linear_multistep_method": "bdf",  # Better for stiff systems
+                    "nonlinear_solver_iteration": "newton",  # More robust for stiff systems
+                    "newton_scheme": "direct",  # Direct solver for better convergence
+                    "max_step_size": 100,  # Limit step size for stability
+                    "min_step_size": 1,  # Prevent too small steps
+                    "scale_abstol": True,  # Scale tolerances for better performance
+                    "always_recalculate_jacobian": False,  # Reuse Jacobian when possible
+                    "use_preconditioner": True,  # Improve convergence
+                    "max_krylov": 10,  # Maximum Krylov dimension
+                    "step0": 1e-4,  # Initial step size
+                },
+            })
 
         self.set_param(**params_simulator)
 
         # Get the template
         tvp_sim_template = self.get_tvp_template()
 
-        # Define the function (indexing is much simpler ...)
+        # Simple, fast function with minimal overhead
         def tvp_sim_fun(t_now):
             if isinstance(t_now, np.ndarray):
                 t_now = t_now[0]
-            t_ = int(t_now // model.dt)
+
+            # Fast index calculation with bounds check
+            t_ = min(int(t_now // model.dt), self.climate_len - 1)
+
+            # Set time once
             tvp_sim_template["t"] = t_now
-            for key in climate.columns:
-                tvp_sim_template[key] = climate[key].iloc[t_]
+
+            # Use pre-slice for faster access
+            current_climate = self.climate_values[:, t_]
+
+            # Fast assignment using direct array access
+            for i, key in enumerate(self.climate_keys):
+                tvp_sim_template[key] = current_climate[i]
+
             return tvp_sim_template
 
         # Set the tvp_fun:
