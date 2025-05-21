@@ -444,7 +444,7 @@ class GreenHouse:
         )  # External carbon dioxide concentration [kg/m^3]
         C_c_ppm = (
             C_c * R * T_i / (M_c * atm) * 1.0e6
-        )  # External carbon dioxide concentration [ppm]
+        )  # Internal carbon dioxide concentration [ppm]
         h = 6.626e-34  # Planck's constant in Joule*Hz^{-1}
 
         ## Lights
@@ -890,7 +890,7 @@ class GreenHouse:
         lambda_m = lambda_nm * 1e-9
         E = h * cLight / lambda_m  # [J/num{photons}]
         u_par = PAR * E * N_A  # [W/m^2]
-        u_co2 = C_c_ppm  # [ppm] >> external C_c_ppm
+        u_co2 = C_c_ppm  # [ppm]
         dx_sdw_dt, dx_nsdw_dt = lettuce_growth_model(
             t, (x_sdw, x_nsdw), (T_i - T_k, u_par, u_co2)
         )

@@ -121,7 +121,8 @@ def set_size(
             Fraction of the height which you wish the figure to occupy
     subplots: array-like, optional
             The number of rows and columns of subplots.
-    Returns
+
+    Returns:
     -------
     fig_dim: tuple
             Dimensions of figure in inches
@@ -164,8 +165,8 @@ def set_size(
 
 
 def set_plotly_defaults_for_latex():
-    """
-    Configure Plotly defaults to generate plots that are style-compliant with LaTeX documents.
+    """Configure Plotly defaults to generate plots that are style-compliant with LaTeX documents.
+
     This includes setting appropriate fonts, sizes, and styling for academic publications.
     """
     import plotly.io as pio
@@ -310,35 +311,36 @@ def plot_response(
         axs[0].set_ylabel(y_label)
         axs[0].legend()
 
-    if isinstance(u_out, pd.DataFrame):
-        # Sort u_out columns based on maximum values in descending order
-        max_values = u_out.max()
-        sorted_columns = max_values.sort_values(ascending=False).index
-        u_out = u_out[sorted_columns]
-        axs[1].plot(
-            t_out,
-            u_out,
-            label=u_out.columns,
-        )
-    else:
-        axs[1].plot(
-            t_out,
-            u_out,
-            label=u_legend,
-        )
-    if u_min is not None and u_max is not None:
-        axs[1]._get_lines.set_prop_cycle(None)
-        for u_min_, u_max_ in zip(u_min, u_max):
-            color = axs[1]._get_lines.get_next_color()
-            axs[1].axhline(u_min_, color=color, linestyle=":")
-            axs[1].axhline(u_max_, color=color, linestyle=":")
-        axs[1]._get_lines.set_prop_cycle(None)
+    if len(axs) > 1:
+        if isinstance(u_out, pd.DataFrame):
+            # Sort u_out columns based on maximum values in descending order
+            max_values = u_out.max()
+            sorted_columns = max_values.sort_values(ascending=False).index
+            u_out = u_out[sorted_columns]
+            axs[1].plot(
+                t_out,
+                u_out,
+                label=u_out.columns,
+            )
+        else:
+            axs[1].plot(
+                t_out,
+                u_out,
+                label=u_legend,
+            )
+        if u_min is not None and u_max is not None:
+            axs[1]._get_lines.set_prop_cycle(None)
+            for u_min_, u_max_ in zip(u_min, u_max):
+                color = axs[1]._get_lines.get_next_color()
+                axs[1].axhline(u_min_, color=color, linestyle=":")
+                axs[1].axhline(u_max_, color=color, linestyle=":")
+            axs[1]._get_lines.set_prop_cycle(None)
 
-    if axs_ is None:
-        axs[1].set_xlabel(t_label)
-        axs[1].set_ylabel(u_label)
-        axs[1].legend()
-        axs[1].tick_params(axis="x")
+        if axs_ is None:
+            axs[1].set_xlabel(t_label)
+            axs[1].set_ylabel(u_label)
+            axs[1].legend()
+            axs[1].tick_params(axis="x")
 
     for ax in axs:
         configure_date_formatter(ax)
@@ -503,8 +505,7 @@ def plotly_greenhouse(
     roof_tilt: float,
     azimuth: float,
 ):
-    """
-    Create a 3D visualization of a greenhouse with a compass on the ground plane.
+    """Create a 3D visualization of a greenhouse with a compass on the ground plane.
 
     Args:
         length: Length of the greenhouse in meters
@@ -544,8 +545,7 @@ def plotly_3d_greenhouse(
     azimuth: float,
     fig: go.Figure,
 ):
-    """
-    Create a 3D visualization of a greenhouse with specified dimensions and orientation.
+    """Create a 3D visualization of a greenhouse with specified dimensions and orientation.
 
     Args:
         length: Length of the greenhouse in meters
@@ -662,8 +662,7 @@ def plotly_3d_compass(
     azimuth: float,
     fig: go.Figure,
 ):
-    """
-    Create a 3D compass visualization on the ground plane.
+    """Create a 3D compass visualization on the ground plane.
 
     Args:
         length: Length reference for sizing the compass
