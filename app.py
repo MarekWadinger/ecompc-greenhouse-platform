@@ -394,13 +394,15 @@ if (
     ):
         st.markdown(st.session_state.forecast_description)
 
-    tilt = [90, 90, 90, 90, 89, 89, roof_tilt, roof_tilt]
+    tilt = [90, 90, 90, 90, roof_tilt, roof_tilt]
     azimuth: list[int | str] = [
         azimuth_face,  # Front
         azimuth_face + 180,  # Back
         azimuth_face + 90,  # Right
         azimuth_face + 270,  # Left
-    ] * 2
+        azimuth_face + 90,  # Right roof
+        azimuth_face + 270,  # Left roof
+    ]
     # Initialize runtime
     openmeteo = OpenMeteo(
         latitude=latitude,  # Latitude of the location in degrees

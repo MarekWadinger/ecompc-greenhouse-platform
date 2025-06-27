@@ -284,10 +284,10 @@ class GreenHouse:
         roof_height = width / 2 * np.tan(np.radians(roof_tilt))
         roof_width = np.sqrt(width**2 + roof_height**2)
         self.A_f = length * width  # greenhouse floor area [m^2]
-        wall_surface = [width * height] * 2 + [length * height] * 2
-        roof_surface = [roof_width * roof_height] * 2 + [
-            roof_width * length
+        wall_surface = [width * height + width / 2 * roof_height] * 2 + [
+            length * height
         ] * 2
+        roof_surface = [roof_width * length] * 2
 
         self.surface_area = np.array(
             wall_surface + roof_surface
@@ -295,11 +295,11 @@ class GreenHouse:
         self.area = np.sum(self.surface_area)
         self.area_roof = np.sum(roof_surface)
         self.volume = (
-            length * width * height + roof_width * roof_height * length
+            length * width * height * 3 / 2
         )  # greenhouse volume [m^3]
 
         # Air characteristics
-        ACH = 20  # air changes per hour
+        ACH = 10  # air changes per hour
         R_a_max = self.volume * ACH / 3600.0  # fan air change rate [m^3/s]
         T_sp_vent = 25.0 + T_k  # setpoint temperature for fan [K]
 
@@ -621,15 +621,15 @@ class GreenHouse:
         wind_pressure = (
             Cp * 0.5 * rho_i * wind_speed_H**2
         )  # Equals DeltaP for wind pressure [Pa]
-        stack_pressure_diff = (
-            rho_i * g * self.height * (T_i - T_ext) / T_i
-        )  # DeltaP for stack pressure [Pa]
+        T_diff = ca.fabs(T_i - T_ext)
+        stack_pressure_diff = rho_i * g * self.height * T_diff / T_i
+        # DeltaP for stack pressure [Pa]
 
         Qw = (
             Cd * crack_area * (2 * wind_pressure / rho_i) ** 0.5
         )  # Flow rate due to wind pressure
         Qs = (
-            Cd * crack_area * (2 * ca.fabs(stack_pressure_diff) / rho_i) ** 0.5
+            Cd * crack_area * (2 * stack_pressure_diff / rho_i) ** 0.5
         )  # Flow rate due to stack pressure
         Qt = (Qw**2 + Qs**2) ** 0.5  # Total flow rate
 
@@ -657,10 +657,10 @@ class GreenHouse:
         QS_al_VIS = 0.0
 
         # Solar radiation incident on the cover
-        QS_tot_rNIR = 0.5 * self.surface_area @ climate[5:13]  # Direct
-        QS_tot_rVIS = 0.5 * self.surface_area @ climate[5:13]
-        QS_tot_fNIR = 0.5 * self.surface_area @ climate[13:21]  # Diffuse
-        QS_tot_fVIS = 0.5 * self.surface_area @ climate[13:21]
+        QS_tot_rNIR = 0.5 * self.surface_area @ climate[5:11]  # Direct
+        QS_tot_rVIS = 0.5 * self.surface_area @ climate[5:11]
+        QS_tot_fNIR = 0.5 * self.surface_area @ climate[11:17]  # Diffuse
+        QS_tot_fVIS = 0.5 * self.surface_area @ climate[11:17]
 
         # Transmitted solar radiation
         QS_int_rNIR = tau_c_NIR * QS_tot_rNIR  # J/s total inside greenhouse
