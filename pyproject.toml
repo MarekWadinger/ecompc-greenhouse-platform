@@ -6,6 +6,42 @@ authors = [{ name = "Marek Wadinger", email = "marek.wadinger@stuba.sk" }]
 requires-python = ">=3.8"
 readme = "README.md"
 license = { file = "LICENSE" }
+dependencies = [
+    "casadi>=3.7.0",
+    "do-mpc>=5.0.1",
+    "dotenv>=0.9.9",
+    "numpy>=1.24.4",
+    "opencv-python>=4.11.0.86",
+    "pandas>=2.0.3",
+    "plotly>=6.1.2",
+    "scipy>=1.10.1",
+    "st-theme>=1.2.3",
+    "stqdm>=0.0.5",
+    "streamlit>=1.40.1",
+    "tqdm>=4.67.1",
+    "watchdog>=4.0.2",
+]
+
+[dependency-groups]
+api = [
+    "entsoe-py>=0.6.2",
+    "orjson>=3.10.15",
+    "pvlib>=0.11.0",
+    "requests>=2.32.4",
+    "requests-cache>=1.2.1",
+    "retry-requests>=2.0.0",
+]
+dev = [
+    "apscheduler>=3.11.0",
+    "commitizen>=3.31.0",
+    "ipykernel>=6.29.5",
+    "logfire>=3.17.0",
+    "mypy>=1.14.1",
+    "nbformat>=5.10.4",
+    "pre-commit>=3.5.0",
+    "ruff>=0.12.0",
+]
+
 
 [tool.pytest.ini_options]
 addopts = [
