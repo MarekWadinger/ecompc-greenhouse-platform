@@ -44,7 +44,7 @@ def suppress_stdout():
 # --- Constants ---
 sim_steps_max = 60 * 24
 N_max = 60
-Ts_default = 300
+Ts_max = 300
 
 TTL = 5 * 60  # Cache for 5 minutes
 
@@ -106,15 +106,6 @@ if "sustainability_description" not in st.session_state:
 #  === Sidebar ===
 with st.sidebar:
     theme: dict | None = st_theme()
-    if theme is not None and theme.get("base", "light") == "dark":
-        st.image("app/qr-white_transparent.png")
-    else:
-        st.image("app/qr-black_transparent.png")
-    feedback = st.link_button(
-        "Give Feedback",
-        "https://forms.gle/pRvXkB69w3vp8c688",
-        use_container_width=True,
-    )
 
     st.session_state["education_mode"] = st.toggle(
         "Education mode",
@@ -238,7 +229,7 @@ with st.sidebar:
             roof_tilt,
             latitude=latitude,
             longitude=longitude,
-            dt=Ts_default,
+            dt=Ts_max,
             **{"co2_intensity": co2_intensity},  # type: ignore
         )
 
@@ -327,7 +318,7 @@ with st.sidebar:
                     "Sampling time (s)",
                     min_value=0,
                     max_value=300,
-                    value=Ts_default,
+                    value=Ts_max,
                     step=10,
                     help="A shorter sampling time allows for more responsive control but increases computational load. A longer sampling time may lead to slower responses to changes.",
                 )
@@ -363,6 +354,15 @@ with st.sidebar:
                 submit_params = st.form_submit_button(
                     "Start Growing!", on_click=set_params_form_submit
                 )
+    if theme is not None and theme.get("base", "light") == "dark":
+        st.image("app/qr-white_transparent.png")
+    else:
+        st.image("app/qr-black_transparent.png")
+    feedback = st.link_button(
+        "Give Feedback",
+        "https://forms.gle/pRvXkB69w3vp8c688",
+        use_container_width=True,
+    )
 
 # === Main ===
 st.title("Economic MPC for Greenhouse Climate Control")
@@ -416,7 +416,7 @@ if (
         start_time,
     )
     end_date = start_date + pd.Timedelta(
-        days=min(15, (sim_steps_max + N_max) * Ts // (3600 * 24))
+        days=min(15, (sim_steps_max + N_max) * Ts_max // (3600 * 24))
     )
     climate = get_weather_and_energy_data(
         openmeteo,

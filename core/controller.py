@@ -99,30 +99,6 @@ class GreenHouseModel(Model):  # Create a model instance
         f = self.gh.model(t + self.dt, x, u, tvp)
         return x + self.dt * f
 
-    def bdf2_step(
-        self,
-        t: float,
-        x: np.ndarray,
-        u: np.ndarray,
-        tvp: tuple,
-    ) -> np.ndarray:
-        """Performs a single BDF2 (Backward Differentiation Formula) integration step.
-
-        Args:
-            t: Current time.
-            x: Current state vector.
-            u: Control input vector.
-            tvp: Tuple of time-varying parameters.
-
-        Returns:
-            The state vector after BDF2 integration.
-        """
-        return (
-            4 / 3 * x
-            - 1 / 3 * x
-            + 2 / 3 * self.backward_euler_step(t, x, u, tvp)
-        )
-
     def analyze_profit_and_costs(self, X, U, X0=None, energy_cost=None):
         profit = pd.Series(
             self.lettuce_price * X[-2:].sum() / DRY_TO_WET_RATIO * self.gh.A_c,
@@ -199,8 +175,8 @@ class EconomicMPC(MPC):
             "t_step": model.dt,
             "supress_ipopt_output": True,
             "state_discretization": "collocation",
-            "collocation_type": "radau",
-            "collocation_deg": 1,
+            "collocation_type": "radau",  # legendre
+            "collocation_deg": 3,
             "collocation_ni": 1,
             "nl_cons_single_slack": True,
             "store_full_solution": True,  # Important for warm starting
@@ -268,8 +244,6 @@ class EconomicMPC(MPC):
         # self.set_nl_cons(
         #     "x", -model.x["x"], ub=0, soft_constraint=True, penalty_term_cons=10000
         # )
-
-        # self.set_nl_cons("u", self.u_prev["u"] - model.u["u"], ub=0)
 
         # Get the template
         tvp_mpc_template = self.get_tvp_template()
@@ -360,17 +334,25 @@ class GreenhouseSimulator(Simulator):
 
         # Simple, fast function with minimal overhead
         def tvp_sim_fun(t_now):
+            """Get the time-varying parameters for the simulator.
+
+            Args:
+                t_now: Current time in seconds
+
+            Returns:
+                Dictionary of time-varying parameters.
+            """
             if isinstance(t_now, np.ndarray):
                 t_now = t_now[0]
 
             # Fast index calculation with bounds check
-            t_ = min(int(t_now // model.dt), self.climate_len - 1)
+            t_idx = min(int(t_now // model.dt), self.climate_len - 1)
 
             # Set time once
             tvp_sim_template["t"] = t_now
 
             # Use pre-slice for faster access
-            current_climate = self.climate_values[:, t_]
+            current_climate = self.climate_values[:, t_idx]
 
             # Fast assignment using direct array access
             for i, key in enumerate(self.climate_keys):

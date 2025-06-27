@@ -71,7 +71,6 @@ class ElectricityMap:
         country_code: str,
     ) -> float:
         """This endpoint retrieves the last 24 hours of carbon intensity (in gCO2eq/kWh) of an area. It can either be queried by zone identifier or by geolocation. The resolution is 60 minutes."""
-
         # Make sure all required weather variables are listed here
         # The order of variables in hourly or daily is important to assign them correctly below
         params = {
@@ -97,7 +96,6 @@ class ElectricityMap:
         country_code: str,
     ) -> pd.DataFrame:
         """This endpoint retrieves the last 24 hours of carbon intensity (in gCO2eq/kWh) of an area. It can either be queried by zone identifier or by geolocation. The resolution is 60 minutes."""
-
         # Make sure all required weather variables are listed here
         # The order of variables in hourly or daily is important to assign them correctly below
         params = {
@@ -391,8 +389,7 @@ class OpenMeteo:
         dhi: float | None = None,
         clearsky_model: str = "ineichen",
     ):
-        """
-        Compute radiation at a given tilt and azimuth angle from Global Horizontal Irradiance (GHI).
+        """Compute radiation at a given tilt and azimuth angle from Global Horizontal Irradiance (GHI).
 
         Parameters:
         ghi: Global Horizontal Irradiance in W/m^2.
@@ -507,12 +504,15 @@ class OpenMeteo:
                     ]
                 ).rename(
                     columns={
-                        "poa_direct": "Direct irradiance [W/m²]",
-                        "poa_diffuse": "Diffuse irradiance [W/m²]",
+                        "poa_direct": "Direct irr.",
+                        "poa_diffuse": "Diffuse irr.",
                     }
                 )
                 df_rad = pd.concat(
-                    [df_rad, radiation.add_suffix(f" [W/m²]:t{t}a{a}")],
+                    [
+                        df_rad,
+                        radiation.add_suffix(f" (T: {t}°, Az: {a}°) [W/m²]"),
+                    ],
                     axis=1,
                 )
         return df_rad
