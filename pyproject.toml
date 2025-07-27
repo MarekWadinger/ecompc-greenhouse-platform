@@ -20,10 +20,6 @@ dependencies = [
     "streamlit>=1.40.1",
     "tqdm>=4.67.1",
     "watchdog>=4.0.2",
-]
-
-[dependency-groups]
-api = [
     "entsoe-py>=0.6.2",
     "orjson>=3.10.15",
     "pvlib>=0.11.0",
@@ -31,6 +27,8 @@ api = [
     "requests-cache>=1.2.1",
     "retry-requests>=2.0.0",
 ]
+
+[dependency-groups]
 dev = [
     "apscheduler>=3.11.0",
     "commitizen>=3.31.0",
