@@ -68,17 +68,10 @@ If you wish to run the platform locally, follow the steps below:
 3. Create a virtual environment:
 
     ```sh
-    python -m venv --upgrade-deps .venv
-    source .venv/bin/activate
+    uv sync --group api
     ```
 
-4. Install the required dependencies:
-
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-5. Run the platform locally:
+4. Run the platform locally:
 
     ```sh
     streamlit run app.py
