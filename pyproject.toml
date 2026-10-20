@@ -26,6 +26,7 @@ dependencies = [
     "requests>=2.32.4",
     "requests-cache>=1.2.1",
     "retry-requests>=2.0.0",
+    "pyomo>=6.8.2",
 ]
 
 [dependency-groups]
