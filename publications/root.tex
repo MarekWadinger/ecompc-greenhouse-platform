@@ -15,10 +15,6 @@
 %% The SI units alignment
 \usepackage{siunitx}
 \usepackage{relsize}
-\setlength\abovedisplayskip{2.5pt}
-\setlength\belowdisplayskip{2.5pt}
-\setlength{\textfloatsep}{2.5pt}
-\setlength{\intextsep}{2.5pt}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
  T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -31,7 +27,7 @@
 \begin{document}
 
 \title{\vspace*{18pt}Carbon Neutral Greenhouse: Economic Model Predictive Control Framework for Education
-    \thanks{The authors acknowledge the support of the Program to support young researchers at STU under the project AIOperator: eXplainable Intelligence for Industry, as well as the contribution of the Scientific Grant Agency of the Slovak Republic under the grants 1/0490/23 and 1/0297/22. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries). RP acknowledges the financial support by the European Commission under the grant scheme NextGenerationEU project no. 09I03-03-V04-00530.}
+    \thanks{The authors acknowledge the support of the Program to support young researchers at STU under the project AIOperator: eXplainable Intelligence for Industry, as well as the contribution of the Scientific Grant Agency of the Slovak Republic under the grants 1/0490/23 and 1/0297/22. This research is funded by the Horizon Europe under the grant no. 101079342 (Fostering Opportunities Towards Slovak Excellence in Advanced Control for Smart Industries). RP acknowledges the financial support by the European Commission under the grant scheme NextGenerationEU project no. 09I03--03--V04--00530.}
 }
 
 \author{\IEEEauthorblockN{Marek Wadinger, Rastislav F\'aber, Erika Pavlovi\v cov\'a, Radoslav Paulen}
@@ -53,7 +49,7 @@
 \end{IEEEkeywords}
 
 \section{Introduction}
-In the evolving field of engineering, graduates must possess both theoretical knowledge and practical skills. Technical university education should therefore combine a solid theoretical foundation with hands-on experiences, gained through projects, real-world problem solving, and experimentation. Interactive tools have proven valuable for teaching control theory~\cite{Emami1991, Guzman2013}, and importantly, practical learning need not depend on costly laboratory setups—simulations and interactive tasks can provide effective, accessible alternatives.
+In the evolving field of engineering, graduates must possess both theoretical knowledge and practical skills. Technical university education should therefore combine a solid theoretical foundation with hands-on experiences, gained through projects, real-world problem solving, and experimentation. Interactive tools have proven valuable for teaching control theory~\cite{Emami1991, Guzman2013}, and importantly, practical learning need not depend on costly laboratory setups --- simulations and interactive tasks can provide effective, accessible alternatives.
 
 Modern agriculture remains labor-intensive, seasonal, and heavily reliant on irrigation and subsidized inputs, often resulting in eutrophication, deforestation, and soil degradation. With nearly 70\% of global water use attributed to agriculture~\cite{Debroy2024}, greenhouses offer a promising alternative by creating controlled environments that enhance productivity beyond conventional farming. However, internal climate fluctuations remain a challenge, requiring efficient control strategies~\cite{Wu2019}.
 
@@ -65,10 +61,9 @@ While PID controllers are valued for their simplicity and effectiveness, IoT and
 
 In parallel, integrating advanced control techniques into education has gained attention. Web-based simulation platforms have been shown to improve student engagement and bridge the gap between theory and practice~\cite{WangEducation2024, Zakova2024}. This work contributes to that goal by presenting a framework for greenhouse climate control that emphasizes modeling, optimal control, and Nonlinear Economic MPC (NEMPC).
 
-Specifically, we present a web interface for optimal greenhouse climate control, designed to enhance crop yield, energy efficiency, and reduce \coo\ emissions. Using principles of thermodynamics, fluid dynamics, and mass transfer—alongside real-time weather and carbon intensity forecasts—we developed a simulation environment where NEMPC dynamically adjusts ventilation, heating, humidification, and \coo\ enrichment. Beyond its technical contributions, the framework serves as an educational platform, enabling students to explore economic and sustainability trade-offs in agricultural systems.
+Specifically, we present a web interface for optimal greenhouse climate control, designed to enhance crop yield, energy efficiency, and reduce \coo\ emissions. Using principles of thermodynamics, fluid dynamics, and mass transfer --- alongside real-time weather and carbon intensity forecasts --- we developed a simulation environment where NEMPC dynamically adjusts ventilation, heating, humidification, and \coo\ enrichment. Beyond its technical contributions, the framework serves as an educational platform, enabling students to explore economic and sustainability trade-offs in agricultural systems.
 
-\section{Greenhouse Climate Model}
-\label{sec:greenhouse}
+\section{Greenhouse Climate Model}\label{sec:greenhouse}
 This section outlines the mathematical greenhouse model implemented within the GES software~\cite{Ward2019} based on the Gembloux Dynamic Greenhouse Climate Model~\cite{Mashonjowa2007} and the work by Vanthoor~\cite{Vanthoor2011}. The model captures wind, temperature, humidity, and \coo\ concentration dynamics. For the complete list of parameters and values with references, see the source code repository\footnote{\url{https://github.com/MarekWadinger/ecompc-greenhouse-platform/blob/main/core/greenhouse_model.py}}.
 \begin{figure}
     \centering
@@ -79,34 +74,34 @@ This section outlines the mathematical greenhouse model implemented within the G
 \subsection{Temperature Dynamics}\label{subsec:temperature}
 
 The temperature evolution is governed by convection, radiation, and conduction between different compartments (cover, internal air, vegetation, tray, etc.), as illustrated in Fig.~\ref{fig:diagram}.
-Convective, radiative, and conductive heat transfers are modeled using standard correlations involving Nusselt, Reynolds, and Grashof numbers. For brevity, detailed equations are omitted here but can be found in~\cite{Ward2019,Vanthoor2011}.
+Convective, radiative, and conductive heat transfers are modeled using standard correlations involving Nusselt, Reynolds, and Grashof numbers~\cite{Ward2019,Vanthoor2011}.
 
-% The convective heat transfer between two surfaces reads as:
-% \begin{equation}
-%     \text{Nu} = \max \left( \text{Nu}_G, \text{Nu}_R \right),
-% \end{equation}
-% where \(\text{Nu}_G\) and \(\text{Nu}_R\) are the Nusselt numbers for free and forced convection, respectively:
-% \begin{align}
-%     \text{Nu}_G & = 0.5  {\left( \frac{\text{Gr}}{10^5} \right)}^{0.25} + 0.13  {\left(\frac{\text{Gr}}{10^5}\right)}^{0.33}, \\
-%     \text{Nu}_R & = 0.6  {\left(\frac{\text{Re}}{20000}\right)}^{0.5} + 0.032  {\left(\frac{\text{Re}}{20000}\right)}^{0.8},
-% \end{align}
-% where Re represents the Reynolds number, and Gr represents the Grashof number. The convective heat flux is then:
-% \begin{equation}
-%     Q_{\text{conv}} = A_{\text{c}}\, \text{Nu}\, \lambda_{\text{air}} \frac{T_1 - T_2}{d_{\text{c}}},
-% \end{equation}
-% where \(A_c\) and \(d_c\) represent the characteristic area and length of a compartment, respectively, and \(\lambda_{air}\) is the approximate air thermal conductivity at room temperature.
+The convective heat transfer between two surfaces reads as:
+\begin{equation}
+    \mathrm{Nu} = \max \left( \ui{\mathrm{Nu}}{G}, \ui{\mathrm{Nu}}{R} \right),
+\end{equation}
+where \(\ui{\mathrm{Nu}}{G}\) and \(\ui{\mathrm{Nu}}{R}\) are the Nusselt numbers for free and forced convection, respectively:
+\begin{align}
+    \ui{\mathrm{Nu}}{G} & = 0.5  {\left( \frac{\mathrm{Gr}}{10^5} \right)}^{0.25} + 0.13  {\left(\frac{\mathrm{Gr}}{10^5}\right)}^{0.33}, \\
+    \ui{\mathrm{Nu}}{R} & = 0.6  {\left(\frac{\mathrm{Re}}{20000}\right)}^{0.5} + 0.032  {\left(\frac{\mathrm{Re}}{20000}\right)}^{0.8},
+\end{align}
+where \( \mathrm{Re} \) represents the Reynolds number, and \( \mathrm{Gr} \) represents the Grashof number. The convective heat flux is then:
+\begin{equation}
+    \ui{Q}{conv} = \ui{A}{c}\, \mathrm{Nu}\, \ui{\lambda}{air} \frac{\ui{T}{1} - \ui{T}{2}}{\ui{d}{c}},
+\end{equation}
+where \(\ui{A}{c}\) and \(\ui{d}{c}\) represent the characteristic area and length of a compartment, respectively, and \(\ui{\lambda}{air}\) is the approximate air thermal conductivity at room temperature.
 
-% The radiative heat transfer is described by:
-% \begin{equation}
-%     Q_{\text{rad}} = \frac{\varepsilon_1  \varepsilon_2}{1 - \rho_1  \rho_2  F_{12}  F_{21}}  \sigma  A_1  F_{12}  \left( T_1^4 - T_2^4 \right),
-% \end{equation}
-% where \(\sigma \) is the Stefan-Boltzmann constant, \(F_{12}\) is the view factor from surface 1 to surface 2, \(T_1\) and \(T_2\) represent the temperatures of the surfaces, and \(\varepsilon \) and \(\rho \) are the emissivity and reflectivity of the surfaces, respectively.
+The radiative heat transfer illustrated in Fig.~\ref{fig:diagram} is given by:
+\begin{equation}
+    \ui{Q}{rad} = \frac{\varepsilon_1  \varepsilon_2}{1 - \rho_1  \rho_2  \ui{F}{12}  \ui{F}{21}}  \sigma  \ui{A}{1}  \ui{F}{12}  \left( \ui{T}{1}^4 - \ui{T}{2}^4 \right),
+\end{equation}
+where \(\sigma \) is the Stefan-Boltzmann constant, \(\ui{F}{21}\) and \(\ui{F}{12}\) are the view factors, which quantify the fraction of radiation leaving one surface that directly reaches the other, \(\ui{T}{1}\) and \(\ui{T}{2}\) represent the temperatures of the two surfaces, and \(\varepsilon \) and \(\rho \) are the emissivity and reflectivity of the surfaces, respectively.
 
-% The conductive heat transfer through a medium is given by:
-% \begin{equation}
-%     Q_{\text{cond}} = \frac{A \lambda_{\text{c}}}{d_\text{l}} (T_1 - T_2),
-% \end{equation}
-% where \(\lambda_{\text{c}} \) is the thermal conductivity of a compartment, and \(d_{\text{l}}\) is the thickness of the conducting layer.
+The conductive heat transfer through a medium is given by:
+\begin{equation}
+    \ui{Q}{cond} = \frac{\ui{A}{c} \ui{\lambda}{c}}{\ui{d}{l}} (\ui{T}{1} - \ui{T}{2}),
+\end{equation}
+where \(\ui{\lambda}{c} \) is the thermal conductivity of a compartment, and \(\ui{d}{l}\) is the thickness of the conducting layer.
 
 \subsection{Humidity Dynamics}\label{subsec:humidity}
 
@@ -116,26 +111,28 @@ Humidity is modeled through vapor mass transfer, where the air moisture content 
 \end{equation}
 where \(\ui{\rho}{air}\) is the density of air.
 
-% The mass transfer of water vapor due to convection is:
-% \begin{equation}
-%     Q_{v} = \frac{A  H_{\text{fg}}}{\rho  c}  \frac{\text{Sh}}{\text{Le}}  \frac{\lambda}{d}  \left( C - C_{\text{sat,}T} \right),
-% \end{equation}
-% where \(H_{\text{fg}}\) is the latent heat of vaporization, \(\text{Sh}\) is the Sherwood number, and \(\text{Le}\) is the Lewis number, \(\lambda \) is the thermal conductivity, \(d\) is the characteristic length, \(A\) is the heat exchange surface area, \(\rho \) is the density of the vapor, \(c\) is the specific heat capacity, \(C\) is the actual vapor concentration --- referring  to the amount of water vapor present in the air in a given volume --- and \(C_{\text{sat,}T}\) is the saturated vapor concentration at temperature \(T\).
+The mass transfer of water vapor due to convection is:
+\begin{equation}
+    \ui{Q}{v} = \frac{\ui{A}{c} \ui{H}{fg}}{\ui{\rho}{v} \ui{c}{v}}  \frac{\mathrm{Sh}}{\mathrm{Le}}  \frac{\ui{\lambda}{c}}{\ui{d}{c}}  \left( \ui{C}{v} - \ui{C}{sat} \right),
+\end{equation}
+where \(\ui{H}{fg}\) is the latent heat of vaporization, \(\mathrm{Sh}\) is the Sherwood number, and \(\mathrm{Le}\) is the Lewis number, \(\ui{\rho}{v} \) is the density of the vapor, \(\ui{c}{v}\) is the specific heat capacity, \(\ui{C}{v}\) is the actual vapor concentration --- referring  to the amount of water vapor present in the air in a given volume --- and \(\ui{C}{sat}\) is the saturated vapor concentration at temperature \(T\).
 
 \subsection{Carbon Dioxide Concentration Dynamics}
 
 The \coo\ concentration is affected by photosynthesis and external conditions. The external \coo\ concentration is computed as:
 \begin{equation}
-    \ui{C}{\coo,ext} = \frac{4 \times 10^{-4}  M_{\coo}  \ui{P}{atm}}{R  \ui{T}{ext}},
+    \ui{C}{\coo,ext} = \frac{4 \times 10^{-4}  M_{\coo}  \ui{P}{atm}}{R\,\ui{T}{ext}},
 \end{equation}
 where \(M_{\coo}\) is the molar mass of \coo, \(\ui{P}{atm}\) is the atmospheric pressure, \(R\) is the gas constant, and \(\ui{T}{ext}\) is the external air temperature in Kelvin.
 
 The internal \coo\ concentration in ppm is given by:
 \begin{equation}
-    \ui{C}{\coo, ppm} = \frac{C_{\coo}  R  \ui{T}{i}}{M_{\coo}  \ui{P}{atm}} \times 10^6,
+    \ui{C}{\coo, ppm} = \frac{C_{\coo}  R\, \ui{T}{i}}{M_{\coo}  \ui{P}{atm}} \times 10^6,
 \end{equation}
 where \(C_{\coo}\) is the \coo\ density, and \(\ui{T}{i}\) is the internal air temperature in Kelvin.
 
+
+\subsection{Dynamic States and Inputs}
 The greenhouse climate model integrates the models of temperature, humidity, and \coo\ concentration into a dynamic system represented by a state vector \linebreak \(x\) = [\(\ui{T}{c}, \ui{T}{i}, \ui{T}{v}, \ui{T}{m}, \ui{T}{p}, \ui{T}{f}, \ui{T}{s}, \ui{C}{w}, \ui{C}{\coo}, \ui{x}{sdw}, \ui{x}{nsdw}\)] \( \in\mathbb R^{11} \), and input vector \(u\) = [\(\ui{Q}{heater}, \ui{R}{fan}, \ui{V}{humid}, \ui{G}{\coo} \)] \( \in\mathbb R^{4} \) for the heating power, ventilation, humidification, and \coo\ enrichment. The \(\ui{T}{c}\) represents the cover temperature, \(\ui{T}{i}\) the internal air temperature, \(\ui{T}{v}\) the plant temperature, \(\ui{T}{m}\) the growing medium temperature, \(\ui{T}{p}\) the tray temperature, \(\ui{T}{f}\) the floor temperature, and \(\ui{T}{s}\) the temperature of the soil layer. Additionally, \(\ui{x}{sdw}\) denotes the structural dry weight of the plant and \(\ui{x}{nsdw}\) the non-structural dry weight of the plant.
 
 The model is influenced by external conditions \linebreak \( p = \left[
@@ -159,9 +156,9 @@ Actuators translate MPC signals into mechanical actions to regulate environmenta
 \end{table}
 We model the actuators by adjusting the control signal, \( u(t) \), which ranges from 0 to 100\%, where 0\% and 100\% corresponds to no actuation and maximum actuation, respectively. The actuation level, \( a(u) \), is then calculated as:
 \begin{equation}
-    a(u) = \frac{u}{100}  \ui{a}{max},
+    a(u) = \frac{u}{100}  \ui{a}{\max},
 \end{equation}
-where \( \ui{a}{max} \) represents the maximum of the specific actuator.
+where \( \ui{a}{\max} \) represents the maximum of the specific actuator.
 
 The power consumption of an actuator is determined by:
 \begin{equation}
@@ -220,49 +217,33 @@ Similarly, the rate of change of non-structural dry weight is given by:
 \end{equation}
 where \( c_{\eta} \) is the conversion factor representing the efficiency of absorbed carbon dioxide conversion into biomass (\(\mathsmaller{\chho/\coo}\)), \( \ui{f}{phot} \) is the gross photosynthesis rate, and \( \ui{f}{resp} \) is the maintenance respiration rate. Using \( Y_{\eta} \) as the yield, the coefficient \( \gamma \) accounts for biomass partitioning and respiratory losses, defined as \( \gamma = 1 + (1 - Y_{\eta}) / Y_{\eta} \).
 
-\subsection{Specific Growth Rate} The specific growth rate \( \ui{r}{gr} \) describes the accumulation rate of the structural biomass (SDW) in response to the available non-structural dry weight (NSDW). This process is temperature-dependent and scales based on plant temperature sensitivity. The NSDW provides a reservoir of energy for structural growth. The efficiency of the energy conversion is central to the plant's overall biomass accumulation.
+\subsection{Specific Growth Rate} The specific growth rate \( \ui{r}{gr} \) represents the temperature-modulated accumulation of structural dry weight (SDW) based on available non-structural dry weight (NSDW). It is defined as:
+\begin{equation}
+    \ui{r}{gr} = \ui{r}{gr,\max} \cdot \frac{\ui{x}{nsdw}}{\theta \, \ui{x}{sdw} + \ui{x}{nsdw}} \cdot Q_{10}^{\left( \frac{\ui{T}{i} - 20}{10} \right)},
+\end{equation}
+where \( \ui{r}{gr,\max} \) is the maximum growth rate at 20 \( ^\circ \)C, \( \theta \) is the growth coefficient, and \( Q_{10} \) is the growth sensitivy to change in temperature by 10 \( ^\circ \)C The NSDW serves as an energy reservoir for growth, and the efficiency of its conversion determines biomass accumulation.
 
-\subsection{Maintenance Respiration} The maintenance respiration rate \( \ui{f}{resp} \) accounts for the energy expenditure required to sustain the plant basic metabolic functions. The respiration process is divided between the shoot and root components, each with its own maintenance respiration rate, scaled to the plant dry mass. Respiration demands increase as temperature rises. It is a key factor in determining the amount of energy for growth as it consumes a portion of the energy generated from photosynthesis.
+\subsection{Maintenance Respiration} The maintenance respiration rate \( \ui{f}{resp} \) quantifies the energy required to sustain basic metabolic functions and is given by:
+\begin{equation}
+    \ui{f}{resp} = \left( \ui{r}{s} (1 - \mu)\, \ui{x}{sdw} + \ui{r}{r}\, \mu \, \ui{x}{sdw} \right) Q_{10}^{\left( \frac{\ui{T}{i} - 25}{10} \right)},
+\end{equation}
+where \( \ui{r}{s} \) and \( \ui{r}{r} \) are shoot and root respiration rates at 25\( ^\circ \)C, \( \mu \) is the root dry mass ratio. Respiration is split between shoot and root compartments, scaled by dry mass and modulated by temperature. As temperature increases, respiration demands increase, consuming a larger portion of the energy available from photosynthesis and thereby influencing growth potential.
 
-\subsection{Gross Photosynthesis} The gross canopy photosynthesis rate \( \ui{f}{phot} \) represents the total \coo\ assimilation by the plant. This is primarily driven by the maximum \coo\ assimilation rate, which depends on incident PAR, \coo\ concentration, and canopy light-use efficiency. The leaf area index and extinction coefficient further influence the efficiency of light absorption across the canopy. Canopy conductance plays a critical role in this process by regulating the rate at which \coo\ diffuses into the leaf. The combined effect of boundary layer conductance, stomatal conductance, and carboxylation conductance ensures that \coo\ reaches the sites of photosynthesis efficiently. Carboxylation conductance is temperature-dependent, reflecting the enzymatic activity affected by ambient conditions.
-%
-% \subsection{Specific Growth Rate}
+\subsection{Gross Photosynthesis} The gross canopy photosynthesis rate \( \ui{f}{phot} \) represents the total \coo\ assimilation by the plant and is primarily driven by the maximum \coo\ assimilation rate \( \ui{f}{phot,\max} \). This maximum rate depends on the incident photosynthetically active radiation (PAR), ambient \coo\ concentration, canopy conductance to \coo\ diffusion \( \ui{g}{\coo} \), and the light-use efficiency \( \epsilon \). It is calculated as:
+\begin{equation}
+    \ui{f}{phot,\max} = \frac{\epsilon \, \ui{u}{PAR}\, \ui{g}{\coo}\, \ui{c}{\omega} (\ui{u}{\coo} - c^*)}{\epsilon \, \ui{u}{PAR} + \ui{g}{\coo}\, \ui{c}{\omega} (\ui{u}{\coo} - c^*)},
+\end{equation}
+where \( \ui{u}{\coo} \) is the \coo\ concentration, \( \ui{c}{\omega} \) is the air density of \coo, and \( c^* \) is the \coo\ compensation point. The gross assimilation \( \ui{f}{phot} \) further depends on structural factors that determine the efficiency of light absorption across the canopy, including the leaf area index and extinction coefficient. It is given by:
+\begin{equation}
+    \ui{f}{phot} = \ui{f}{abs} \cdot \ui{f}{phot,\max}
+\end{equation}
 
-% The specific growth rate \( \ui{r}{gr} \) is defined as:
+where \( \ui{f}{abs} \) represents the fraction of incident light absorbed by the canopy, calculated as
+\begin{equation}
+    \ui{f}{abs} = 1 - \exp(-K \cdot \mathrm{LAR} \cdot (1-\tau) \cdot \ui{x}{sdw})
+\end{equation}
 
-% \begin{equation}
-%     \ui{r}{gr} = \ui{c}{gr, max} \frac{\ui{x}{nsdw}}{\ui{c}{\gamma} \ui{x}{sdw} + \ui{x}{nsdw}} \ui{c}{qr, Q10}^{\left(\frac{\ui{u}{T} - 20}{10}\right)}
-% \end{equation}
-
-% where \( \ui{u}{T} \) is the canopy temperature, \( \ui{c}{gr, max} \) is the saturated growth rate at 20°C, \( \ui{c}{\gamma} \) is the growth rate coefficient, and \( \ui{c}{qr, Q10} \) is the growth sensitivy to change in temperature by 10\( ^\circ \)C.
-
-% \subsection{Respiration Model}
-
-% The maintenance respiration rate \( \ui{f}{resp} \) is defined as:
-
-% \begin{equation}
-%     \ui{f}{resp} = \left( \ui{c}{resp, s} (1 - \ui{c}{\tau}) \ui{x}{sdw} + \ui{c}{resp, r} \ui{c}{\tau} \ui{x}{sdw} \right) \ui{c}{resp, Q10}^{\left( \frac{\ui{u}{T} - 25}{10} \right)}
-% \end{equation}
-
-% where the \( \ui{c}{resp, s} \) and \( \ui{c}{resp, r} \) are the shoot and root maintenance respiration rate at 25°C, \( \ui{c}{\tau} \) is the root dry mass ratio, and \( \ui{c}{qr, Q10} \) is the respiration sensitivy to change in temperature by 10\( ^\circ \)C.
-
-% \subsection{Photosynthesis Model}
-
-% The photosynthesis model is divided into two parts: the maximum \coo\ assimilation rate and the gross canopy photosynthesis. The maximum \coo\ assimilation rate \( \ui{f}{phot, max} \) is given by:
-
-% \begin{equation}
-%     \ui{f}{phot, max} = \frac{\epsilon \ui{u}{PAR} \ui{g}{\coo} \ui{c}{\omega} (\ui{u}{\coo} - \Gamma)}{\epsilon \ui{u}{PAR} + \ui{g}{\coo} \ui{c}{\omega} (\ui{u}{\coo} - \Gamma)}
-% \end{equation}
-
-% where the \( \ui{u}{PAR} \) is the incident photosynthetically active radiation, \( \ui{u}{\coo} \) is the \coo\ concentration, \( \epsilon \) is the light-use efficiency, \( \ui{g}{\coo} \) is the canopy conductance to \coo\ diffusion, \( \ui{c}{\omega} \) is the density of \coo\ in air, and \( \Gamma \) is the \coo\ compensation point.
-
-% The gross canopy photosynthesis \( \ui{f}{phot} \) is expressed as:
-
-% \begin{equation}
-%     \ui{f}{phot} = \left( 1 - \exp\left( -\ui{c}{K} \ui{c}{LAR} (1 - \ui{c}{\tau}) \ui{x}{sdw} \right) \right) \ui{f}{phot, max}
-% \end{equation}
-
-% where \( \ui{c}{K} \) is the extinction coefficient, and \( \ui{c}{LAR} \) is the structural leaf area ratio.
+ This expression captures the exponential attenuation of light with canopy depth, reflecting the combined effects of the structural leaf area ratio (LAR), extinction coefficient \(K\), canopy light transmittance \( \tau \), and structural parameters, consistent with the Beer-Lambert law~\cite{Beer-Lambert}.
 
 % \subsection{Canopy Conductance}
 
@@ -284,7 +265,7 @@ where \( c_{\eta} \) is the conversion factor representing the efficiency of abs
 
 % where:
 % - \( \ui{c}{CAR1} \), \( \ui{c}{CAR2} \), and \( \ui{c}{CAR3} \) are carboxylation parameters dependent on temperature.
-%
+
 \section{Nonlinear Economic Model Predictive Control}\label{sec:mpc}
 The NEMPC is adopted to maximize the profit of growing lettuce in a greenhouse by maximizing lettuce yield and minimizing operating costs over a finite prediction horizon. The NEMPC framework incorporates the dynamics of the greenhouse and time-varying external conditions.
 
@@ -376,7 +357,7 @@ To understand actuator influence on plant growth, we conducted simulations under
 \begin{figure}
     \centering
     \includegraphics[]{figures/step_response-outputs-2024-10-11_2024-10-26-120s.pdf}
-    \caption{Responses of structural and non-structural dry weight on step changes from off to maximum in following actuations from the left to the right: ventilation, heating, humidification, and \coo\ enrichment, no step made.}\label{fig:steps}
+    \caption{Responses of structural and non-structural dry weight on step changes from off to maximum in following actuations from the top to bottom: ventilation, heating, humidification, and \coo\ enrichment, no step made.}\label{fig:steps}
 \end{figure}
 
 To evaluate the NEMPC algorithm's performance, we conducted comparative simulations against a no-control scenario. The NEMPC was configured with both prediction and control horizons of 1 hour, running for 10,801 steps with a 120-second sampling time under the same climate conditions. Table~\ref{tab:comparison} presents the remarkable results: the proposed NEMPC increased crop yield by 435\% and improved profit by more than 14\% in just 15 days of growth. As shown in Fig.~\ref{fig:control}, the control strategy heavily utilizes the \coo\ generator while minimizing heater usage due to its high electricity consumption and the relatively mild autumn weather conditions.
