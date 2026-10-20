@@ -1,3 +1,5 @@
+# mypy: ignore-errors
+# Verbatim CasADi example kept for reference; not type-checked.
 #
 #     MIT No Attribution
 #

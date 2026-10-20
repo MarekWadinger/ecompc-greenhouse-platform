@@ -159,8 +159,10 @@ class PyomoGreenHouseModel:
             actuator: Actuator = getattr(self.gh, act.lower().replace(" ", ""))
             costs[f"Energy ({act})"] = -actuator.signal_to_eur(
                 U[act], energy_cost
+            ).sum()  # type: ignore[union-attr]  # U[act] is a Series here
+            costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(  # type: ignore[union-attr]
+                U[act]
             ).sum()
-            costs[f"CO2 ({act})"] = -actuator.signal_to_co2_eur(U[act]).sum()
 
         profit_costs = pd.concat([profit, costs]).rename("EUR")
         profit_costs["Total"] = profit_costs.sum()
@@ -218,7 +220,7 @@ class PyomoEconomicMPC:
             self.u_max = [u_max] * model.n_u
 
         # For warm starting
-        self.prev_solution = None
+        self.prev_solution: list[list[float]] | None = None
 
     def _create_pyomo_model(self, t_now, x0=None):
         """Create the PyOmo optimization model.

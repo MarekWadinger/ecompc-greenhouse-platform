@@ -56,8 +56,6 @@ def main():
     gh_model = GreenHouse(dt=dt)
 
     # Parameters
-    cultivated_area = gh_model.A_c
-    lettuce_price = 0.0054  # EUR/g
     N = 30  # number of control intervals
 
     # Paths
