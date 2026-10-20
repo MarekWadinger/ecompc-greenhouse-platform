@@ -163,3 +163,7 @@ docs/_build/
 !*.gitignore
 !*.gitattributes
 !*.github
+
+# Generated outputs
+examples/results/
+reports/
